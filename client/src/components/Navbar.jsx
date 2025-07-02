@@ -46,4 +46,4 @@ const Navbar = ({ isOpen = true }) => {
     </nav>
   );
 };
-export default navbar;
+export default Navbar;
