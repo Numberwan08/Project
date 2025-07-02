@@ -2,7 +2,7 @@ import React from 'react'
 
 function EventControllers() {
   return (
-    <div>
+    <div className="min-h-screen p-4">
       EventControllers
     </div>
   )
