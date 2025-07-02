@@ -70,28 +70,6 @@ function EventControllers() {
               <td className="w-[20%] px-4 py-2 border">5 โพสต์</td>
               <td className="w-[20%] px-4 py-2 border">ดูรายละเอียด / บล็อค</td>
             </tr>
-            <tr className="hover:bg-gray-100">
-              <td className="w-[10%] text-center border">1</td>
-              <td className="w-[20%] px-4 py-2 border">รูป</td>
-              <td className="w-[30%] px-4 py-2 border">สมรักรักนะ</td>
-              <td className="w-[20%] px-4 py-2 border">5 โพสต์</td>
-              <td className="w-[20%] px-4 py-2 border">ดูรายละเอียด / บล็อค</td>
-            </tr>
-            <tr className="hover:bg-gray-100">
-              <td className="w-[10%] text-center border">1</td>
-              <td className="w-[20%] px-4 py-2 border">รูป</td>
-              <td className="w-[30%] px-4 py-2 border">สมรักรักนะ</td>
-              <td className="w-[20%] px-4 py-2 border">5 โพสต์</td>
-              <td className="w-[20%] px-4 py-2 border">ดูรายละเอียด / บล็อค</td>
-            </tr>
-            <tr className="hover:bg-gray-100">
-              <td className="w-[10%] text-center border">1</td>
-              <td className="w-[20%] px-4 py-2 border">รูป</td>
-              <td className="w-[30%] px-4 py-2 border">สมรักรักนะ</td>
-              <td className="w-[20%] px-4 py-2 border">5 โพสต์</td>
-              <td className="w-[20%] px-4 py-2 border">ดูรายละเอียด / บล็อค</td>
-            </tr>
-            
           </tbody>
         </table>
       </div>
