@@ -1,7 +1,19 @@
-const mysql = require('mysql2');
-const dotenv = require('dotenv');
-console.log('CWD:', process.cwd());
-dotenv.config();
-console.log("Connecting to database...");
-console.log("USER:", process.env.DB_USER);
-console.log("PASSWORD:", process.env.DB_PASSWORD);
+const mysql = require("mysql2");
+const dotenv = require("dotenv");
+dotenv.config({ path: "../.env" });
+
+const db = mysql.createConnection({
+    host:process.env.DB_HOST , 
+    user:process.env.DB_USER ,
+    password:process.env.DB_PASS ,
+    database:process.env.DB_NAME
+})
+
+db.connect((err) =>{
+    if(err){
+        console.log("error connect database", err);
+        return;
+    }
+    console.log("connect database success");
+
+})
