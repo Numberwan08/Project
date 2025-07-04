@@ -82,10 +82,46 @@ exports.adminRegister = async ( req , res ) =>{
     }
 }
 
-exports.login = (req,res) =>{
-    res.status(200).json({
-        msg : "login success",
-    })
+exports.login = async (req,res) =>{
+
+    const { username , password} = req.body;
+
+    if(!username || !password){
+        return res.status(500).json({msg: "กรอบข้อมูลไม่ครบ"})
+    }
+
+    try {
+
+        const [rows] = await db.promise().query("SELECT * FROM user WHERE username = ?", [username]);
+        if(rows.length === 0){
+            // console.log(rows);
+            return res.status(400).json({msg : "ไม่พบผู้ใช้งานนี้"})
+        }
+        
+        const user = rows[0];
+
+        const isMatch = await bcrypt.compare(password , user.password)
+
+        if(!isMatch){
+            return res.status(401).json({msg: "รหัสผ่านไม่ถูกต้อง"})
+        }
+
+
+        const token = jwt.sign(
+            {
+                username:user.username,
+                first_name:user.first_name,
+            },"token",{ expiresIn : "1h"});
+
+            res.status(200).json({
+                msg : "เข้าสู่ระบบสำเร็จ",
+                token, data:user.first_name
+            });
+
+    }catch (err){
+        console.log("error Login", err)
+        return res.status(500).json({ msg : "เกิดข้อผิดพลาดในการเข้าสู้ระบบ"})
+    }
 }
 
 exports.adminLogin = async (req , res) => {
@@ -116,7 +152,7 @@ exports.adminLogin = async (req , res) => {
             {
                 username:admin.username,
                 first_name:admin.first_name,
-            },"asdasdweqwellitd",{ expiresIn : "1h"});
+            },"token",{ expiresIn : "1h"});
 
             res.status(200).json({
                 msg : "เข้าสู่ระบบสำเร็จ",
