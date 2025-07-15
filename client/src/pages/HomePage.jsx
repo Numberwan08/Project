@@ -3,6 +3,7 @@ import React from "react";
 function HomePage() {
   return (
     <div className="flex flex-col ml-5 mr-5 mt-5">
+              
       <div className="carousel w-full">
         <div id="slide1" className="carousel-item relative w-full">
           <img
@@ -61,7 +62,7 @@ function HomePage() {
           </div>
         </div>
       </div>
-
+      {/*สถานที่ยอนนิยม*/}
       <div className="text-4xl font-bold mt-5">
         สถานที่ท่องเที่ยวเชิงวัฒนธรรมยอดนิยม 5 อันดับ
         <div className="flex flex-wrap mt-5 mr-5 ml-5">
@@ -75,65 +76,12 @@ function HomePage() {
                   เชิงวัฒนธรรม
                 </div>
               </div>
-              <p>
-                วิ่งขึ้นดอยสุเทพ
-              </p>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 w-85 shadow-sm mt-3 mr-5">
-            <figure>
-              <img src="https://s.isanook.com/tr/0/ud/282/1412087/41463628_295061174416770_4443_1.jpg?ip/crop/w670h402/q80/jpg" />
-            </figure>
-            <div className="card-body">
-              <div className="flex justify-end">
-                <div className="badge bg-purple-600 text-base-100">
-                  เชิงวัฒนธรรม
-                </div>
-              </div>
-              <p>
-                วัดห้วยปลากั้ง ตำบลริมกก อำเภอเมืองเชียง ราย
-                จังหวัดเชียงราย.....
-              </p>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 w-85 shadow-sm mt-3 mr-5">
-            <figure>
-              <img src="https://s.isanook.com/tr/0/ud/282/1412087/41463628_295061174416770_4443_1.jpg?ip/crop/w670h402/q80/jpg" />
-            </figure>
-            <div className="card-body">
-              <div className="flex justify-end">
-                <div className="badge bg-purple-600 text-base-100">
-                  เชิงวัฒนธรรม
-                </div>
-              </div>
-              <p>
-                วัดห้วยปลากั้ง ตำบลริมกก อำเภอเมืองเชียง ราย
-                จังหวัดเชียงราย.....
-              </p>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 w-85 shadow-sm mt-3 mr-5">
-            <figure>
-              <img src="https://s.isanook.com/tr/0/ud/282/1412087/41463628_295061174416770_4443_1.jpg?ip/crop/w670h402/q80/jpg" />
-            </figure>
-            <div className="card-body">
-              <div className="flex justify-end">
-                <div className="badge bg-purple-600 text-base-100">
-                  เชิงวัฒนธรรม
-                </div>
-              </div>
-              <p>
-                วัดห้วยปลากั้ง ตำบลริมกก อำเภอเมืองเชียง ราย
-                จังหวัดเชียงราย.....
-              </p>
+              <p>วิ่งขึ้นดอยสุเทพ</p>
             </div>
           </div>
         </div>
       </div>
-
+      {/*กิจกรรม*/}
       <div className="bg-blue-100 w-full h-120 mt-5">
         <div className="text-4xl font-bold text-center pt-5">
           กิจกรรมที่น่าสนใจ
@@ -146,9 +94,7 @@ function HomePage() {
             </figure>
             <div className="card-body">
               <div className="flex justify-end">
-                <div className="badge bg-rose-600 text-base-100">
-                  กิจกรรม
-                </div>
+                <div className="badge bg-rose-600 text-base-100">กิจกรรม</div>
               </div>
               <p>
                 วัดห้วยปลากั้ง ตำบลริมกก อำเภอเมืองเชียง ราย
@@ -156,51 +102,18 @@ function HomePage() {
               </p>
             </div>
           </div>
-          <div className="card bg-base-100 w-100 shadow-sm mt-3 mr-30">
-            <figure>
-              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2vCKcDkjgZltD9Ngi7i8ISjjow0V251bLaw&s" />
-            </figure>
-            <div className="card-body">
-              <div className="flex justify-end">
-                <div className="badge bg-rose-600 text-base-100">
-                  กิจกรรม
-                </div>
-              </div>
-              <p>
-                วิ่งขึ้นดอยสุเทพ
-              </p>
-            </div>
-          </div>
-          <div className="card bg-base-100 w-100 shadow-sm mt-3 mr-5">
-            <figure>
-              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2vCKcDkjgZltD9Ngi7i8ISjjow0V251bLaw&s" />
-            </figure>
-            <div className="card-body">
-              <div className="flex justify-end">
-                <div className="badge bg-rose-600 text-base-100">
-                  กิจกรรม
-                </div>
-              </div>
-              <p>
-                วิ่งขึ้นดอยสุเทพ
-              </p>
-            </div>
-          </div>
         </div>
       </div>
-
+      {/*แนะนำ-สินค้า*/}
       <div className="mt-3">
         <div className="text-4xl font-bold ml-150">แนะนำ</div>
 
         <div className="flex justify-between mt-3 gap-4">
           <div className="flex flex-col gap-5">
-
             <div className="card lg:card-side bg-base-100 shadow-sm">
               <div className="flex flex-wrap w-300">
                 <figure>
-                  <img
-                    src="https://image-tc.galaxy.tf/wijpeg-7pqufmqti0twcdzzq3btsb5lq/wat-rong-khun_standard.jpg?crop=0%2C0%2C555%2C416"
-                  />
+                  <img src="https://image-tc.galaxy.tf/wijpeg-7pqufmqti0twcdzzq3btsb5lq/wat-rong-khun_standard.jpg?crop=0%2C0%2C555%2C416" />
                 </figure>
                 <div className="card-body">
                   <h2 className="card-title">วัดรุ่งขุ่น</h2>
@@ -211,42 +124,6 @@ function HomePage() {
                 </div>
               </div>
             </div>
-
-            <div className="card lg:card-side bg-base-100 shadow-sm">
-              <div className="flex flex-wrap w-300">
-                <figure>
-                  <img
-                    src="https://image-tc.galaxy.tf/wijpeg-7pqufmqti0twcdzzq3btsb5lq/wat-rong-khun_standard.jpg?crop=0%2C0%2C555%2C416"
-                  />
-                </figure>
-                <div className="card-body">
-                  <h2 className="card-title">วัดรุ่งขุ่น</h2>
-                  <p>วัดขาวสวยงาม</p>
-                  <div className="card-actions">
-                    <button className="btn btn-primary">Listen</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card lg:card-side bg-base-100 shadow-sm">
-              <div className="flex flex-wrap w-300">
-                <figure>
-                  <img
-                    src="https://image-tc.galaxy.tf/wijpeg-7pqufmqti0twcdzzq3btsb5lq/wat-rong-khun_standard.jpg?crop=0%2C0%2C555%2C416"
-                  />
-                </figure>
-                <div className="card-body">
-                  <h2 className="card-title">วัดรุ่งขุ่น</h2>
-                  <p>วัดขาวสวยงาม</p>
-                  <div className="card-actions">
-                    <button className="btn btn-primary">Listen</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
           </div>
 
           <div className="card bg-base-100 shadow-sm w-100">
@@ -255,43 +132,7 @@ function HomePage() {
             </div>
             <div className="card-body">
               <figure>
-                <img
-                  src="https://i.ytimg.com/vi/Dz5VwiqGmuw/maxresdefault.jpg"
-                />
-              </figure>
-              <div className="flex justify-end">
-                <div className="badge bg-green-500 text-base-100">สินค้า</div>
-              </div>
-              <p>หอมหวาน</p>
-            </div>
-            <div className="card-body">
-              <figure>
-                <img
-                  src="https://i.ytimg.com/vi/Dz5VwiqGmuw/maxresdefault.jpg"
-                />
-              </figure>
-              <div className="flex justify-end">
-                <div className="badge bg-green-500 text-base-100">สินค้า</div>
-              </div>
-              <p>หอมหวาน</p>
-            </div>
-            <div className="card-body">
-              <figure>
-                <img
-                  src="https://i.ytimg.com/vi/Dz5VwiqGmuw/maxresdefault.jpg"
-                />
-              </figure>
-              <div className="flex justify-end">
-                <div className="badge bg-green-500 text-base-100">สินค้า</div>
-              </div>
-              <p>หอมหวาน</p>
-            </div>
-
-            <div className="card-body">
-              <figure>
-                <img
-                  src="https://i.ytimg.com/vi/Dz5VwiqGmuw/maxresdefault.jpg"
-                />
+                <img src="https://i.ytimg.com/vi/Dz5VwiqGmuw/maxresdefault.jpg" />
               </figure>
               <div className="flex justify-end">
                 <div className="badge bg-green-500 text-base-100">สินค้า</div>
