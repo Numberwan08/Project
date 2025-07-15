@@ -89,7 +89,7 @@ function HomePage() {
 
         <div className="flex flex-wrap  justify-center items-center">
           <div className="card bg-base-100 w-100 shadow-sm mt-3 mr-30">
-            <figure>
+            <figure className="mt-5">
               <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2vCKcDkjgZltD9Ngi7i8ISjjow0V251bLaw&s" />
             </figure>
             <div className="card-body">

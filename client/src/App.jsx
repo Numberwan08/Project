@@ -13,6 +13,7 @@ import AttractionPage from "./pages/AttractionPage";
 import ProductPage from "./pages/ProductPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   const router = createBrowserRouter([
@@ -74,9 +75,9 @@ function App() {
     }
   ]);
   return (
-    <>
+    <AuthProvider>
       <RouterProvider router={router} />
-    </>
+    </AuthProvider>
   );
 }
 

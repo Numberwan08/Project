@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import {useAuth} from "../context/AuthContext";
+
 
 const menuItems = [
   {
@@ -19,8 +21,11 @@ const menuItems = [
     path: "/product",
   },
 ];
-const Navbar = ({ isOpen = true }) => {
-  if (!isOpen) return null;
+
+const Navbar = () => {
+
+const {isLogin, logout, name } = useAuth();
+
 
   return (
     <nav className="bg-white shadow-md py-4 px-6">
@@ -39,6 +44,11 @@ const Navbar = ({ isOpen = true }) => {
           ))}
         </ul>
         <div className="flex items-center gap-4">
+            {isLogin ? (
+              <>
+              {name}
+              <button className="btn btn-error" onClick={() => logout()}>logout</button></>
+            ) : <>
             <button>
               <Link
                 to="/login"
@@ -56,8 +66,10 @@ const Navbar = ({ isOpen = true }) => {
                 สมัครสมาชิก
               </Link>
             </button>
+            </>}
           </div>
       </div>
+
     </nav>
   );
 };
