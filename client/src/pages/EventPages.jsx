@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 function EventPages() {
   return (
@@ -59,6 +60,7 @@ function EventPages() {
                 </div>
               </div>
               <p>วิ่งขึ้นดอยสุเทพ</p>
+              <Link to="/detall_event"><button className="btn btn-error">รายละเอียดสถานที่</button></Link>
             </div>
           </div>
         </div>

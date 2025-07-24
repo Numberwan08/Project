@@ -14,6 +14,14 @@ import ProductPage from "./pages/ProductPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
+import Detall_Event from "./pages/Detall_Event";
+import Detall_Prodact from "./pages/Detall_Prodact";
+import Detall_Att from "./pages/Detall_att";
+import Uselayuot from "./layout/Uselayout";
+import Menu_Att from "./pages/Menu_Att";
+import Menu_Event from "./pages/Menu_Event";
+import Menu_Prodact from "./pages/Menu_Prodact";
+import Menu_Profile from "./pages/Menu_Profile";
 
 function App() {
   const router = createBrowserRouter([
@@ -62,6 +70,40 @@ function App() {
         {
           path:"/product",
           element: <ProductPage />,
+        },
+        {
+          path:"/detall_att",
+          element:<Detall_Att/>,
+        },
+        {
+          path:"/detall_event",
+          element:<Detall_Event/>,
+        },
+        {
+          path:"/detall_prodact",
+          element:<Detall_Prodact/>,
+        },
+      ]
+    },
+    {
+      path:"/menu",
+      element:<Uselayuot/>,
+      children:[
+        {
+          path:"/menu/menu_att",
+          element : <Menu_Att/>
+        },
+        {
+          path:"/menu/menu_event",
+          element : <Menu_Event/>
+        },
+        {
+          path:"/menu/menu_prodact",
+          element : <Menu_Prodact/>
+        },
+        {
+          path:"/menu/menu_profile",
+          element : <Menu_Profile/>
         },
       ]
     },

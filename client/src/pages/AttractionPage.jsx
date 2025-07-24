@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 function AttractionPage() {
   return (
@@ -59,6 +60,7 @@ function AttractionPage() {
                 </div>
               </div>
               <p>วิ่งขึ้นดอยสุเทพ</p>
+              <Link to="/detall_att"><button className="btn btn-error">รายละเอียดสถานที่</button></Link>
             </div>
           </div>
         </div>

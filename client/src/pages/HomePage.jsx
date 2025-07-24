@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 function HomePage() {
   return (
@@ -77,12 +78,13 @@ function HomePage() {
                 </div>
               </div>
               <p>วิ่งขึ้นดอยสุเทพ</p>
+              <Link to="/detall_att"><button className="btn btn-error">ดูรายระเอียด</button></Link>
             </div>
           </div>
         </div>
       </div>
       {/*กิจกรรม*/}
-      <div className="bg-blue-100 w-full h-120 mt-5">
+      <div className="bg-blue-100 w-full h-135 mt-5">
         <div className="text-4xl font-bold text-center pt-5">
           กิจกรรมที่น่าสนใจ
         </div>
@@ -100,6 +102,7 @@ function HomePage() {
                 วัดห้วยปลากั้ง ตำบลริมกก อำเภอเมืองเชียง ราย
                 จังหวัดเชียงราย.....
               </p>
+              <Link to="/detall_event"><button className="btn btn-error">ดูรายระเอียด</button></Link>
             </div>
           </div>
         </div>
@@ -138,6 +141,7 @@ function HomePage() {
                 <div className="badge bg-green-500 text-base-100">สินค้า</div>
               </div>
               <p>หอมหวาน</p>
+              <Link to="/detall_prodact"><button className="btn btn-error">ดูรายระเอียด</button></Link>
             </div>
           </div>
         </div>

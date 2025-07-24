@@ -7,26 +7,24 @@ const { use } = require("react");
 exports.register = async ( req , res ) =>{
     try{
         const {
-        username,
         email,
         password,
         first_name,
         last_name,
-        birth_date,
-        gender_id,
-        description_name} = req.body;
+        dob,
+        sex,
+        } = req.body;
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const [rows] = await db.promise().query("INSERT INTO  user (username, email, password, first_name, last_name, birth_date,gender_id, description_name) VALUES (?,?,?,?,?,?,?,?)",[
-            username,
+        const [rows] = await db.promise().query("INSERT INTO  user (email, password, first_name, last_name, dob,sex) VALUES (?,?,?,?,?,?)",[
             email,
             hashedPassword,
             first_name,
             last_name,
-            birth_date,
-            gender_id, 
-            description_name
+            dob,
+            sex, 
+    
         ])
 
         if(rows.affectedRows === 0){
@@ -39,6 +37,7 @@ exports.register = async ( req , res ) =>{
         return res.status(201).json({
             msg : "register success"
         })  
+        
     }catch(err){
         console.log("error register", err);
         return res.status(500).json({
@@ -84,15 +83,15 @@ exports.adminRegister = async ( req , res ) =>{
 
 exports.login = async (req,res) =>{
 
-    const { username , password} = req.body;
+    const { email , password} = req.body;
 
-    if(!username || !password){
+    if(!email || !password){
         return res.status(500).json({msg: "กรอบข้อมูลไม่ครบ"})
     }
 
     try {
 
-        const [rows] = await db.promise().query("SELECT * FROM user WHERE username = ?", [username]);
+        const [rows] = await db.promise().query("SELECT * FROM user WHERE email = ?", [email]);
         if(rows.length === 0){
             // console.log(rows);
             return res.status(400).json({msg : "ไม่พบผู้ใช้งานนี้"})
@@ -109,7 +108,7 @@ exports.login = async (req,res) =>{
 
         const token = jwt.sign(
             {
-                username:user.username,
+                email:user.email,
                 first_name:user.first_name,
             },"token",{ expiresIn : "1h"});
 
