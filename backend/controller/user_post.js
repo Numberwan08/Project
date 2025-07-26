@@ -10,6 +10,7 @@ res.json({
 
 exports.add_post = async (req, res) => {
 try{
+    console.log("req.body", req.body);
         const {
             id_user,
             name_location,
@@ -18,10 +19,11 @@ try{
             detail_att,
             images,
             latitude,
-            longitude
+            longitude,
+            date
         } = req.body;
 
-       const [rows] = await db.promise().query("INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude) VALUES (?,?,?,?,?,?,?,?)",[
+       const [rows] = await db.promise().query("INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude, date) VALUES (?,?,?,?,?,?,?,?,?)",[
             id_user,
             name_location,
             detail_location,
@@ -29,7 +31,8 @@ try{
             detail_att,
             images,
             latitude,
-            longitude
+            longitude,
+            date
        ])
 
        if(rows.affectedRows === 0){
@@ -76,7 +79,7 @@ exports.edit_post = async (req, res) => {
             longitude,
             id
         ]);
-        
+
         if (rows.affectedRows === 0) {
             return res.status(404).json({
                 msg: "โพสต์ไม่พบ",
