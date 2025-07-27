@@ -1,5 +1,14 @@
 const db = require('../config/db');
-
+const fs = require('fs');
+const deleteImage =(path)=>{
+    fs.unlink(path,(err)=>{
+        if(err){
+            console.error("Error deleting image:", err);
+        }else{
+            console.log("Image deleted successfully");
+        }
+    });
+};
 
 exports.get_post = async (req ,res ) => {
 res.json({
@@ -8,52 +17,58 @@ res.json({
 }
 
 
+
 exports.add_post = async (req, res) => {
-try{
-    console.log("req.body", req.body);
-        const {
-            id_user,
-            name_location,
-            detail_location,
-            phone,
-            detail_att,
-            images,
-            latitude,
-            longitude,
-            date
-        } = req.body;
+  const {
+    id_user,
+    name_location,
+    detail_location,
+    phone,
+    detail_att,
+    date,
+    latitude,
+    longitude,
+  } = req.body;
 
-       const [rows] = await db.promise().query("INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude, date) VALUES (?,?,?,?,?,?,?,?,?)",[
-            id_user,
-            name_location,
-            detail_location,
-            phone,
-            detail_att,
-            images,
-            latitude,
-            longitude,
-            date
-       ])
+  const image = req.file;
 
-       if(rows.affectedRows === 0){
-            return res.status(400).json({
-                msg : "ไม่สามารถโพสต์ได้",
-                error : "ไม่สามารถโพสต์ได้"
-            })
-        }
+  try {
+    const [rows] = await db
+      .promise()
+      .query(
+        "INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude , date) VALUES (?,?,?,?,?,?,?,?,?)",
+        [
+          id_user,
+          name_location,
+          detail_location,
+          phone,
+          detail_att,
+          image.path,
+          latitude,
+          longitude,
+          date,
+        ]
+      );
 
-        return res.status(201).json({
-            msg : "โพสต์สำเร็จ"
-        })
-
-    }catch(err){
-        console.log("error user_post", err);
-        return res.status(500).json({
-            msg : "ไม่สามารถโพสต์ได้",
-            error : err.message
-        })
+    if (rows.affectedRows === 0) {
+      deleteImage(image.path);
+      return res.status(400).json({
+        msg: "ไม่สามารถโพสต์ได้",
+        error: "ไม่สามารถโพสต์ได้",
+      });
     }
-}
+
+    return res.status(201).json({ msg: "add post siucess" });
+  } catch (err) {
+    deleteImage(image.path);
+    console.log("error user_post", err);
+    return res.status(500).json({
+      msg: "ไม่สามารถโพสต์ได้",
+      error: err.message,
+    });
+  }
+};
+
 
 
 exports.edit_post = async (req, res) => {

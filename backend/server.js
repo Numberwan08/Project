@@ -3,6 +3,7 @@ const morgan = require("morgan");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { readdirSync } = require("fs");
+const path = require("path");
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const port = 3000 || process.env.PORT;
 app.use(morgan("dev"));
 app.use(cors());
 app.use(express.json());
+app.use("/pubuc", express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Connected Api sucessfully" });

@@ -10,7 +10,7 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login, setName } = useAuth();
+  const { login, setName, setUserId } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -36,7 +36,8 @@ function Login() {
       setTimeout(() => {
         navigate("/");
       }, 1000);
-      setName(res.data.data);
+      setName(res.data.data.first_name);
+      setUserId(res.data.data.user_id)
     } catch (error) {
       // Show error toast
       toast.error(

@@ -114,7 +114,12 @@ exports.login = async (req,res) =>{
 
             res.status(200).json({
                 msg : "เข้าสู่ระบบสำเร็จ",
-                token, data:user.first_name
+                token, data:{
+                    
+                    first_name : user.first_name,
+                    user_id : user.user_id,
+
+                }
             });
 
     }catch (err){

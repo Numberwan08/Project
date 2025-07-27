@@ -1,4 +1,16 @@
+
 const db = require("../config/db");
+const fs = require('fs');
+const deleteImage =(path)=>{
+    fs.unlink(path,(err)=>{
+        if(err){
+            console.error("Error deleting image:", err);
+        }else{
+            console.log("Image deleted successfully");
+        }
+    });
+};
+
 
 exports.get_event = async (req , res )=> {
     res.json({

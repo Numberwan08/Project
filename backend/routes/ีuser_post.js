@@ -2,9 +2,13 @@ const express = require('express');
 const { get_post, add_post, edit_post, delete_post } = require('../controller/user_post');
 const router = express.Router();
 
-router.get('/user',get_post);
-router.post('/user',add_post);
-router.patch('/user/:id',edit_post);
-router.delete('/user/:id',delete_post);
+
+const uploadTo = require('../middleware/upload');
+const uploadToPostImg = uploadTo('post_image');
+
+router.get('/post',get_post);
+router.post('/post',uploadToPostImg.single("image"),add_post);
+router.patch('/post/:id',uploadToPostImg.single("image"),edit_post);
+router.delete('/post/:id',delete_post);
 
 module.exports = router;

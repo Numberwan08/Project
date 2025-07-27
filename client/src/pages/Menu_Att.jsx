@@ -3,13 +3,12 @@ import axios from "axios";
 
 function Menu_Att() {
   const [formdata, setFormdata] = useState({
-    id_user: "123474",
     name_location: "",
     detail_location: "",
     phone: "",
     detail_att: "",
-    latitude: "12307.49804",
-    longitude: "12345.67890",
+    latitude: "",
+    longitude: "",
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -22,19 +21,34 @@ function Menu_Att() {
     setPreview(path);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      // return console.log(import.meta.env.VITE_API + "user");
-      const res = await axios.post(import.meta.env.VITE_API + "user", {
-        ...formdata,
-        image: selectedFile,
-      });
-      console.log("Response:", res.data);
-    } catch (error) {
-      console.error("Error submitting form:", error);
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const formDataToSend = new FormData();
+    formDataToSend.append("id_user", localStorage.getItem("userId"));
+    formDataToSend.append("name_location", formdata.name_location);
+    formDataToSend.append("detail_location", formdata.detail_location);
+    formDataToSend.append("phone", formdata.phone);
+    formDataToSend.append("detail_att", formdata.detail_att);
+    formDataToSend.append("latitude", formdata.latitude);
+    formDataToSend.append("longitude", formdata.longitude);
+    formDataToSend.append("date", formdata.date);
+    if (selectedFile) {
+      formDataToSend.append("image", selectedFile); // ต้องเป็น key ที่ backend รับ
     }
-  };
+
+    const res = await axios.post(import.meta.env.VITE_API + "post", formDataToSend, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    console.log("Response:", res.data);
+  } catch (error) {
+    console.error("Error submitting form:", error);
+  }
+};
 
   return (
     <div className="h-screen m-5 items-center justify-content-center overflow-y-auto">
@@ -88,6 +102,34 @@ function Menu_Att() {
                 setFormdata({ ...formdata, phone: e.target.value })
               }
               name="phone"
+            />
+          </div>
+          <div>
+            <input
+              type="tel"
+              className="tabular-nums input input-neutral mt-2 "
+              required
+              placeholder="ละติจูด"
+              title="Must be 10 digits"
+              value={formdata.latitude}
+              onChange={(e) =>
+                setFormdata({ ...formdata, latitude: e.target.value })
+              }
+              name="latitude"
+            />
+          </div>
+          <div>
+            <input
+              type="tel"
+              className="tabular-nums input input-neutral mt-2 "
+              required
+              placeholder="ลองจิจูด"
+              title="Must be 10 digits"
+              value={formdata.longitude}
+              onChange={(e) =>
+                setFormdata({ ...formdata, longitude: e.target.value })
+              }
+              name="longitude"
             />
           </div>
           <div>
