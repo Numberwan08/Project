@@ -39,7 +39,7 @@ const Sidebar = ({ isOpen = true }) => {
 
   return (
     <aside
-      className={`bg-gradient-to-b h-full from-purple-600 to-purple-500 border-r border-purple-700 shadow-2xl transition-all duration-300 ease-in-out ${
+      className={`h-screen bg-gradient-to-b h-full from-purple-600 to-purple-500 border-r border-purple-700 shadow-2xl transition-all duration-300 ease-in-out ${
         isOpen ? "w-64" : "w-20"
       }`}
     >

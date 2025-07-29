@@ -12,23 +12,21 @@ function AdminLayout() {
   };
 
   return (
-    <div className="w-screen h-screen bg-gray-100 overflow-hidden">
-      <div>
-        <Header></Header>
+    <div className="min-h-screen min-w-full bg-gray-100">
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 z-30 w-full">
+        <Header />
       </div>
-
-      {/* Scrollable content below header */}
-      <main className="h-screen">
-        <div className="flex">
-          <div>
-            <Sidebar />
-          </div>
-          <div className="h-screen">
-            {" "}
-            <Outlet />
-          </div>
+      {/* Sidebar */}
+      <div className="fixed top-0 left-0 h-screen w-64 bg-white shadow-lg z-20">
+        <Sidebar />
+      </div>
+      {/* Main Content */}
+      <div className="pl-64 pt-16 min-h-screen">
+        <div className="h-[calc(100vh-4rem)] overflow-y-auto p-4">
+          <Outlet />
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -69,9 +69,9 @@ exports.add_post = async (req, res) => {
     detail_location,
     phone,
     detail_att,
-    date,
     latitude,
     longitude,
+    type
   } = req.body;
 
   const image = req.file;
@@ -80,7 +80,7 @@ exports.add_post = async (req, res) => {
     const [rows] = await db
       .promise()
       .query(
-        "INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude , date) VALUES (?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude ,type) VALUES (?,?,?,?,?,?,?,?,?)",
         [
           id_user,
           name_location,
@@ -90,7 +90,7 @@ exports.add_post = async (req, res) => {
           image.path,
           latitude,
           longitude,
-          date,
+          type
         ]
       );
 
