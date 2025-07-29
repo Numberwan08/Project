@@ -11,11 +11,55 @@ const deleteImage =(path)=>{
 };
 
 exports.get_post = async (req ,res ) => {
-res.json({
-    msg: "api แสดงโพสต์"
-})
+    try{
+        const [rows] = await db.promise().query("SELECT * FROM user_post");
+
+        if(rows.length === 0){
+            return res.status(4004).json({ mag: "ไม่พบโพสต์"});
+        }
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
+        }));
+
+        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
+
+
+    }catch(err){
+        console.log("error get post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงข้อมูลโพสต์ได้",
+            error: err.message
+        });
+    }
 }
 
+exports.get_post_me = async (req ,res ) => {
+    const {id} =req.params;
+    try{
+        const [rows] = await db.promise().query("SELECT * FROM user_post WHERE id_user = ?",[id]);
+
+        if(rows.length === 0){
+            return res.status(404).json({ mag: "ไม่พบโพสต์"});
+        }
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
+        }));
+
+        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
+
+
+    }catch(err){
+        console.log("error get post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงข้อมูลโพสต์ได้",
+            error: err.message
+        });
+    }
+}
 
 
 exports.add_post = async (req, res) => {
