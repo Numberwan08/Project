@@ -71,16 +71,18 @@ exports.add_post = async (req, res) => {
     detail_att,
     latitude,
     longitude,
+    date,
     type
   } = req.body;
 
   const image = req.file;
+  const postDate = date || new Date().toISOString();
 
   try {
     const [rows] = await db
       .promise()
       .query(
-        "INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude ,type) VALUES (?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude ,date,type) VALUES (?,?,?,?,?,?,?,?,?,?)",
         [
           id_user,
           name_location,
@@ -90,6 +92,7 @@ exports.add_post = async (req, res) => {
           image.path,
           latitude,
           longitude,
+          postDate,
           type
         ]
       );
@@ -161,20 +164,28 @@ exports.edit_post = async (req, res) => {
 }
 
 exports.delete_post = async (req, res) => {
-    try{
+    try {
         const { id } = req.params;
 
+        // ค้นหาโพสต์ก่อนเพื่อจะได้ path ของภาพ
         const [rows] = await db.promise().query("SELECT * FROM user_post WHERE id_post = ?", [id]);
-       
-        if(rows.length === 0){
+
+        if (rows.length === 0) {
             return res.status(404).json({
                 msg: "โพสต์ไม่พบ",
                 error: "โพสต์ไม่พบ"
             });
         }
 
+        // ลบไฟล์ภาพถ้ามี
+        const imagePath = rows[0].images;
+        if (imagePath && fs.existsSync(imagePath)) {
+            deleteImage(imagePath);
+        }
+
+        // ลบโพสต์ในฐานข้อมูล
         const [result] = await db.promise().query("DELETE FROM user_post WHERE id_post = ?", [id]);
-        if(result.affectedRows === 0){
+        if (result.affectedRows === 0) {
             return res.status(400).json({
                 msg: "ไม่สามารถลบโพสต์ได้",
                 error: "ไม่สามารถลบโพสต์ได้"
@@ -184,12 +195,11 @@ exports.delete_post = async (req, res) => {
             msg: "ลบโพสต์สำเร็จ"
         });
 
-    } catch(err){
+    } catch (err) {
         console.log("error delete user_post", err);
         return res.status(500).json({
             msg: "ไม่สามารถลบโพสต์ได้",
             error: err.message
         });
-    }   
-    
+    }
 }

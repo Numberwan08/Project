@@ -22,10 +22,8 @@ function Menu_Att() {
   const [marker, setMarker] = useState(null);
   const markerRef = useRef(null);
 
-  // Initialize map when showMap becomes true
   useEffect(() => {
     if (showMap && !map) {
-      // Load Leaflet CSS and JS
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';
@@ -35,26 +33,21 @@ function Menu_Att() {
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
       script.onload = () => {
         setTimeout(() => {
-          // Initialize map centered on Chiang Rai
           const mapInstance = window.L.map('map').setView([19.9105, 99.8406], 11);
           
           window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
           }).addTo(mapInstance);
 
-          // Add click event to map
           mapInstance.on('click', function(e) {
             const { lat, lng } = e.latlng;
-            // Remove existing marker if any
             if (markerRef.current) {
               mapInstance.removeLayer(markerRef.current);
             }
-            // Add new marker
             const newMarker = window.L.marker([lat, lng]).addTo(mapInstance);
             markerRef.current = newMarker;
             setMarker(newMarker);
             
-            // Update form data
             setFormdata(prev => ({
               ...prev,
               latitude: lat.toFixed(6),
@@ -91,6 +84,10 @@ function Menu_Att() {
       formDataToSend.append("latitude", formdata.latitude);
       formDataToSend.append("longitude", formdata.longitude);
       formDataToSend.append("type", formdata.type);
+      const now = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      const dateString = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      formDataToSend.append("date", dateString);
       if (selectedFile) {
         formDataToSend.append("image", selectedFile);
       }
@@ -350,7 +347,7 @@ function Menu_Att() {
                     </div>
                   </div>
                 )}
-
+                
                 {/* Submit Button */}
                 <div className="pt-4">
                   <button 
