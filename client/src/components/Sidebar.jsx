@@ -28,6 +28,11 @@ const menuItems = [
     label: "กิจกรรมของผู้ใช้",
     icon: <MailWarning size={20} />,
     path: "/menu/show_event",
+  },
+  {
+    label: "สินค้าผู้ใช้",
+    icon: <MailWarning size={20} />,
+    path :"/menu/show_product",
   }
 ];
 

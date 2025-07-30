@@ -105,7 +105,7 @@ exports.add_post = async (req, res) => {
       });
     }
 
-    return res.status(201).json({ msg: "add post siucess" });
+    return res.status(201).json({ msg: "add post sucess" });
   } catch (err) {
     deleteImage(image.path);
     console.log("error user_post", err);

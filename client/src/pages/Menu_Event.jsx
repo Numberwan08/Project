@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Calendar,
   MapPin,
@@ -29,7 +29,7 @@ function Menu_Event() {
   const [preview, setPreview] = useState(null);
   const [showMap, setShowMap] = useState(false);
   const [map, setMap] = useState(null);
-  const [marker, setMarker] = useState(null);
+  const markerRef = useRef(null); // ใช้ useRef เก็บ marker
 
   // Initialize map when showMap becomes true
   useEffect(() => {
@@ -64,13 +64,13 @@ function Menu_Event() {
             const { lat, lng } = e.latlng;
 
             // Remove existing marker
-            if (marker) {
-              mapInstance.removeLayer(marker);
+            if (markerRef.current) {
+              mapInstance.removeLayer(markerRef.current);
             }
 
             // Add new marker
             const newMarker = window.L.marker([lat, lng]).addTo(mapInstance);
-            setMarker(newMarker);
+            markerRef.current = newMarker;
 
             // Update form data
             setFormdata((prev) => ({
@@ -85,7 +85,7 @@ function Menu_Event() {
       };
       document.head.appendChild(script);
     }
-  }, [showMap, map, marker]);
+  }, [showMap, map]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -100,7 +100,7 @@ function Menu_Event() {
     e.preventDefault();
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("id_user", localStorage.getItem("userId")); // Simulated since localStorage isn't available
+      formDataToSend.append("id_user", localStorage.getItem("userId")); // สมมติว่า userId อยู่ใน localStorage
       formDataToSend.append("name_event", formdata.name_event);
       formDataToSend.append("location_event", formdata.location_event);
       formDataToSend.append("phone", formdata.phone);
@@ -114,7 +114,7 @@ function Menu_Event() {
         formDataToSend.append("image", selectedFile);
       }
 
-      // Simulate API call
+      // เรียก API จริง
       const res = await axios.post(
         import.meta.env.VITE_API + "event",
         formDataToSend,
@@ -132,6 +132,7 @@ function Menu_Event() {
       });
     } catch (error) {
       console.error("Error submit form", error);
+      toast.error("เกิดข้อผิดพลาดในการโพสต์กิจกรรม");
     }
   };
 
@@ -153,11 +154,11 @@ function Menu_Event() {
 
           if (map) {
             map.setView([lat, lng], 15);
-            if (marker) {
-              map.removeLayer(marker);
+            if (markerRef.current) {
+              map.removeLayer(markerRef.current);
             }
             const newMarker = window.L.marker([lat, lng]).addTo(map);
-            setMarker(newMarker);
+            markerRef.current = newMarker;
           }
         },
         (error) => {

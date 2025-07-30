@@ -1,14 +1,15 @@
 const express = require('express');
-const { get_prodact, add_prodact, delete_prodact, edit_prodact } = require('../controller/add_prodact');
+const { get_prodact, add_prodact, delete_prodact, edit_prodact, get_product_me } = require('../controller/add_prodact');
 const router = express.Router();
 
 
 const uploadTo = require('../middleware/upload');
 const uploadToPostImg = uploadTo('post_image');
 
-router.get('/prodact',get_prodact);
-router.post('/prodact',uploadToPostImg.single,add_prodact);
-router.patch('/prodact/:id',uploadToPostImg.single,edit_prodact);
-router.delete('/prodact/:id',delete_prodact);
+router.get('/product',get_prodact);
+router.get('/product/:id',get_product_me);
+router.post('/product',uploadToPostImg.single("image"),add_prodact);
+router.patch('/product/:id',uploadToPostImg.single("image"),edit_prodact);
+router.delete('/product/:id',delete_prodact);
 
 module.exports = router;
