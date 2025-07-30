@@ -15,7 +15,7 @@ exports.get_post = async (req ,res ) => {
         const [rows] = await db.promise().query("SELECT * FROM user_post");
 
         if(rows.length === 0){
-            return res.status(4004).json({ mag: "ไม่พบโพสต์"});
+            return res.status(404).json({ mag: "ไม่พบโพสต์"});
         }
 
         const formatData = rows.map((row)=>({

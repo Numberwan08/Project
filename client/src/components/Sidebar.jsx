@@ -20,9 +20,14 @@ const menuItems = [
   },
   { label: "เพิ่มสินค้า", icon: <Settings size={20} />, path: "/menu/menu_prodact" },
   {
-    label: "แก้ไขโปรไฟล์",
+    label: "โพสต์ของผู้ใช้",
     icon: <MailWarning size={20} />,
     path: "/menu/menu_profile",
+  },
+  {
+    label: "กิจกรรมของผู้ใช้",
+    icon: <MailWarning size={20} />,
+    path: "/menu/show_event",
   }
 ];
 

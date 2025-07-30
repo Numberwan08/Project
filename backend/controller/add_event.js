@@ -13,36 +13,79 @@ const deleteImage =(path)=>{
 
 
 exports.get_event = async (req , res )=> {
-    res.json({
-        mag: "api แสดงกิจกรรม"
-    })
+    try{
+        const [rows] = await db.promise().query("SELECT * FROM user_event");
+        if(rows.length === 0){
+            return res.status(404).json({ mag :"ไม่พบกิจกรรม"}); 
+        }
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`:null,
+        }));
+        return res.status(200).json({mag :"ดึงข้อมูลกิจกรรมสำเร็จ", data: formatData});
+    }catch(err){
+        console.log("error get event", err);
+        return res.status(500).json({
+            mag: "ไม่สามารถดึงข้อมูลกิจกรรมได้",
+            error: err.message
+        })
+    }
+}
+
+exports.get_event_me = async (req , res )=> {
+    const {id} = req.params;
+    try{
+
+        const [rows] = await db.promise().query("SELECT * FROM user_event WHERE id_user = ?",[id]);
+        if(rows.length === 0){
+            return res.status(404).json({ mag :"ไม่พบกิจกรรม"}); 
+        }
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`:null,
+        }));
+        return res.status(200).json({mag :"ดึงข้อมูลกิจกรรมสำเร็จ", data: formatData});
+    }catch(err){
+        console.log("error get event", err);
+        return res.status(500).json({
+            mag: "ไม่สามารถดึงข้อมูลกิจกรรมได้",
+            error: err.message
+        })
+    }
 }
 
 exports.add_event = async (req , res )=> {
-    try{
-    console.log("req.bady",req.bady);
+    // console.log("req.bady",req.bady);
         const {
             id_user,
             name_event,
             location_event,
             phone,
             detail_event,
-            date,
-            images,
+            date_start,
+            date_end,
             latitude,
-            longitude
+            longitude,
+            type
         }=req.body;
 
-        const [rows]=await db.promise().query("INSERT INTO user_event (id_user, name_event, location_event, phone, detail_event, date, images, latitude, longitude) VALUES (?,?,?,?,?,?,?,?,?)",[
+        const image = req.file;
+
+    try{
+        const [rows]=await db.promise().query("INSERT INTO user_event (id_user, name_event, location_event, phone, detail_event, date_start,date_end, images, latitude, longitude,type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",[
             id_user,
             name_event,
             location_event,
             phone,
             detail_event,
-            date,
-            images,
+            date_end,
+            date_start,
+            image.path,
             latitude,
-            longitude
+            longitude,
+            type
         ])
 
         if(rows.affectedRows === 0) {
@@ -55,6 +98,7 @@ exports.add_event = async (req , res )=> {
         return res.status(201).json({
             mag: "เพิ่มกิจกรรมสำเร็จ"
         })
+        
     }catch(err){
         console.log("error add_event",err);
         return res.status(500).json({
@@ -123,6 +167,14 @@ exports.delete_event = async (req , res )=> {
                 error: "ไม่พบกิจกรรมที่ต้องการลบ"
             })
         }
+
+        // ลบไฟล์ภาพถ้ามี
+        const imagePath = rows[0].images;
+        if (imagePath && fs.existsSync(imagePath)) {
+            deleteImage(imagePath);
+        }
+
+        
         const [result] = await db.promise().query("DELETE FROM user_event WHERE id_event = ?", [id]);
         if(result.affectedRows === 0) {
             return res.status(400).json({
@@ -131,7 +183,7 @@ exports.delete_event = async (req , res )=> {
             });
         }
         return res.status(200).json({
-            mag: "ลบกิจกรรมสำเร็จ"
+            msg: "ลบกิจกรรมสำเร็จ"
         });
 
     } catch(err){

@@ -22,6 +22,7 @@ import Menu_Att from "./pages/Menu_Att";
 import Menu_Event from "./pages/Menu_Event";
 import Menu_Prodact from "./pages/Menu_Prodact";
 import Menu_Profile from "./pages/Menu_Profile";
+import Show_Event from "./pages/show_event";
 
 function App() {
   const router = createBrowserRouter([
@@ -105,6 +106,10 @@ function App() {
           path:"/menu/menu_profile",
           element : <Menu_Profile/>
         },
+        {
+          path:"/menu/show_event",
+          element : <Show_Event/>
+        }
       ]
     },
     {
