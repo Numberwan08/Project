@@ -193,7 +193,7 @@ function Menu_Prodact() {
               <button
                 type="button"
                 onClick={() => setShowMap(!showMap)}
-                className="bg-purple-500 text-white py-2 px-4 rounded-lg hover:bg-purple-600"
+                className="bg-purple-500 text-white py-2 px-4 cursor-pointer rounded-lg hover:bg-purple-600"
               >
                 {showMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
               </button>
@@ -230,7 +230,7 @@ function Menu_Prodact() {
             <button
               type="button"
               onClick={handleSubmit}
-              className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-4 px-6 rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all"
+              className="w-full bg-gradient-to-r from-purple-500 cursor-pointer to-purple-500 text-white py-4 px-6 rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all"
             >
               ยืนยันการโพสต์สินค้า
             </button>

@@ -66,7 +66,7 @@ exports.get_event_me = async (req , res )=> {
     const {id} = req.params;
     try{
 
-        const [[rows]] = await db.promise().query("SELECT * FROM user_event WHERE id_user = ?",[id]);
+        const [rows] = await db.promise().query("SELECT * FROM user_event WHERE id_user = ?",[id]);
         if(rows.length === 0){
             return res.status(404).json({ mag :"ไม่พบกิจกรรม"}); 
         }

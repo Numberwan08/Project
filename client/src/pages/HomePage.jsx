@@ -99,7 +99,7 @@ function HomePage() {
                     {item.name_location}
                   </h3>
                   <Link to={`/detall_att/${item.id_post}`}>
-                    <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                    <button className="w-full bg-gradient-to-r cursor-pointer from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       ดูรายละเอียด
                     </button>
                   </Link>
@@ -143,7 +143,7 @@ function HomePage() {
                       {item.name_event}
                     </h3>
                     <Link to={`/detall_event/${item.id_event}`}>
-                      <button className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                      <button className="w-full bg-gradient-to-r cursor-pointer from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                         ดูรายละเอียด
                       </button>
                     </Link>
@@ -210,7 +210,7 @@ function HomePage() {
                         }
                         className="self-start"
                       >
-                        <button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                        <button className="bg-gradient-to-r from-purple-500 cursor-pointer to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                           ดูรายละเอียด
                         </button>
                       </Link>
@@ -260,7 +260,7 @@ function HomePage() {
                         </p>
                         
                         <Link to={`/detall_product/${item.id_product}`}>
-                          <button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
+                          <button className="w-full bg-gradient-to-r from-green-500 cursor-pointer to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
                             ดูรายละเอียด
                           </button>
                         </Link>

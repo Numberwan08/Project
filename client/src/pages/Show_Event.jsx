@@ -456,11 +456,7 @@ function Show_Event() {
                     className="cursor-pointer"
                     onClick={() => handleEdit(item)}
                   />
-                  <Eye
-                    size={20}
-                    className="cursor-pointer"
-                    onClick={() => handleViewDetail(item)}
-                  />
+
                   <Trash2
                     size={20}
                     className="cursor-pointer"

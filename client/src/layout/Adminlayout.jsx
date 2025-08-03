@@ -12,7 +12,7 @@ function AdminLayout() {
   };
 
   return (
-    <div className="w-screen h-screen bg-gray-100 overflow-hidden">
+    <div className="w-screen h-screen flex bg-gray-100 overflow-hidden">
       {/* Sidebar Fixed */}
       <div className={`fixed top-0 left-0 h-full  bg-white z-20 transition-all duration-300${
         sidebarOpen ? " w-64" : " w-20"
@@ -31,7 +31,7 @@ function AdminLayout() {
         </div>
 
         {/* Scrollable content below header */}
-        <main className="flex-1 mt-16  p-4 bg-gray-200">
+        <main className="flex-1 overflow-y-auto mt-16  p-4 bg-gray-200">
           <Outlet />
         </main>
       </div>

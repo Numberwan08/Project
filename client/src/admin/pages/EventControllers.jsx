@@ -4,6 +4,8 @@ import axios from 'axios'
 function EventControllers() {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   // โหลดข้อมูลกิจกรรมทั้งหมด
   useEffect(() => {
@@ -35,6 +37,16 @@ function EventControllers() {
       : false
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+  const paginatedEvents = filteredEvents.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
+  const handlePrev = () => setPage(prev => Math.max(prev - 1, 1));
+  const handleNext = () => setPage(prev => Math.min(prev + 1, totalPages));
+
   return (
     <div className="flex flex-col items-center text-center min-h-screen p-4 text-4xl">
       จัดการกิจกรรม
@@ -45,7 +57,10 @@ function EventControllers() {
           className="input input-bordered w-96 text-base"
           placeholder="ค้นหาชื่อกิจกรรม"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => {
+            setSearch(e.target.value);
+            setPage(1); // reset page when search
+          }}
         />
       </div>
 
@@ -63,16 +78,16 @@ function EventControllers() {
             </tr>
           </thead>
           <tbody>
-            {filteredEvents.length === 0 && (
+            {paginatedEvents.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center py-6 text-gray-400 text-lg">
                   ไม่พบข้อมูลกิจกรรม
                 </td>
               </tr>
             )}
-            {filteredEvents.map((item, idx) => (
+            {paginatedEvents.map((item, idx) => (
               <tr className="hover:bg-gray-100" key={item.id_event}>
-                <td className="text-center border">{idx + 1}</td>
+                <td className="text-center border">{(page - 1) * itemsPerPage + idx + 1}</td>
                 <td className="px-4 py-2 border">
                   <img
                     src={item.images}
@@ -101,6 +116,26 @@ function EventControllers() {
             ))}
           </tbody>
         </table>
+        {/* Pagination controls */}
+        <div className="flex justify-center items-center gap-2 mt-4 text-base">
+          <button
+            className="btn btn-sm"
+            onClick={handlePrev}
+            disabled={page === 1}
+          >
+            ก่อนหน้า
+          </button>
+          <span>
+            หน้า {page} / {totalPages}
+          </span>
+          <button
+            className="btn btn-sm"
+            onClick={handleNext}
+            disabled={page === totalPages || totalPages === 0}
+          >
+            ถัดไป
+          </button>
+        </div>
       </div>
     </div>
   )

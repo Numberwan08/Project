@@ -359,7 +359,7 @@ function Menu_Event() {
                     <button
                       type="button"
                       onClick={getCurrentLocation}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-purple-500 text-white cursor-pointer rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
                     >
                       ตำแหน่งปัจจุบัน
                     </button>
@@ -369,7 +369,7 @@ function Menu_Event() {
                     <button
                       type="button"
                       onClick={toggleMap}
-                      className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-teal-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-purple-500 cursor-pointer to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-teal-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
                     >
                       <Map className="h-5 w-5" />
                       {showMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
@@ -468,7 +468,7 @@ function Menu_Event() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full bg-gradient-to-r cursor-pointer from-purple-500 to-purple-500 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
                     โพสต์กิจกรรม
                   </button>

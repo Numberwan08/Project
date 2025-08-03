@@ -42,7 +42,7 @@ function PostControllers() {
   const paginatedPosts = filteredPosts.slice((page - 1) * pageSize, page * pageSize);
 
   return (
-    <div className=" flex flex-col items-center text-center min-h-screen p-4 text-4xl overflow-y-auto">
+    <div className="min-h-screen overflow-y-auto flex flex-col items-center text-center min-h-screen p-4 text-4xl overflow-y-auto">
       จัดการโพสต์
       
       <div className="mt-5">
