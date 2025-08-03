@@ -37,7 +37,7 @@ function Login() {
         navigate("/");
       }, 1000);
       setName(res.data.data.first_name);
-      setUserId(res.data.data.user_id)
+      setUserId(res.data.data.id_user)
     } catch (error) {
       // Show error toast
       toast.error(

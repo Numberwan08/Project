@@ -1,270 +1,222 @@
-import React, { useState } from 'react';
-import { 
-  MapPin, 
-  Clock, 
-  Phone, 
-  Star, 
-  Heart, 
-  Share2, 
-  Camera, 
-  User, 
-  Calendar,
-  Navigation,
-  Facebook,
-  Twitter,
-  Instagram,
-  Youtube,
-  ChevronLeft,
-  ChevronRight,
-  Mountain,
-  Users
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import axios from "axios";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 function Detail_Att() {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
+  const { id } = useParams();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  const images = [
-    "https://images.unsplash.com/photo-1563492065-c9a1bb45e8c2?w=800&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
-    "https://images.unsplash.com/photo-1570655569213-c9d90e3c3aa4?w=800&h=400&fit=crop"
-  ];
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  const getDetailAtt = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(import.meta.env.VITE_API + `post_att/${id}`);
+      // console.log(res.data);
+      setData(res.data.data);
+    } catch(err) {
+      console.log("Error get detail : ", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  useEffect(() => {
+    getDetailAtt();
+  }, []);
 
-  const galleryImages = [
-    "https://images.unsplash.com/photo-1563492065-c9a1bb45e8c2?w=150&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=150&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=150&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1570655569213-c9d90e3c3aa4?w=150&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1563492065-c9a1bb45e8c2?w=150&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=150&h=100&fit=crop"
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-purple-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Content */}
-          <div className="lg:col-span-2">
-            {/* Main Image Slider */}
-            <div className="relative mb-6">
-              <div className="relative h-96 rounded-2xl overflow-hidden">
-                <img
-                  src={images[currentImageIndex]}
-                  alt="Attraction"
-                  className="w-full h-full object-cover"
+    <div className="min-h-screen bg-purple-50">
+      {data.map((item, index) => (
+        <div key={index} className="max-w-7xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* ฝั่งซ้าย - เนื้อหาหลัก */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Main Image */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <img 
+                  src={item.images} 
+                  alt={item.name_location}
+                  className="w-full h-80 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                  onClick={() => setSelectedImage(item.images)}
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+              </div>
+
+              {/* Title and Like Section */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h1 className="text-3xl font-bold text-gray-800">{item.name_location}</h1>
+                  <div className="flex items-center space-x-2">
+                    <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full flex items-center space-x-2 transition-colors">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-medium"></span>
+                    </button>
+                  </div>
+                </div>
                 
-                {/* Navigation Buttons */}
-                <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
-                >
-                  <ChevronLeft className="h-6 w-6 text-gray-800" />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
-                >
-                  <ChevronRight className="h-6 w-6 text-gray-800" />
-                </button>
-
-                {/* Action Buttons */}
-                <div className="absolute top-4 right-4 flex space-x-2">
-                  <button
-                    onClick={() => setIsLiked(!isLiked)}
-                    className={`p-2 rounded-full transition-all ${
-                      isLiked ? 'bg-red-500 text-white' : 'bg-white bg-opacity-80 text-gray-800'
-                    }`}
-                  >
-                    <Heart className="h-5 w-5" fill={isLiked ? 'currentColor' : 'none'} />
-                  </button>
-                  <button className="p-2 bg-white bg-opacity-80 rounded-full hover:bg-opacity-100 transition-all">
-                    <Share2 className="h-5 w-5 text-gray-800" />
-                  </button>
-                  <button className="p-2 bg-white bg-opacity-80 rounded-full hover:bg-opacity-100 transition-all">
-                    <Camera className="h-5 w-5 text-gray-800" />
-                  </button>
+                <div className="text-gray-600 text-sm mb-4 flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {item.detail_location}
                 </div>
 
-                {/* Image Counter */}
-                <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
-                  {currentImageIndex + 1} / {images.length}
+                {/* Description */}
+                <div className="text-gray-700 leading-relaxed">
+                  <p>{item.detail_att}</p>
+                </div>
+
+                {/* Contact */}
+                <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                  <h3 className="font-semibold text-purple-800 mb-2">ข้อมูลติดต่อ</h3>
+                  <p className="text-purple-700">เบอร์โทรศัพท์: {item.phone}</p>
+                  <h3 className="font-semibold text-purple-800 mt-2 mb-2">ผู้โพสต์</h3>
+                  <p className="text-purple-700">โดย {item.first_name}</p>
+                </div>
+
+                {/* Author */}
+                <div className="mt-4 text-sm text-gray-500">
+                  โดย {item.first_name}
                 </div>
               </div>
-            </div>
 
-            {/* Title and Rating */}
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">วัดห้วยปลากั้ง เชียงราย</h1>
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="flex items-center space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
+              {/* Related Places Section */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">สถานที่ใกล้เคียง</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Placeholder for related places */}
+                  {[1, 2, 3].map((placeholder) => (
+                    <div key={placeholder} className="relative group cursor-pointer">
+                      <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-500">รูปภาพ</span>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
+                        <p className="text-white text-sm font-medium">สถานที่แนะนำ {placeholder}</p>
+                      </div>
+                    </div>
                   ))}
-                  <span className="text-sm text-gray-600 ml-2">4.8 (2,345 รีวิว)</span>
-                </div>
-                <div className="flex items-center space-x-1 text-gray-600">
-                  <Users className="h-4 w-4" />
-                  <span className="text-sm">เยี่ยมชมแล้ว 15,432 คน</span>
                 </div>
               </div>
             </div>
 
-            {/* Description */}
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">รายละเอียด</h3>
-              <div className="prose prose-gray max-w-none">
-                <p className="text-gray-700 leading-relaxed mb-4">
-                  วัดห้วยปลากั้ง เป็นวัดที่มีความสวยงามและเป็นที่รู้จักในจังหวัดเชียงราย ด้วยสถาปัตยกรรมที่งดงามและมีเอกลักษณ์เฉพาะตัว 
-                  ตั้งอยู่ท่ามกลางธรรมชาติที่สวยงาม เป็นสถานที่ท่องเที่ยวที่น่าสนใจสำหรับนักท่องเที่ยวที่ชื่นชอบศิลปะและวัฒนธรรม
-                </p>
-                <p className="text-gray-700 leading-relaxed mb-4">
-                  ภายในวัดมีจุดเด่นหลายจุด ทั้งพระอุโบสถที่มีลวดลายประณีตสวยงาม และมีพระพุทธรูปที่น่าเคารพสักการะ 
-                  นอกจากนี้ยังมีบรรยากาศที่เงียบสงบ เหมาะสำหรับการมาทำบุญและขอพร
-                </p>
-                <p className="text-gray-700 leading-relaxed">
-                  การเดินทางมาที่วัดห้วยปลากั้งสะดวก มีที่จอดรถเพียงพอ และมีสิ่งอำนวยความสะดวกต่างๆ ครบครัน 
-                  เป็นสถานที่ที่เหมาะสำหรับการมาเยี่ยมชมทั้งครอบครัวและกลุ่มเพื่อน
-                </p>
-              </div>
-            </div>
-
-            {/* Gallery */}
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">แกลเลอรี่</h3>
-              <div className="grid grid-cols-3 gap-4">
-                {galleryImages.map((image, index) => (
-                  <div key={index} className="relative h-24 rounded-lg overflow-hidden hover:opacity-75 transition-opacity cursor-pointer">
-                    <img
-                      src={image}
-                      alt={`Gallery ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Additional Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h4 className="font-semibold text-gray-900 mb-3">ข้อมูลเพิ่มเติม</h4>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">เปิด: 06:00 - 18:00 น.</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">เปิดทุกวัน</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">053-123-456</span>
+            {/* ฝั่งขวา - Sidebar */}
+            <div className="space-y-6">
+              {/* Map Section */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="bg-purple-100 px-4 py-3 border-b">
+                  <h3 className="font-semibold text-purple-800">แผนที่และตำแหน่ง</h3>
+                </div>
+                
+                <div className="p-4">
+                  {/* Map */}
+                  <div className="h-64 rounded-lg overflow-hidden border">
+                    {item.latitude && item.longitude ? (
+                      <MapContainer
+                        center={[parseFloat(item.latitude), parseFloat(item.longitude)]}
+                        zoom={15}
+                        style={{ height: '100%', width: '100%' }}
+                        className="z-0"
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[parseFloat(item.latitude), parseFloat(item.longitude)]}>
+                          <Popup>
+                            <div className="text-center">
+                              <h3 className="font-semibold">{item.name_location}</h3>
+                              <p className="text-sm text-gray-600">{item.detail_location}</p>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                    ) : (
+                      <div className="h-full bg-gray-100 flex items-center justify-center text-gray-500">
+                        <span>ไม่มีข้อมูลตำแหน่ง</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h4 className="font-semibold text-gray-900 mb-3">ติดตามเรา</h4>
-                <div className="flex space-x-4">
-                  <button className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    <Facebook className="h-4 w-4" />
+              {/* Actions */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h3 className="font-semibold text-gray-800 mb-4">การดำเนินการ</h3>
+                <div className="space-y-3">
+                  <button className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>เพิ่มรูปภาพ</span>
                   </button>
-                  <button className="p-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors">
-                    <Twitter className="h-4 w-4" />
-                  </button>
-                  <button className="p-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
-                    <Instagram className="h-4 w-4" />
-                  </button>
-                  <button className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                    <Youtube className="h-4 w-4" />
+                  
+                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    <span>เพิ่มการรีวิว</span>
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Right Column - Sidebar */}
-          <div className="lg:col-span-1">
-            {/* User Profile Card */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-purple-600" />
+              {/* Recommendation Badge */}
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  <span className="font-bold">สถานที่แนะนำ</span>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">สมาชิกใหม่</h4>
-                  <p className="text-sm text-gray-600">เข้าร่วมเมื่อ มกราคม 2024</p>
-                </div>
-              </div>
-              <button className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                ดูโปรไฟล์
-              </button>
-            </div>
-
-            {/* Map Card */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-gray-900">ตำแหน่งที่ตั้ง</h4>
-                <button className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors">
-                  <Navigation className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="h-48 bg-gray-200 rounded-lg mb-4 relative overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&h=200&fit=crop"
-                  alt="Map"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-blue-500 bg-opacity-20"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <MapPin className="h-8 w-8 text-red-500" />
-                </div>
-              </div>
-              <div className="flex items-start space-x-2">
-                <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-900 font-medium">วัดห้วยปลากั้ง</p>
-                  <p className="text-xs text-gray-600">ตำบลห้วยปลากั้ง อำเภอเมืองเชียงราย จังหวัดเชียงราย</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Related Attractions */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h4 className="font-semibold text-gray-900 mb-4">สถานที่ใกล้เคียง</h4>
-              <div className="space-y-4">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="flex items-center space-x-3">
-                    <div className="w-16 h-12 bg-gray-200 rounded-lg overflow-hidden">
-                      <img
-                        src={`https://images.unsplash.com/photo-157${item}019613454-1cb2f99b2d8b?w=100&h=60&fit=crop`}
-                        alt={`Related ${item}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="text-sm font-medium text-gray-900">วัดโรงขุ่น</h5>
-                      <p className="text-xs text-gray-600">ระยะทาง 2.5 กม.</p>
-                    </div>
-                  </div>
-                ))}
+                <p className="text-purple-100 text-sm">สถานที่ยอดนิยมที่ควรไปเยือน</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      ))}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <img 
+              src={selectedImage} 
+              alt="รูปขนาดใหญ่" 
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+            <button 
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-2 transition-all duration-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -35,6 +35,33 @@ exports.get_post = async (req ,res ) => {
     }
 }
 
+exports.post_att = async (req ,res ) => {
+    try{
+        const {id} = req.params;
+
+        const [rows] = await db.promise().query(`SELECT t1.name_location,t1.detail_location,t1.phone,t1.detail_att,t1.date,t1.images,t1.latitude,t1.longitude,t2.first_name FROM user_post t1 JOIN user t2 ON t1.id_user = t2.id_user WHERE t1.id_post= ?`,[id]);
+
+        if(rows.length === 0){
+            return res.status(404).json({ mag: "ไม่พบโพสต์"});
+        }
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
+        }));
+
+        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
+
+
+    }catch(err){
+        console.log("error get post", err);
+        return res.status(500).json({
+            mag: "ไม่สามารถดึงข้อมูลโพสต์ได้",
+            error: err.message
+        });
+    }
+}
+
 exports.get_post_me = async (req ,res ) => {
     const {id} =req.params;
     try{
@@ -119,28 +146,49 @@ exports.add_post = async (req, res) => {
 
 
 exports.edit_post = async (req, res) => {
-
+    
     const { id } = req.params;
-    const {
+    let {
         name_location,
         detail_location,
         phone,
         detail_att,
-        images,
         latitude,
         longitude
     } = req.body;
+
     try {
-        const [rows] = await db.promise().query("UPDATE user_post SET name_location = ?, detail_location = ?, phone = ?, detail_att = ?, images = ?, latitude = ?, longitude = ? WHERE id_post = ?", [
-            name_location,
-            detail_location,
-            phone,
-            detail_att,
-            images,
-            latitude,
-            longitude,
-            id
-        ]);
+        let imagePath = null;
+        // ถ้ามีการอัปโหลดไฟล์ใหม่
+        if (req.file) {
+            imagePath = req.file.path;
+
+            // ลบรูปเดิม (ถ้ามี)
+            const [oldRows] = await db.promise().query("SELECT images FROM user_post WHERE id_post = ?", [id]);
+            if (oldRows.length > 0 && oldRows[0].images && fs.existsSync(oldRows[0].images)) {
+                deleteImage(oldRows[0].images);
+            }
+        }
+
+        // ถ้าไม่ได้อัปโหลดรูปใหม่ ให้ใช้ path เดิม
+        if (!imagePath) {
+            const [oldRows] = await db.promise().query("SELECT images FROM user_post WHERE id_post = ?", [id]);
+            imagePath = oldRows.length > 0 ? oldRows[0].images : null;
+        }
+
+        const [rows] = await db.promise().query(
+            "UPDATE user_post SET name_location = ?, detail_location = ?, phone = ?, detail_att = ?, images = ?, latitude = ?, longitude = ? WHERE id_post = ?",
+            [
+                name_location,
+                detail_location,
+                phone,
+                detail_att,
+                imagePath,
+                latitude,
+                longitude,
+                id
+            ]
+        );
 
         if (rows.affectedRows === 0) {
             return res.status(404).json({
@@ -160,7 +208,6 @@ exports.edit_post = async (req, res) => {
             error: err.message
         });
     }
-
 }
 
 exports.delete_post = async (req, res) => {

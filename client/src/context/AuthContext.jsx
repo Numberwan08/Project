@@ -4,8 +4,6 @@ import { useNavigate } from "react-router-dom";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-
-
   const [isLogin, setIsLogin] = useState(() => {
     const storedLogin = localStorage.getItem("isLogin");
     return storedLogin === "true";

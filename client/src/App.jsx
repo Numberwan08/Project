@@ -10,7 +10,7 @@ import HomePage from "./pages/HomePage";
 import Pageslayout from "./layout/Pageslayout";
 import EventPages from "./pages/EventPages";
 import AttractionPage from "./pages/AttractionPage";
-import ProductPage from "./pages/ProductPage";
+import ProductPage from "./pages/ProductPage";  
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
@@ -74,15 +74,15 @@ function App() {
           element: <ProductPage />,
         },
         {
-          path:"/detall_att",
+          path:"/detall_att/:id",
           element:<Detall_Att/>,
         },
         {
-          path:"/detall_event",
+          path:"/detall_event/:id",
           element:<Detall_Event/>,
         },
         {
-          path:"/detall_prodact",
+          path:"/detall_product/:id",
           element:<Detall_Prodact/>,
         },
       ]

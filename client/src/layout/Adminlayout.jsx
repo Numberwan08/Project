@@ -31,7 +31,7 @@ function AdminLayout() {
         </div>
 
         {/* Scrollable content below header */}
-        <main className="flex-1 mt-16 overflow-y-auto p-4 bg-gray-200">
+        <main className="flex-1 mt-16  p-4 bg-gray-200">
           <Outlet />
         </main>
       </div>

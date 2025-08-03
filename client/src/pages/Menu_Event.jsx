@@ -169,17 +169,17 @@ function Menu_Event() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-fuchsia-50 to-pink-50 py-8 px-4">
       <ToastContainer />
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-emerald-100">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-purple-100">
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-violet-800 via-purple-600 to-fuchsia-500 px-8 py-6">
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <Calendar className="h-8 w-8" />
               เพิ่มกิจกรรม จังหวัดเชียงราย
             </h1>
-            <p className="text-emerald-100 mt-2">
+            <p className="text-purple-50 mt-2">
               กรอกข้อมูลกิจกรรมและเหตุการณ์ในจังหวัดเชียงราย
             </p>
           </div>
@@ -191,7 +191,7 @@ function Menu_Event() {
                 {/* Image Upload */}
                 <div className="space-y-4">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Upload className="h-5 w-5 text-emerald-600" />
+                    <Upload className="h-5 w-5 text-purple-600" />
                     รูปภาพกิจกรรม
                   </label>
                   <div className="relative">
@@ -200,22 +200,22 @@ function Menu_Event() {
                         <img
                           src={preview}
                           alt="Preview"
-                          className="w-full h-64 object-cover rounded-2xl border-4 border-emerald-200 shadow-lg"
+                          className="w-full h-64 object-cover rounded-2xl border-4 border-purple-200 shadow-lg"
                         />
-                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute inset-0 bg-purple-600 bg-opacity-40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-white font-medium">
                             คลิกเพื่อเปลี่ยนรูป
                           </span>
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full h-64 border-4 border-dashed border-emerald-300 rounded-2xl flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer">
+                      <div className="w-full h-64 border-4 border-dashed border-fuchsia-400 rounded-2xl flex items-center justify-center bg-fuchsia-50 hover:bg-fuchsia-100 transition-colors cursor-pointer">
                         <div className="text-center">
-                          <Upload className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
-                          <p className="text-emerald-600 font-medium">
+                          <Upload className="h-12 w-12 text-purple-400 mx-auto mb-3" />
+                          <p className="text-purple-600 font-medium">
                             อัปโหลดรูปภาพ
                           </p>
-                          <p className="text-emerald-500 text-sm mt-1">
+                          <p className="text-purple-500 text-sm mt-1">
                             คลิกเพื่อเลือกไฟล์
                           </p>
                         </div>
@@ -234,12 +234,12 @@ function Menu_Event() {
                 {/* Event Name */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-emerald-600" />
+                    <Calendar className="h-5 w-5 text-purple-600" />
                     ชื่อกิจกรรม
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
                     placeholder="เช่น เทศกาลดอกไม้เชียงราย, งานวัฒนธรรมไทยใหญ่"
                     value={formdata.name_event}
                     onChange={(e) =>
@@ -252,12 +252,12 @@ function Menu_Event() {
                 {/* Event Location */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Navigation className="h-5 w-5 text-emerald-600" />
+                    <Navigation className="h-5 w-5 text-purple-600" />
                     สถานที่จัดงาน
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
                     placeholder="เช่น สวนสาธารณะ, วัดหรือศาลา, ลานใหญ่"
                     value={formdata.location_event}
                     onChange={(e) =>
@@ -273,12 +273,12 @@ function Menu_Event() {
                 {/* Phone */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Phone className="h-5 w-5 text-emerald-600" />
+                    <Phone className="h-5 w-5 text-purple-600" />
                     เบอร์โทรศัพท์ติดต่อ
                   </label>
                   <input
                     type="tel"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg tabular-nums"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
                     placeholder="08X-XXX-XXXX"
                     value={formdata.phone}
                     onChange={(e) =>
@@ -291,12 +291,12 @@ function Menu_Event() {
                 {/* Event Detail */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-emerald-600" />
+                    <FileText className="h-5 w-5 text-purple-600" />
                     รายละเอียดกิจกรรม
                   </label>
                   <textarea
                     name="detail_event"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg h-32 resize-none"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg h-32 resize-none"
                     placeholder="อธิบายเกี่ยวกับกิจกรรมนี้ เช่น กิจกรรมต่างๆ ค่าใช้จ่าย การเตรียมตัว สิ่งที่ควรทราบ"
                     value={formdata.detail_event}
                     onChange={(e) =>
@@ -311,7 +311,7 @@ function Menu_Event() {
                 {/* Date and Time Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-emerald-600" />
+                    <Clock className="h-5 w-5 text-purple-600" />
                     วันและเวลาจัดกิจกรรม
                   </h3>
 
@@ -322,7 +322,7 @@ function Menu_Event() {
                       </label>
                       <input
                         type="datetime-local"
-                        className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
                         value={formdata.date_start}
                         onChange={(e) =>
                           setFormdata({
@@ -339,7 +339,7 @@ function Menu_Event() {
                       </label>
                       <input
                         type="datetime-local"
-                        className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
                         value={formdata.date_end}
                         onChange={(e) =>
                           setFormdata({ ...formdata, date_end: e.target.value })
@@ -353,23 +353,23 @@ function Menu_Event() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Map className="h-5 w-5 text-emerald-600" />
+                      <Map className="h-5 w-5 text-purple-600" />
                       เลือกตำแหน่งบนแผนที่
                     </label>
                     <button
                       type="button"
                       onClick={getCurrentLocation}
-                      className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
                     >
                       ตำแหน่งปัจจุบัน
                     </button>
                   </div>
 
-                  <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
                     <button
                       type="button"
                       onClick={toggleMap}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-teal-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
                     >
                       <Map className="h-5 w-5" />
                       {showMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
@@ -379,9 +379,9 @@ function Menu_Event() {
                       <div className="mt-4">
                         <div
                           id="map"
-                          className="h-80 rounded-xl border-2 border-emerald-200 shadow-inner"
+                          className="h-80 rounded-xl border-2 border-purple-200 shadow-inner"
                         ></div>
-                        <p className="text-sm text-emerald-600 mt-2 text-center">
+                        <p className="text-sm text-purple-600 mt-2 text-center">
                           🗺️ คลิกบนแผนที่เพื่อเลือกตำแหน่งที่ต้องการ
                         </p>
                       </div>
@@ -398,7 +398,7 @@ function Menu_Event() {
                     <input
                       type="number"
                       step="any"
-                      className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg tabular-nums"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
                       placeholder="19.910500"
                       value={formdata.latitude}
                       onChange={(e) =>
@@ -414,7 +414,7 @@ function Menu_Event() {
                     <input
                       type="number"
                       step="any"
-                      className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg tabular-nums"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
                       placeholder="99.840600"
                       value={formdata.longitude}
                       onChange={(e) =>
@@ -427,11 +427,11 @@ function Menu_Event() {
 
                 {/* Current Coordinates Display */}
                 {formdata.latitude && formdata.longitude && (
-                  <div className="bg-gradient-to-r from-emerald-100 to-teal-100 p-4 rounded-xl border border-emerald-200">
-                    <h3 className="font-semibold text-emerald-800 mb-2">
+                  <div className="bg-gradient-to-r from-purple-100 to-teal-100 p-4 rounded-xl border border-purple-200">
+                    <h3 className="font-semibold text-purple-800 mb-2">
                       📍 ตำแหน่งที่เลือก
                     </h3>
-                    <div className="text-sm text-emerald-700 space-y-1">
+                    <div className="text-sm text-purple-700 space-y-1">
                       <p>
                         <span className="font-medium">ละติจูด:</span>{" "}
                         {formdata.latitude}
@@ -468,9 +468,9 @@ function Menu_Event() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    className="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
-                    ✅ โพสต์กิจกรรม
+                    โพสต์กิจกรรม
                   </button>
                 </div>
               </div>

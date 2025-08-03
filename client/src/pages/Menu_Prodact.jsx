@@ -112,11 +112,11 @@ function Menu_Prodact() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-purple-50 to-purple-50 py-8 px-4">
       <ToastContainer />
-      <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-8 border border-emerald-100">
-        <h1 className="text-3xl font-bold text-emerald-800 mb-6 flex items-center gap-2">
-          <MapPin className="h-7 w-7 text-emerald-600" />
+      <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-8 border border-purple-100">
+        <h1 className="text-3xl font-bold text-purple-800 mb-6 flex items-center gap-2">
+          <MapPin className="h-7 w-7 text-purple-600" />
           เพิ่มสินค้าในจังหวัดเชียงราย
         </h1>
 
@@ -129,11 +129,11 @@ function Menu_Prodact() {
                 <img
                   src={preview}
                   alt="preview"
-                  className="w-full h-64 object-cover rounded-xl border-2 border-emerald-200"
+                  className="w-full h-64 object-cover rounded-xl border-2 border-purple-200"
                 />
               ) : (
-                <div className="w-full h-64 border-4 border-dashed border-emerald-300 rounded-xl flex items-center justify-center">
-                  <Upload className="h-12 w-12 text-emerald-400" />
+                <div className="w-full h-64 border-4 border-dashed border-purple-300 rounded-xl flex items-center justify-center">
+                  <Upload className="h-12 w-12 text-purple-400" />
                 </div>
               )}
               <input
@@ -148,7 +148,7 @@ function Menu_Prodact() {
               <label className="block font-medium mb-1">ชื่อสินค้า</label>
               <input
                 type="text"
-                className="w-full border border-emerald-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-emerald-200"
+                className="w-full border border-purple-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-purple-200"
                 value={formdata.name_product}
                 onChange={(e) => setFormData({ ...formdata, name_product: e.target.value })}
               />
@@ -157,7 +157,7 @@ function Menu_Prodact() {
             <div>
               <label className="block font-medium mb-1">รายละเอียดสินค้า</label>
               <textarea
-                className="w-full border border-emerald-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-emerald-200"
+                className="w-full border border-purple-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-purple-200"
                 value={formdata.detail_product}
                 onChange={(e) => setFormData({ ...formdata, detail_product: e.target.value })}
               />
@@ -167,7 +167,7 @@ function Menu_Prodact() {
               <label className="block font-medium mb-1">เบอร์โทรศัพท์</label>
               <input
                 type="tel"
-                className="w-full border border-emerald-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-emerald-200"
+                className="w-full border border-purple-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-purple-200"
                 value={formdata.phone}
                 onChange={(e) => setFormData({ ...formdata, phone: e.target.value })}
               />
@@ -177,7 +177,7 @@ function Menu_Prodact() {
               <label className="block font-medium mb-1">ราคา</label>
               <input
                 type="number"
-                className="w-full border border-emerald-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-emerald-200"
+                className="w-full border border-purple-300 rounded-xl p-3 focus:outline-none focus:ring focus:ring-purple-200"
                 value={formdata.price}
                 onChange={(e) => setFormData({ ...formdata, price: e.target.value })}
               />
@@ -188,12 +188,12 @@ function Menu_Prodact() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <label className="block font-medium text-lg flex items-center gap-2">
-                <MapIcon className="h-5 w-5 text-emerald-600" /> ตำแหน่งบนแผนที่
+                <MapIcon className="h-5 w-5 text-purple-600" /> ตำแหน่งบนแผนที่
               </label>
               <button
                 type="button"
                 onClick={() => setShowMap(!showMap)}
-                className="bg-emerald-500 text-white py-2 px-4 rounded-lg hover:bg-emerald-600"
+                className="bg-purple-500 text-white py-2 px-4 rounded-lg hover:bg-purple-600"
               >
                 {showMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
               </button>
@@ -201,8 +201,8 @@ function Menu_Prodact() {
 
             {showMap && (
               <div className="mt-2">
-                <div id="map" className="h-72 w-full rounded-xl border-2 border-emerald-200"></div>
-                <p className="text-sm text-center text-emerald-600 mt-1">คลิกบนแผนที่เพื่อเลือกตำแหน่งสินค้า</p>
+                <div id="map" className="h-72 w-full rounded-xl border-2 border-purple-200"></div>
+                <p className="text-sm text-center text-purple-600 mt-1">คลิกบนแผนที่เพื่อเลือกตำแหน่งสินค้า</p>
               </div>
             )}
 
@@ -213,7 +213,7 @@ function Menu_Prodact() {
                   type="number"
                   value={formdata.latitude}
                   onChange={(e) => setFormData({ ...formdata, latitude: e.target.value })}
-                  className="w-full border border-emerald-300 rounded-xl p-3 focus:outline-none"
+                  className="w-full border border-purple-300 rounded-xl p-3 focus:outline-none"
                 />
               </div>
               <div>
@@ -222,7 +222,7 @@ function Menu_Prodact() {
                   type="number"
                   value={formdata.longitude}
                   onChange={(e) => setFormData({ ...formdata, longitude: e.target.value })}
-                  className="w-full border border-emerald-300 rounded-xl p-3 focus:outline-none"
+                  className="w-full border border-purple-300 rounded-xl p-3 focus:outline-none"
                 />
               </div>
             </div>
@@ -230,7 +230,7 @@ function Menu_Prodact() {
             <button
               type="button"
               onClick={handleSubmit}
-              className="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white py-4 px-6 rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all"
+              className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-4 px-6 rounded-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all"
             >
               ยืนยันการโพสต์สินค้า
             </button>

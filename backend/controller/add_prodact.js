@@ -1,5 +1,5 @@
 
-const { error } = require("console");
+const { error, log } = require("console");
 const db = require("../config/db");
 const fs = require('fs');
 const deleteImage =(path)=>{
@@ -11,6 +11,33 @@ const deleteImage =(path)=>{
         }
     });
 };
+
+exports.get_product_id = async (req,res)=>{
+    try{
+        const {id} =req.params;
+        const [rows] =await db.promise().query(`SELECT 
+        t1.name_product,t1.detail_product,t1.phone,t1.latitude,t1.longitude,t1.price,t1.images,t2.first_name
+        FROM user_prodact t1 JOIN user t2 ON t1.id_user = t2.id_user WHERE t1.id_product=?`,[id]);
+        if(rows.length === 0){
+            return res.status(404).json({mag:"ไม่พบสินค้า"});
+        }
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
+        }));
+
+        return res.status(200).json({mag:"ดึงข้อมูลสินค้าสำเร็จ",data:formatData});
+
+    }catch(err){
+        console.log("error get data");
+        return res.status(500).json({
+            mag :"ไม่สามารถดึงข้อมูลสินค้าได้",
+            error: err.message
+        })
+        
+    }
+}
 
 exports.get_prodact = async (req , res )=>{
     try{
@@ -101,31 +128,54 @@ exports.add_prodact = async (req , res )=>{
     }
 }
 
-exports.edit_prodact = async (req , res )=>{
-    const {id} = req.params;
-    const {
-        name_prodact,
-        detail_prodact,
+exports.edit_prodact = async (req, res) => {
+    const { id } = req.params;
+    let {
+        name_product,
+        detail_product,
         phone,
         latitude,
         longitude,
         price,
-        images
+        type
     } = req.body;
-    try{
-        
-        const [rows] = await db.promise().query("UPuser_prodact SET name_prodact = ?, detail_prodact = ?, phone = ?, latitude = ?, longitude = ?, price = ?, images = ? WHERE id_product = ?", [
-            name_prodact,
-            detail_prodact,
-            phone,
-            latitude,
-            longitude,
-            price,
-            images,
-            id
-        ]);
 
-        if(rows.affectedRows === 0) {
+    try {
+        // ตรวจสอบว่ามีการอัปโหลดไฟล์ใหม่หรือไม่
+        let imagePath = null;
+        if (req.file) {
+            // ดึง path รูปใหม่
+            imagePath = req.file.path;
+
+            // ลบรูปเดิม (ถ้ามี)
+            const [oldRows] = await db.promise().query("SELECT images FROM user_prodact WHERE id_product = ?", [id]);
+            if (oldRows.length > 0 && oldRows[0].images && fs.existsSync(oldRows[0].images)) {
+                deleteImage(oldRows[0].images);
+            }
+        }
+
+        // ถ้าไม่ได้อัปโหลดรูปใหม่ ให้ใช้ path เดิม
+        if (!imagePath) {
+            const [oldRows] = await db.promise().query("SELECT images FROM user_prodact WHERE id_product = ?", [id]);
+            imagePath = oldRows.length > 0 ? oldRows[0].images : null;
+        }
+
+        const [rows] = await db.promise().query(
+            "UPDATE user_prodact SET name_product = ?, detail_product = ?, phone = ?, latitude = ?, longitude = ?, price = ?, images = ?, type = ? WHERE id_product = ?",
+            [
+                name_product,
+                detail_product,
+                phone,
+                latitude,
+                longitude,
+                price,
+                imagePath,
+                type,
+                id
+            ]
+        );
+
+        if (rows.affectedRows === 0) {
             return res.status(400).json({
                 msg: "ไม่สามารถแก้ไขสินค้าได้",
                 error: "ไม่สามารถแก้ไขสินค้าได้"
@@ -135,7 +185,7 @@ exports.edit_prodact = async (req , res )=>{
             msg: "แก้ไขสินค้าสำเร็จ"
         });
 
-    } catch(err) {
+    } catch (err) {
         console.log("error edit_prodact", err);
         return res.status(500).json({
             msg: "ไม่สามารถแก้ไขสินค้าได้",

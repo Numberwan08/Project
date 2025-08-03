@@ -145,17 +145,17 @@ function Menu_Att() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-teal-50 to-cyan-50 py-8 px-4">
       <ToastContainer/>
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-emerald-100">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-purple-100">
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 px-8 py-6">
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <MapPin className="h-8 w-8" />
               เพิ่มสถานที่ท่องเที่ยว จังหวัดเชียงราย
             </h1>
-            <p className="text-emerald-100 mt-2">กรอกข้อมูลสถานที่ท่องเที่ยวในจังหวัดเชียงราย</p>
+            <p className="text-purple-100 mt-2">กรอกข้อมูลสถานที่ท่องเที่ยวในจังหวัดเชียงราย</p>
           </div>
 
           <div className="p-8">
@@ -165,7 +165,7 @@ function Menu_Att() {
                 {/* Image Upload */}
                 <div className="space-y-4">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Upload className="h-5 w-5 text-emerald-600" />
+                    <Upload className="h-5 w-5 text-purple-600" />
                     รูปภาพสถานที่
                   </label>
                   <div className="relative">
@@ -174,18 +174,18 @@ function Menu_Att() {
                         <img 
                           src={preview} 
                           alt="Preview" 
-                          className="w-full h-64 object-cover rounded-2xl border-4 border-emerald-200 shadow-lg"
+                          className="w-full h-64 object-cover rounded-2xl border-4 border-purple-200 shadow-lg"
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-white font-medium">คลิกเพื่อเปลี่ยนรูป</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full h-64 border-4 border-dashed border-emerald-300 rounded-2xl flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer">
+                      <div className="w-full h-64 border-4 border-dashed border-purple-300 rounded-2xl flex items-center justify-center bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
                         <div className="text-center">
-                          <Upload className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
-                          <p className="text-emerald-600 font-medium">อัปโหลดรูปภาพ</p>
-                          <p className="text-emerald-500 text-sm mt-1">คลิกเพื่อเลือกไฟล์</p>
+                          <Upload className="h-12 w-12 text-purple-400 mx-auto mb-3" />
+                          <p className="text-purple-600 font-medium">อัปโหลดรูปภาพ</p>
+                          <p className="text-purple-500 text-sm mt-1">คลิกเพื่อเลือกไฟล์</p>
                         </div>
                       </div>
                     )}
@@ -202,12 +202,12 @@ function Menu_Att() {
                 {/* Location Name */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-emerald-600" />
+                    <MapPin className="h-5 w-5 text-purple-600" />
                     ชื่อสถานที่
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
                     placeholder="เช่น วัดร่องขุ่น, ดอยตุง, แม่สายโกลเด้นไตรแองเกิล"
                     value={formdata.name_location}
                     onChange={(e) => setFormdata({ ...formdata, name_location: e.target.value })}
@@ -218,12 +218,12 @@ function Menu_Att() {
                 {/* Location Detail */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Navigation className="h-5 w-5 text-emerald-600" />
+                    <Navigation className="h-5 w-5 text-purple-600" />
                     รายละเอียดที่ตั้ง
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
                     placeholder="เช่น ตำบลป่าอ้อดอนชัย อำเภอเมืองเชียงราย"
                     value={formdata.detail_location}
                     onChange={(e) => setFormdata({ ...formdata, detail_location: e.target.value })}
@@ -234,12 +234,12 @@ function Menu_Att() {
                 {/* Phone */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <Phone className="h-5 w-5 text-emerald-600" />
+                    <Phone className="h-5 w-5 text-purple-600" />
                     เบอร์โทรศัพท์
                   </label>
                   <input
                     type="tel"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg tabular-nums"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
                     placeholder="08X-XXX-XXXX"
                     value={formdata.phone}
                     onChange={(e) => setFormdata({ ...formdata, phone: e.target.value })}
@@ -250,12 +250,12 @@ function Menu_Att() {
                 {/* Detail Description */}
                 <div className="space-y-2">
                   <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-emerald-600" />
+                    <FileText className="h-5 w-5 text-purple-600" />
                     รายละเอียดสถานที่
                   </label>
                   <textarea
                     name="detail_att"
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg h-32 resize-none"
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg h-32 resize-none"
                     placeholder="อธิบายเกี่ยวกับสถานที่ท่องเที่ยวนี้ เช่น ความสวยงาม กิจกรรมที่น่าสนใจ เวลาเปิด-ปิด ค่าเข้าชม"
                     value={formdata.detail_att}
                     onChange={(e) => setFormdata({ ...formdata, detail_att: e.target.value })}
@@ -269,23 +269,23 @@ function Menu_Att() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Map className="h-5 w-5 text-emerald-600" />
+                      <Map className="h-5 w-5 text-purple-600" />
                       เลือกตำแหน่งบนแผนที่
                     </label>
                     <button 
                       type="button"
                       onClick={getCurrentLocation}
-                      className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
                     >
                       ตำแหน่งปัจจุบัน
                     </button>
                   </div>
                   
-                  <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
                     <button
                       type="button"
                       onClick={toggleMap}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-teal-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
                     >
                       <Map className="h-5 w-5" />
                       {showMap ? 'ซ่อนแผนที่' : 'แสดงแผนที่'}
@@ -295,9 +295,9 @@ function Menu_Att() {
                       <div className="mt-4">
                         <div 
                           id="map" 
-                          className="h-80 rounded-xl border-2 border-emerald-200 shadow-inner"
+                          className="h-80 rounded-xl border-2 border-purple-200 shadow-inner"
                         ></div>
-                        <p className="text-sm text-emerald-600 mt-2 text-center">
+                        <p className="text-sm text-purple-600 mt-2 text-center">
                           คลิกบนแผนที่เพื่อเลือกตำแหน่งที่ต้องการ
                         </p>
                       </div>
@@ -314,7 +314,7 @@ function Menu_Att() {
                     <input
                       type="number"
                       step="any"
-                      className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg tabular-nums"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
                       placeholder="XX.XXXXXX"
                       value={formdata.latitude}
                       onChange={(e) => setFormdata({ ...formdata, latitude: e.target.value })}
@@ -328,7 +328,7 @@ function Menu_Att() {
                     <input
                       type="number"
                       step="any"
-                      className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none text-lg tabular-nums"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
                       placeholder="XX.XXXXXX"
                       value={formdata.longitude}
                       onChange={(e) => setFormdata({ ...formdata, longitude: e.target.value })}
@@ -339,9 +339,9 @@ function Menu_Att() {
 
                 {/* Current Coordinates Display */}
                 {(formdata.latitude && formdata.longitude) && (
-                  <div className="bg-gradient-to-r from-emerald-100 to-teal-100 p-4 rounded-xl border border-emerald-200">
-                    <h3 className="font-semibold text-emerald-800 mb-2">📍 ตำแหน่งที่เลือก</h3>
-                    <div className="text-sm text-emerald-700 space-y-1">
+                  <div className="bg-gradient-to-r from-purple-100 to-teal-100 p-4 rounded-xl border border-purple-200">
+                    <h3 className="font-semibold text-purple-800 mb-2">📍 ตำแหน่งที่เลือก</h3>
+                    <div className="text-sm text-purple-700 space-y-1">
                       <p><span className="font-medium">ละติจูด:</span> {formdata.latitude}</p>
                       <p><span className="font-medium">ลองจิจูด:</span> {formdata.longitude}</p>
                     </div>
@@ -353,7 +353,7 @@ function Menu_Att() {
                   <button 
                     type="button"
                     onClick={handleSubmit}
-                    className="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full bg-gradient-to-r from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
                     ยืนยันข้อมูล
                   </button>

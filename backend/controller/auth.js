@@ -117,7 +117,7 @@ exports.login = async (req,res) =>{
                 token, data:{
                     
                     first_name : user.first_name,
-                    user_id : user.user_id,
+                    id_user : user.id_user,
 
                 }
             });

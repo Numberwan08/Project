@@ -92,17 +92,7 @@ const Sidebar = ({ isOpen = true }) => {
         })}
       </nav>
 
-      <div className="p-4 border-t border-purple-700/50 mt-auto">
-        <button
-          onClick={handleLogout}
-          className={`flex items-center p-3 w-full text-purple-200 hover:bg-red-600/20 hover:text-red-300 rounded-xl cursor-pointer transition-all duration-200 border border-transparent hover:border-red-500/30 ${
-            !isOpen && "justify-center"
-          }`}
-        >
-          <LogOut size={20} />
-          <span className={`ml-3 font-medium ${!isOpen && "hidden"}`}>ออกจากระบบ</span>
-        </button>
-      </div>
+     
     </aside>
   );
 };
