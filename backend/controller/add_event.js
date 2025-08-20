@@ -86,6 +86,8 @@ exports.get_event_me = async (req , res )=> {
 }
 
 exports.add_event = async (req , res )=> {
+    const [[{max_id}]] = await db.promise().query("SELECT MAX(id_event) as max_id FROM user_event ")
+
     // console.log("req.bady",req.bady);
         const {
             id_user,
@@ -103,7 +105,8 @@ exports.add_event = async (req , res )=> {
         const image = req.file;
 
     try{
-        const [rows]=await db.promise().query("INSERT INTO user_event (id_user, name_event, location_event, phone, detail_event, date_start,date_end, images, latitude, longitude,type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",[
+        const [rows]=await db.promise().query("INSERT INTO user_event (id_event,id_user, name_event, location_event, phone, detail_event, date_start,date_end, images, latitude, longitude,type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",[
+            max_id+1,
             id_user,
             name_event,
             location_event,

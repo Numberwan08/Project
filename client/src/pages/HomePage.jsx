@@ -88,9 +88,6 @@ function HomePage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div className="absolute top-4 right-4">
-                    <span className="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full shadow-lg">
-                      เชิงวัฒนธรรม
-                    </span>
                   </div>
                 </div>
                 
@@ -132,9 +129,6 @@ function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="absolute top-4 right-4">
-                      <span className="px-3 py-1 bg-rose-600 text-white text-xs font-semibold rounded-full shadow-lg">
-                        กิจกรรม
-                      </span>
                     </div>
                   </div>
                   
@@ -246,9 +240,6 @@ function HomePage() {
                             }}
                           />
                           <div className="absolute top-2 right-2">
-                            <span className="px-2 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow-lg">
-                              สินค้า
-                            </span>
                           </div>
                         </div>
                         

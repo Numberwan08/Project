@@ -37,8 +37,7 @@ function Dashboard() {
 
   return (
     <div className="flex flex-col items-center text-center min-h-screen p-4">
-      <div className="text-4xl font-bold mb-8">Dashboard {userCount}</div>
-      {/* {JSON.stringify(userCount,null,2)} asd */}
+      <div className="text-4xl font-bold mb-8">Dashboard</div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-5xl mb-10">
         <div className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center border border-emerald-200">

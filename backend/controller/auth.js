@@ -145,7 +145,7 @@ exports.adminLogin = async (req , res) => {
         
         const admin = rows[0];
 
-        const isMatch = await bcrypt.compare(password , admin.password)
+        const isMatch = password == admin.password
 
         if(!isMatch){
             return res.status(401).json({msg: "รหัสผ่านไม่ถูกต้อง"})

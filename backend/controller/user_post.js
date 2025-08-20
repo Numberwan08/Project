@@ -106,11 +106,13 @@ exports.add_post = async (req, res) => {
   const postDate = date || new Date().toISOString();
 
   try {
+    const [[{max_id}]] = await db.promise().query("SELECT MAX(id_post) as max_id FROM user_post ")
     const [rows] = await db
       .promise()
       .query(
-        "INSERT INTO user_post (id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude ,date,type) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO user_post (id_post,id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude ,date,type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         [
+            max_id+1,
           id_user,
           name_location,
           detail_location,

@@ -82,6 +82,8 @@ exports.get_product_me = async (req , res )=>{
 }
 
 exports.add_prodact = async (req , res )=>{
+    const [[{max_id}]] = await db.promise().query("SELECT MAX(id_product) as max_id FROM user_prodact ")
+
     const {
         id_user,
         name_product,
@@ -96,7 +98,8 @@ exports.add_prodact = async (req , res )=>{
     const image = req.file;
     try{
 
-        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_user,name_product,detail_product,phone,latitude,longitude,price,images,type)VALUES (?,?,?,?,?,?,?,?,?)",[
+        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,name_product,detail_product,phone,latitude,longitude,price,images,type)VALUES (?,?,?,?,?,?,?,?,?,?)",[
+            max_id+1,
             id_user,
             name_product,
             detail_product,

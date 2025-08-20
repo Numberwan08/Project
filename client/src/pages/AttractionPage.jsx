@@ -62,12 +62,6 @@ function AttractionPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button
-              type="submit"
-              className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-            >
-              Search
-            </button>
           </div>
         </form>
 
@@ -87,17 +81,12 @@ function AttractionPage() {
                 />
               </figure>
               <div className="card-body">
-                <div className="flex justify-end">
-                  <div className="badge bg-purple-600 text-base-100">
-                    เชิงวัฒนธรรม
-                  </div>
-                </div>
                 <p className="font-bold">{item.name_location}</p>
                 <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                   {item.detail_location}
                 </p>
                 <Link to={`/detall_att/${item.id_post}`}>
-                  <button className="btn btn-error w-full">รายละเอียดสถานที่</button>
+                  <button className="btn bg-purple-600 text-base-100 w-full">รายละเอียดสถานที่</button>
                 </Link>
               </div>
             </div>

@@ -34,13 +34,15 @@ function Menu_Profile() {
   const handleDelete = async () => {
     try {
       const res = await axios.delete(import.meta.env.VITE_API + `post/${selectedPost.id_post}`);
-      alert(res.data.msg);
+      toast.success(res.data.msg,{
+      autoClose: 1000,
+      });
       getPostMe();
       setIsDelete(false);
       setSelectedPost({});
     } catch (err) {
       console.log("error delete post", err);
-      alert("ไม่สามารถลบโพสต์ได้");
+      toast.success("ไม่สามารถลบโพสต์ได้");
     }
   };
 

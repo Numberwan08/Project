@@ -27,7 +27,7 @@ const Navbar = () => {
   return (
     <nav className="bg-white shadow-md py-4 px-6">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <div className="text-2xl font-bold text-blue-600">Chiang rai</div>
+        <div className="text-2xl font-bold text-blue-600">Chiang Rai</div>
         <ul className=" flex justify-between space-x-6">
           {menuItems.map((item, index) => (
             <li key={index}>

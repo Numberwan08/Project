@@ -59,12 +59,7 @@ function EventPages() {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <button
-              type="submit"
-              className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-            >
-              Search
-            </button>
+           
           </div>
         </form>
 
@@ -84,17 +79,12 @@ function EventPages() {
                 />
               </figure>
               <div className="card-body">
-                <div className="flex justify-end">
-                  <div className="badge bg-rose-600 text-base-100">
-                    กิจกรรม
-                  </div>
-                </div>
                 <p className="font-bold">{item.name_event}</p>
                 <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                   {item.location_event}
                 </p>
                 <Link to={`/detall_event/${item.id_event}`}>
-                  <button className="btn btn-error w-full">รายละเอียดกิจกรรม</button>
+                  <button className="btn bg-purple-600 text-base-100 w-full">รายละเอียดกิจกรรม</button>
                 </Link>
               </div>
             </div>

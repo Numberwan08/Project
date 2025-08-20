@@ -24,9 +24,14 @@ import Menu_Prodact from "./pages/Menu_Prodact";
 import Menu_Profile from "./pages/Menu_Profile";
 import Show_Event from "./pages/show_event";
 import Show_Product from "./pages/show_product";
+import Adminlogin from "./admin/pages/Adminlogin";
 
 function App() {
   const router = createBrowserRouter([
+    {
+      path:"/loginadmin",
+      element:<Adminlogin/>
+    },
     {
       path: "/admin",
       element: <Adminlayout />,
@@ -50,7 +55,7 @@ function App() {
         {
           path: "/admin/product",
           element: <ProductControllers />,
-        },
+        }
       ],
     },
     {

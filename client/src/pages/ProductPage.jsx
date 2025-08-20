@@ -57,12 +57,6 @@ function ProductPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <button
-              type="submit"
-              className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-            >
-              Search
-            </button>
           </div>
         </form>
 
@@ -82,11 +76,6 @@ function ProductPage() {
                 />
               </figure>
               <div className="card-body">
-                <div className="flex justify-end">
-                  <div className="badge bg-green-600 text-base-100">
-                    สินค้า
-                  </div>
-                </div>
                 <p className="font-bold">{item.name_product}</p>
                 <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                   {item.detail_product}
@@ -95,7 +84,7 @@ function ProductPage() {
                   ราคา: {item.price} บาท
                 </p>
                 <Link to={`/detall_product/${item.id_product}`}>
-                  <button className="btn btn-error w-full">รายละเอียดสินค้า</button>
+                  <button className="btn bg-purple-600 text-base-100 w-full">รายละเอียดสินค้า</button>
                 </Link>
               </div>
             </div>
