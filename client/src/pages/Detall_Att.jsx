@@ -4,7 +4,7 @@ import axios from "axios";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-
+import {Heart, ThumbsUp} from "lucide-react";
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -20,13 +20,24 @@ function Detail_Att() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [liked, setLiked] = useState(false);
+
+  const userId = localStorage.getItem("userId");
 
   const getDetailAtt = async () => {
     try {
       setLoading(true);
       const res = await axios.get(import.meta.env.VITE_API + `post_att/${id}`);
-      // console.log(res.data);
       setData(res.data.data);
+      // ตรวจสอบสถานะไลค์
+      if (userId) {
+        const resCheck = await axios.get(
+          import.meta.env.VITE_API + `post/likes/check/${id}/${userId}`
+        );
+        setLiked(!!resCheck.data.liked);
+      } else {
+        setLiked(false);
+      }
     } catch (err) {
       console.log("Error get detail : ", err);
     } finally {
@@ -34,8 +45,39 @@ function Detail_Att() {
     }
   };
 
+  // ฟังก์ชันไลค์/อันไลค์
+  const handlelike = async (item) => {
+    if (!userId) {
+      alert("กรุณาเข้าสู่ระบบก่อนกดไลค์");
+      return;
+    }
+    
+    try {
+      if (liked) {
+        await axios.delete(
+          import.meta.env.VITE_API + `post/likes/${item.id_post}/${userId}`
+        );
+      
+        setLiked(false);
+      } else {
+        // กดไลค์
+        await axios.post(
+          import.meta.env.VITE_API + `post/likes/${item.id_post}`,
+          { userId }
+        );
+        
+          
+        setLiked(true);
+      }
+      getDetailAtt();
+    } catch (err) {
+      console.log("Error like/unlike post : ", err);
+    }
+  };
+
   useEffect(() => {
     getDetailAtt();
+    // eslint-disable-next-line
   }, []);
 
   if (loading) {
@@ -70,9 +112,12 @@ function Detail_Att() {
                     {item.name_location}
                   </h1>
                   <div className="flex items-center space-x-2">
-                    <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full flex items-center space-x-2 transition-colors">
-                      <span className="font-medium"></span>
-                    </button>
+                    <ThumbsUp
+                      color={liked ? "#22c55e" : "#ef4444"}
+                      onClick={() => handlelike(item)}
+                      className={`cursor-pointer ${liked ? "scale-110" : ""}`}
+                    />
+                    {item.likes}
                   </div>
                 </div>
 

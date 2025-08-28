@@ -5,7 +5,7 @@ import { Outlet } from 'react-router-dom'
 function Pageslayout() {
   return (
     <>
-      <div>
+      <div className='mt-15'>
         <Navbar />
       </div>
         <Outlet />

@@ -22,7 +22,7 @@ function AttractionPage() {
     );
 
   return (
-    <div>
+    <div className="mt-25">
       <div className="m-5 gap-3">
         <form
           className="max-w-md mx-auto"

@@ -18,7 +18,7 @@ function AdminLayout() {
         <Header />
       </div>
       {/* Sidebar */}
-      <div className="fixed top-0 left-0 h-screen w-64 bg-white shadow-lg z-20">
+      <div className="fixed top-0 left-0 h-screen w-64 bg-white shadow-lg z-20 mt-20">
         <Sidebar />
       </div>
       {/* Main Content */}

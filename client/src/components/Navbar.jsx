@@ -25,7 +25,7 @@ const Navbar = () => {
   const { isLogin, logout, name } = useAuth();
 
   return (
-    <nav className="bg-white shadow-md py-4 px-6">
+    <nav className="bg-white shadow-md py-4 px-6 fixed top-0 left-0 w-full z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="text-2xl font-bold text-blue-600">Chiang Rai</div>
         <ul className=" flex justify-between space-x-6">

@@ -22,7 +22,7 @@ function EventPages() {
 
   return (
     <div>
-      <div className="m-5 gap-3">
+      <div className="m-5 gap-3 mt-20">
         <form
           className="max-w-md mx-auto"
           onSubmit={e => e.preventDefault()}

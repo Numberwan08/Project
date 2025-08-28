@@ -38,9 +38,13 @@ exports.get_events = async (req, res) =>{
     try{
 
         const [rows] = await db.promise().query(`SELECT 
-        t1.name_event,t1.location_event,t1.phone,t1.detail_event,t1.date_start,t1.images,t1.latitude,t1.longitude,t1.date_end,t2.first_name
-        FROM user_event t1 JOIN user t2 ON t1.id_user = t2.id_user WHERE t1.id_event=?`,[id]);
-        
+            t1.id_event,t1.name_event,t1.location_event,t1.phone,t1.detail_event,t1.date_start,t1.images,t1.latitude,t1.longitude,t1.date_end,t2.first_name,
+            COUNT(t3.id_event) likes
+            FROM user_event t1
+            JOIN user t2 ON t1.id_user = t2.id_user 
+            JOIN like_event t3 ON t1.id_event = t3.id_event
+            WHERE t1.id_event = ?`,[id]);
+    
         if(rows.length === 0){
             return res.status(404).json({mag:"ไม่พบกิจกรรม"});
         }
@@ -249,4 +253,80 @@ exports.delete_event = async (req , res )=> {
         })
     }
    
+} 
+exports.likes = async (req, res) => {
+      const {id} = req.params;
+    const {userId} = req.body;
+    
+    try{
+        const [existingLike] = await db.promise().query("SELECT * FROM like_event WHERE id_event = ? AND id_user = ?", [id, userId]);
+        if(existingLike.length > 0){
+                console.log('1')
+            return res.status(400).json({
+                msg: "คุณได้กดไลค์โพสต์นี้แล้ว",
+                error: "คุณได้กดไลค์โพสต์นี้แล้ว"
+            });
+            
+        }
+        const [rows] = await db.promise().query("INSERT INTO like_event (id_event,id_user) VALUES (?,?)",[id, userId]);
+        if(rows.affectedRows === 0){
+                
+            return res.status(400).json({
+                msg: "ไม่สามารถกดไลค์โพสต์ได้",
+                error: "ไม่สามารถกดไลค์โพสต์ได้"
+            });
+        }
+        return res.status(200).json({
+            msg: "กดไลค์โพสต์สำเร็จ"
+        });
+    }catch(err){
+        console.log("error likes post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถกดไลค์โพสต์ได้",
+            error: err.message
+        });
+    }
+};
+
+
+// เช็คสถานะไลค์ของ user กับ post
+exports.likes_check = async (req, res) => {
+    const { id_event, id_user } = req.params;
+    try {
+        const [rows] = await db.promise().query("SELECT * FROM like_event WHERE id_event = ? AND id_user = ?", [id_event, id_user]);
+        if (rows.length > 0) {
+            return res.status(200).json({ liked: true });
+        } else {
+            return res.status(200).json({ liked: false });
+        }
+    } catch (err) {
+        console.log("error likes check", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถตรวจสอบสถานะไลค์ได้",
+            error: err.message
+        });
+    }
+}
+
+// ยกเลิกไลค์โพสต์
+exports.unlike = async (req, res) => {
+    const { id_event, id_user } = req.params;
+    try {
+        const [result] = await db.promise().query("DELETE FROM like_event WHERE id_event = ? AND id_user = ?", [id_event, id_user]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                msg: "ไม่พบข้อมูลไลค์หรือยังไม่ได้ไลค์โพสต์นี้",
+                error: "ไม่พบข้อมูลไลค์หรือยังไม่ได้ไลค์โพสต์นี้"
+            });
+        }
+        return res.status(200).json({
+            msg: "ยกเลิกไลค์โพสต์สำเร็จ"
+        });
+    } catch (err) {
+        console.log("error unlike post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถยกเลิกไลค์โพสต์ได้",
+            error: err.message
+        });
+    }
 }

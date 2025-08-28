@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { ThumbsUp } from 'lucide-react';
 
 // Fix for default markers in React Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -19,13 +20,24 @@ function Detall_Event() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isInterested, setIsInterested] = useState(false);
+  const [liked, setLiked] = useState(false);
+
+  const userId = localStorage.getItem("userId");
 
   const getEvent = async () => {
     try {
       setLoading(true);
       const res = await axios.get(import.meta.env.VITE_API + `get_event/${id}`);
       setData(res.data.data);
-      console.log(res.data);
+      // ตรวจสอบสถานะไลค์
+      if (userId) {
+        const resCheck = await axios.get(
+          import.meta.env.VITE_API + `event/likes/check/${id}/${userId}`
+        );
+        setLiked(!!resCheck.data.liked);
+      } else {
+        setLiked(false);
+      }
     } catch (err) {
       console.log("error get data", err);
     } finally {
@@ -33,8 +45,36 @@ function Detall_Event() {
     }
   };
 
+  // ฟังก์ชันไลค์/อันไลค์
+  const handlelike = async (item) => {
+    if (!userId) {
+      alert("กรุณาเข้าสู่ระบบก่อนกดไลค์");
+      return;
+    }
+
+    try {
+      if (liked) {
+        await axios.delete(
+          import.meta.env.VITE_API + `event/likes/${item.id_event}/${userId}`
+        );
+        setLiked(false);
+      } else {
+          await axios.post(
+          import.meta.env.VITE_API + `event/likes/${item.id_event}`,
+          { userId }
+        );
+        
+        setLiked(true);
+      }
+      getEvent();
+    } catch (err) {
+      console.log("Error like/unlike event : ", err);
+    }
+  };
+
   useEffect(() => {
     getEvent();
+    // eslint-disable-next-line
   }, []);
 
   const formatDate = (dateString) => {
@@ -134,6 +174,14 @@ function Detall_Event() {
                     <h1 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-4">
                       {item.name_event}
                     </h1>
+                    <div className="flex items-center space-x-2">
+                      <ThumbsUp
+                        color={liked ? "#22c55e" : "#ef4444"}
+                        onClick={() => handlelike(item)}
+                        className={`cursor-pointer ${liked ? "scale-110" : ""}`}
+                      />
+                      {item.likes}
+                    </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="text-sm text-gray-500">
