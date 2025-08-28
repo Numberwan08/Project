@@ -19,11 +19,22 @@ function Detall_Event() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [isInterested, setIsInterested] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [nearbyEvent, setNerabyEvent] = useState([]);
+
 
   const userId = localStorage.getItem("userId");
 
+  const getNearbyEvent = async () => {
+    try{
+      const res = await axios.get(import.meta.env.VITE_API + `nearby_event/${id}`);
+      console.log("nearby event",res.data);
+      setNerabyEvent(res.data.data || []);
+
+    }catch(err){
+      console.log("error get nearby event",err);
+    }
+  }
   const getEvent = async () => {
     try {
       setLoading(true);
@@ -74,6 +85,7 @@ function Detall_Event() {
 
   useEffect(() => {
     getEvent();
+    getNearbyEvent();
     // eslint-disable-next-line
   }, []);
 
@@ -258,19 +270,35 @@ function Detall_Event() {
                 {/* Related Events */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h2 className="text-2xl font-bold text-gray-800 mb-6">กิจกรรมที่เกี่ยวข้อง</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[1, 2, 3].map((placeholder) => (
-                      <div key={placeholder} className="relative group cursor-pointer">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {nearbyEvent.length > 0 ? (
+                    nearbyEvent.map((place, idx) => (
+                      <div key={idx} className="relative group cursor-pointer">
                         <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-500">กิจกรรมแนะนำ</span>
+                          <img
+                            src={'http://localhost:3000/'+place.images}
+                            alt={place.name_event}
+                            className="h-28 object-cover rounded-lg"
+                            style={{ maxWidth: '100%' }}
+                          />
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
-                          <p className="text-white text-sm font-medium">กิจกรรมท้องถิ่น {placeholder}</p>
-                          <p className="text-blue-300 text-xs">15-20 ม.ค. 2568</p>
+                          <p className="text-white text-sm font-medium">
+                            {place.name_event}
+                          </p>
+                          <p className="text-purple-100 text-xs">
+                            {place.detail_event}
+                          </p>
+                          <p className="text-purple-200 text-xs">
+                            ระยะทาง {place.distance.toFixed(2)} กม.
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
+                  )}
+                </div>
                 </div>
               </div>
 

@@ -14,7 +14,10 @@ const deleteImage =(path)=>{
 
 exports.get_event = async (req , res )=> {
     try{
-        const [rows] = await db.promise().query("SELECT * FROM user_event");
+        const [rows] = await db.promise().query(`SELECT COUNT(t2.id_event) likes,t1.*,t3.first_name FROM user_event t1
+LEFT JOIN like_event t2 on t1.id_event=t2.id_event
+LEFT JOIN user t3 on t1.id_user=t3.id_user
+GROUP BY t1.id_event`);
         if(rows.length === 0){
             return res.status(404).json({ mag :"ไม่พบกิจกรรม"}); 
         }
@@ -328,5 +331,41 @@ exports.unlike = async (req, res) => {
             msg: "ไม่สามารถยกเลิกไลค์โพสต์ได้",
             error: err.message
         });
+    }
+}
+
+exports.nearby_event = async (req, res) => {
+    const { id } = req.params;
+    try {
+        
+        const [[current]] = await db.promise().query("SELECT latitude, longitude FROM user_event WHERE id_event = ?", [id]);
+        if (!current || !current.latitude || !current.longitude) {
+            return res.status(404).json({ msg: "ไม่พบข้อมูลสถานที่หลัก" });
+        }
+        // ดึงข้อมูลสถานที่อื่น ๆ ทั้งหมด (ยกเว้นตัวเอง)
+        const [places] = await db.promise().query("SELECT id_event, name_event, detail_event, latitude, longitude, images FROM user_event WHERE id_event != ? AND latitude IS NOT NULL AND longitude IS NOT NULL", [id]);
+        // คำนวณระยะทาง
+        function toRad(Value) { return (Value * Math.PI) / 180; }
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+        const nearby = places.map(place => ({
+            ...place,
+            distance: getDistance(
+                parseFloat(current.latitude),
+                parseFloat(current.longitude),
+                parseFloat(place.latitude),
+                parseFloat(place.longitude)
+            )
+        })).sort((a, b) => a.distance - b.distance).slice(0, 3);
+        return res.status(200).json({ data: nearby });
+    } catch (err) {
+        console.log("error nearby", err);
+        return res.status(500).json({ msg: "ไม่สามารถดึงสถานที่ใกล้เคียงได้", error: err.message });
     }
 }

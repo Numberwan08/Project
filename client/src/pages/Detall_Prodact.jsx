@@ -18,7 +18,7 @@ function Detall_Prodact() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const [nearbyProduct , setNearbyProduct] = useState([]);
 
   const getDetailProduct = async () => {
     try {
@@ -33,8 +33,21 @@ function Detall_Prodact() {
     }
   };
 
+  const getNearbyProduct = async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        const res = await axios.get(import.meta.env.VITE_API + `nearby_product/${id}`);
+        console.log("Nearby data:", res.data);
+        setNearbyProduct(res.data.data || []);
+        
+      } catch (err) {
+        console.log("Error get nearby : ", err); 
+      }
+    };
+
   useEffect(() => {
     getDetailProduct();
+    getNearbyProduct();
   }, []);
 
   if (loading) {
@@ -123,22 +136,37 @@ function Detall_Prodact() {
               </div>
 
               {/* Related Products */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">สินค้าที่เกี่ยวข้อง</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[1, 2, 3].map((placeholder) => (
-                    <div key={placeholder} className="relative group cursor-pointer">
-                      <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-500">สินค้าแนะนำ</span>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">สินค้าใกล้เคียง</h2>
+                  {nearbyProduct.length > 0 ? (
+                    nearbyProduct.map((place, idx) => (
+                      <div key={idx} className="relative group cursor-pointer">
+                        <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
+                          <img
+                            src={'http://localhost:3000/'+place.images}
+                            alt={place.name_product}
+                            className="h-28 object-cover rounded-lg"
+                            style={{ maxWidth: '100%' }}
+                          />
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
+                          <p className="text-white text-sm font-medium">
+                            {place.name_product}
+                          </p>
+                          <p className="text-purple-100 text-xs">
+                            {place.detail_product}
+                          </p>
+                          <p className="text-purple-200 text-xs">
+                            ระยะทาง {place.distance.toFixed(2)} กม.
+                          </p>
+                        </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
-                        <p className="text-white text-sm font-medium">สินค้าท้องถิ่น {placeholder}</p>
-                        <p className="text-purple-300 text-xs">฿299</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
+                  )}
                 </div>
-              </div>
             </div>
 
             {/* ฝั่งขวา - แผนที่และข้อมูลเพิ่มเติม */}

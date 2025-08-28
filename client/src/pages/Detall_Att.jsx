@@ -20,24 +20,14 @@ function Detail_Att() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [liked, setLiked] = useState(false);
-
-  const userId = localStorage.getItem("userId");
+  const [nearbyAtt, setNearbyAtt] = useState([]);
 
   const getDetailAtt = async () => {
     try {
       setLoading(true);
       const res = await axios.get(import.meta.env.VITE_API + `post_att/${id}`);
+      // console.log(res.data);
       setData(res.data.data);
-      // ตรวจสอบสถานะไลค์
-      if (userId) {
-        const resCheck = await axios.get(
-          import.meta.env.VITE_API + `post/likes/check/${id}/${userId}`
-        );
-        setLiked(!!resCheck.data.liked);
-      } else {
-        setLiked(false);
-      }
     } catch (err) {
       console.log("Error get detail : ", err);
     } finally {
@@ -45,39 +35,34 @@ function Detail_Att() {
     }
   };
 
-  // ฟังก์ชันไลค์/อันไลค์
-  const handlelike = async (item) => {
-    if (!userId) {
-      alert("กรุณาเข้าสู่ระบบก่อนกดไลค์");
-      return;
-    }
-    
+  const getNearbyAtt = async () => {
     try {
-      if (liked) {
-        await axios.delete(
-          import.meta.env.VITE_API + `post/likes/${item.id_post}/${userId}`
-        );
+      const res = await axios.get(import.meta.env.VITE_API + `nearby/${id}`);
+      console.log("Nearby data:", res.data);
+      setNearbyAtt(res.data.data || []);
       
-        setLiked(false);
-      } else {
-        // กดไลค์
-        await axios.post(
-          import.meta.env.VITE_API + `post/likes/${item.id_post}`,
-          { userId }
-        );
-        
-          
-        setLiked(true);
-      }
-      getDetailAtt();
     } catch (err) {
-      console.log("Error like/unlike post : ", err);
+      console.log("Error get nearby : ", err); 
     }
   };
 
+
+  const handlelike = async (item)=>{
+    try{
+      const userId = localStorage.getItem("userId");
+      const res = await axios.post(import.meta.env.VITE_API + `likes/${item.id_post}`,{userId});
+      console.log("Like response:", res.data);
+      getDetailAtt();
+    }catch(err){
+      console.log("Error like post : ", err);
+    }
+
+
+  }
+
   useEffect(() => {
     getDetailAtt();
-    // eslint-disable-next-line
+    getNearbyAtt();
   }, []);
 
   if (loading) {
@@ -112,12 +97,7 @@ function Detail_Att() {
                     {item.name_location}
                   </h1>
                   <div className="flex items-center space-x-2">
-                    <ThumbsUp
-                      color={liked ? "#22c55e" : "#ef4444"}
-                      onClick={() => handlelike(item)}
-                      className={`cursor-pointer ${liked ? "scale-110" : ""}`}
-                    />
-                    {item.likes}
+                    <ThumbsUp color="red" onClick={()=>handlelike(item)} className="cursor-pointer"></ThumbsUp>{item.likes}
                   </div>
                 </div>
 
@@ -177,22 +157,33 @@ function Detail_Att() {
                   สถานที่ใกล้เคียง
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Placeholder for related places */}
-                  {[1, 2, 3].map((placeholder) => (
-                    <div
-                      key={placeholder}
-                      className="relative group cursor-pointer"
-                    >
-                      <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-500">รูปภาพ</span>
+                  {nearbyAtt.length > 0 ? (
+                    nearbyAtt.map((place, idx) => (
+                      <div key={idx} className="relative group cursor-pointer">
+                        <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
+                          <img
+                            src={'http://localhost:3000/'+place.images}
+                            alt={place.name_location}
+                            className="h-28 object-cover rounded-lg"
+                            style={{ maxWidth: '100%' }}
+                          />
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
+                          <p className="text-white text-sm font-medium">
+                            {place.name_location}
+                          </p>
+                          <p className="text-purple-100 text-xs">
+                            {place.detail_location}
+                          </p>
+                          <p className="text-purple-200 text-xs">
+                            ระยะทาง {place.distance.toFixed(2)} กม.
+                          </p>
+                        </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
-                        <p className="text-white text-sm font-medium">
-                          สถานที่แนะนำ {placeholder}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -342,7 +333,7 @@ function Detail_Att() {
                 />
               </svg>
             </button>
-          </div>
+           </div>
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { MessageCircle, ThumbsUp } from "lucide-react";
 
 function AttractionPage() {
   const [places, setPlaces] = useState([]);
@@ -13,13 +14,14 @@ function AttractionPage() {
       .catch(() => setPlaces([]));
   }, []);
 
-  const filteredPlaces = places
-    .filter((item) => item.type == 1)
-    .filter((item) =>
-      item.name_location
-        ? item.name_location.toLowerCase().includes(search.toLowerCase())
-        : false
-    );
+const filteredPlaces = places
+  .filter((item) => item.type == 1)
+  .filter((item) =>
+    item.name_location
+      ? item.name_location.toLowerCase().includes(search.toLowerCase())
+      : false
+  )
+  .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div className="mt-25">
@@ -85,6 +87,17 @@ function AttractionPage() {
                 <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                   {item.detail_location}
                 </p>
+                <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center gap-1">
+                      <ThumbsUp color="#9900FF" />
+                      <span>{item.likes}</span>
+                    </div>
+                    <div>โพสต์โดย: {item.first_name}</div>
+                    <div className="flex items-center gap-1">
+                      <MessageCircle color="#9900FF" />
+                      <span>0</span>
+                    </div>
+                  </div>
                 <Link to={`/detall_att/${item.id_post}`}>
                   <button className="btn bg-purple-600 text-base-100 w-full">รายละเอียดสถานที่</button>
                 </Link>

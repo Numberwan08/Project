@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import axios from 'axios'
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { MessageCircle, ThumbsUp } from 'lucide-react';
 
 function EventPages() {
   const [events, setEvents] = useState([]);
@@ -12,17 +13,32 @@ function EventPages() {
       .catch(() => setEvents([]));
   }, []);
 
+  const today = new Date();
+
   const filteredEvents = events
     .filter(item => item.type == 2)
     .filter(item =>
       item.name_event
         ? item.name_event.toLowerCase().includes(search.toLowerCase())
         : false
-    );
+    )
+    .sort((a, b) => {
+      // คำนวณวันจากวันนี้ถึง date_start
+      const daysA = (new Date(a.date_start) - today) / (1000 * 60 * 60 * 24);
+      const daysB = (new Date(b.date_start) - today) / (1000 * 60 * 60 * 24);
+
+      // กิจกรรมที่ใกล้จะเริ่ม (0–10 วัน) มาก่อน
+      if (daysA >= 0 && daysA <= 10 && !(daysB >= 0 && daysB <= 10)) return -1;
+      if (daysB >= 0 && daysB <= 10 && !(daysA >= 0 && daysA <= 10)) return 1;
+
+      // ถ้าอยู่กลุ่มเดียวกัน → เรียงวันเริ่มใกล้สุด
+      return new Date(a.date_start) - new Date(b.date_start);
+    });
 
   return (
     <div>
-      <div className="m-5 gap-3 mt-20">
+      <div className="m-5 gap-3 mt-25">
+        {/* ค้นหากิจกรรม */}
         <form
           className="max-w-md mx-auto"
           onSubmit={e => e.preventDefault()}
@@ -59,7 +75,6 @@ function EventPages() {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-           
           </div>
         </form>
 
@@ -83,8 +98,42 @@ function EventPages() {
                 <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                   {item.location_event}
                 </p>
+
+                {/* แสดงสถานะกิจกรรม */}
+                <p className="text-sm font-medium text-purple-600">
+                  {(() => {
+                    const startDate = new Date(item.date_start);
+                    const endDate = new Date(item.date_end);
+
+                    if (today > endDate) {
+                      return "กิจกรรมสิ้นสุดแล้ว";
+                    } else if (today < startDate) {
+                      const diffDays = Math.ceil((startDate - today) / (1000 * 60 * 60 * 24));
+                      return `จะเริ่มในอีก ${diffDays} วัน`;
+                    } else {
+                      return "กำลังจัดกิจกรรม";
+                    }
+                  })()}
+                </p>
+
+                <div className="flex justify-between items-center w-full mt-2">
+                  <div className="flex items-center gap-1">
+                    <ThumbsUp color="#9900FF" />
+                    <span>{item.likes}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    โพสต์โดย: {item.first_name}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MessageCircle color="#9900FF" />
+                    <span>0</span>
+                  </div>
+                </div>
+
                 <Link to={`/detall_event/${item.id_event}`}>
-                  <button className="btn bg-purple-600 text-base-100 w-full">รายละเอียดกิจกรรม</button>
+                  <button className="btn bg-purple-600 text-base-100 w-full mt-2">
+                    รายละเอียดกิจกรรม
+                  </button>
                 </Link>
               </div>
             </div>
@@ -95,4 +144,4 @@ function EventPages() {
   )
 }
 
-export default EventPages
+export default EventPages;
