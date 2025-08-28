@@ -12,7 +12,9 @@ const deleteImage =(path)=>{
 
 exports.get_post = async (req ,res ) => {
     try{
-        const [rows] = await db.promise().query("SELECT * FROM user_post");
+        const [rows] = await db.promise().query(`SELECT COUNT(t2.id_post) likes,t1.* FROM user_post t1
+                LEFT JOIN like_post t2 on t1.id_post=t2.id_post
+                GROUP BY t1.id_post `);
 
         if(rows.length === 0){
             return res.status(404).json({ mag: "ไม่พบโพสต์"});
