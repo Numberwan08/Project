@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Link } from 'react-router-dom';
 import axios from "axios";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -21,13 +22,24 @@ function Detail_Att() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [nearbyAtt, setNearbyAtt] = useState([]);
+  const [liked, setLiked] = useState(false);
+  const [userId, setUserId] = useState(localStorage.getItem("userId"));
 
+  // ดึงข้อมูลสถานที่และเช็คสถานะไลค์
   const getDetailAtt = async () => {
     try {
       setLoading(true);
       const res = await axios.get(import.meta.env.VITE_API + `post_att/${id}`);
-      // console.log(res.data);
       setData(res.data.data);
+      // ตรวจสอบสถานะไลค์
+      if (userId) {
+        const resCheck = await axios.get(
+          import.meta.env.VITE_API + `post/likes/check/${id}/${userId}`
+        );
+        setLiked(!!resCheck.data.liked);
+      } else {
+        setLiked(false);
+      }
     } catch (err) {
       console.log("Error get detail : ", err);
     } finally {
@@ -47,23 +59,37 @@ function Detail_Att() {
   };
 
 
-  const handlelike = async (item)=>{
-    try{
-      const userId = localStorage.getItem("userId");
-      const res = await axios.post(import.meta.env.VITE_API + `likes/${item.id_post}`,{userId});
-      console.log("Like response:", res.data);
-      getDetailAtt();
-    }catch(err){
-      console.log("Error like post : ", err);
+  // ฟังก์ชันไลค์/อันไลค์
+  const handlelike = async (item) => {
+    if (!userId) {
+      alert("กรุณาเข้าสู่ระบบก่อนกดไลค์");
+      return;
     }
-
-
-  }
+    try {
+      if (liked) {
+        await axios.delete(
+          import.meta.env.VITE_API + `post/likes/${item.id_post}/${userId}`
+        );
+        setLiked(false);
+      } else {
+        await axios.post(
+          import.meta.env.VITE_API + `post/likes/${item.id_post}`,
+          { userId }
+        );
+        setLiked(true);
+      }
+      // รีเฟรชข้อมูลหลังไลค์/อันไลค์
+      getDetailAtt();
+    } catch (err) {
+      console.log("Error like/unlike post : ", err);
+    }
+  };
 
   useEffect(() => {
     getDetailAtt();
     getNearbyAtt();
-  }, []);
+    // eslint-disable-next-line
+  }, [id]);
 
   if (loading) {
     return (
@@ -97,7 +123,12 @@ function Detail_Att() {
                     {item.name_location}
                   </h1>
                   <div className="flex items-center space-x-2">
-                    <ThumbsUp color="red" onClick={()=>handlelike(item)} className="cursor-pointer"></ThumbsUp>{item.likes}
+                    <ThumbsUp
+                      color={liked ? "#22c55e" : "#ef4444"}
+                      onClick={() => handlelike(item)}
+                      className={`cursor-pointer ${liked ? "scale-110" : ""}`}
+                    />
+                    {item.likes}
                   </div>
                 </div>
 
@@ -159,7 +190,8 @@ function Detail_Att() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {nearbyAtt.length > 0 ? (
                     nearbyAtt.map((place, idx) => (
-                      <div key={idx} className="relative group cursor-pointer">
+                     <Link to={`/detall_att/${place.id_post}`}>
+                       <div key={idx} className="relative group cursor-pointer">
                         <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
                           <img
                             src={'http://localhost:3000/'+place.images}
@@ -180,6 +212,7 @@ function Detail_Att() {
                           </p>
                         </div>
                       </div>
+                     </Link>
                     ))
                   ) : (
                     <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>

@@ -339,7 +339,7 @@ exports.unlike = async (req, res) => {
 exports.nearby = async (req, res) => {
     const { id } = req.params;
     try {
-        
+
         const [[current]] = await db.promise().query("SELECT latitude, longitude FROM user_post WHERE id_post = ?", [id]);
         if (!current || !current.latitude || !current.longitude) {
             return res.status(404).json({ msg: "ไม่พบข้อมูลสถานที่หลัก" });
@@ -370,4 +370,36 @@ exports.nearby = async (req, res) => {
         console.log("error nearby", err);
         return res.status(500).json({ msg: "ไม่สามารถดึงสถานที่ใกล้เคียงได้", error: err.message });
     }
+}
+
+exports.comment_post = async (req, res) => {
+    const {id, id_post} = req.params;
+    const {userId, date_comment, start, comment} = req.body;
+    const image = req.file;
+    const postDate = date_comment || new Date().toISOString();
+
+    try{
+        const [rows] =await db.promise().query("INSERT INTO comment_post (id_post,id_user,date_comment,images,start,comment) VALUES (?,?,?,?,?,?)",[id,id_post,userId,postDate,image,start,comment]);
+        if(rows.affectedRows === 0){
+            if(image && image.path){
+                deleteImage(image.path);
+            }
+            return res.status(400).json({
+                msg: "ไม่สามารถคอมเมนต์โพสต์ได้",
+                error: "ไม่สามารถคอมเมนต์โพสต์ได้"
+            });
+        }
+
+        return res.status(200).json({
+            msg: "คอมเมนต์โพสต์สำเร็จ"
+        });
+
+    }catch(err){
+        console.log("error comment post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถคอมเมนต์โพสต์ได้",
+            error: err.message
+        });
+    }
+
 }

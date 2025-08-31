@@ -1,7 +1,7 @@
 // ดึงสถานที่ใกล้เคียง
 
 const express = require('express');
-const { get_post, add_post, edit_post, delete_post, get_post_me, post_att, likes, likes_check,nearby } = require('../controller/user_post');
+const { get_post, add_post, edit_post, delete_post, get_post_me, post_att, likes, likes_check,nearby, comment_post } = require('../controller/user_post');
 const router = express.Router();
 
 
@@ -16,11 +16,8 @@ router.delete('/post/:id',delete_post);
 router.get("/post_att/:id",post_att);
 router.post("/post/likes/:id",likes);
 router.get('/nearby/:id',nearby);
-
-// ตรวจสอบสถานะไลค์โพสต์ (id_post, id_user)
 router.get("/post/likes/check/:id_post/:id_user", likes_check);
-
-// ยกเลิกไลค์โพสต์ (unlike)
 router.delete("/post/likes/:id_post/:id_user", require('../controller/user_post').unlike);
+router.post("/post/comment/:id_post",comment_post);
 
 module.exports = router;
