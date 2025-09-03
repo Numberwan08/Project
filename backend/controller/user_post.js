@@ -373,13 +373,13 @@ exports.nearby = async (req, res) => {
 }
 
 exports.comment_post = async (req, res) => {
-    const {id, id_post} = req.params;
+    const {id,id_post} = req.params;
     const {userId, date_comment, start, comment} = req.body;
     const image = req.file;
     const postDate = date_comment || new Date().toISOString();
 
     try{
-        const [rows] =await db.promise().query("INSERT INTO comment_post (id_post,id_user,date_comment,images,start,comment) VALUES (?,?,?,?,?,?)",[id,id_post,userId,postDate,image,start,comment]);
+        const [rows] =await db.promise().query("INSERT INTO comment_post (id_user,date_comment,images,start,comment) VALUES (?,?,?,?,?,?)",[id,id_post,userId,postDate,image,start,comment]);
         if(rows.affectedRows === 0){
             if(image && image.path){
                 deleteImage(image.path);

@@ -25,13 +25,11 @@ function Detail_Att() {
   const [liked, setLiked] = useState(false);
   const [userId, setUserId] = useState(localStorage.getItem("userId"));
 
-  // ดึงข้อมูลสถานที่และเช็คสถานะไลค์
   const getDetailAtt = async () => {
     try {
       setLoading(true);
       const res = await axios.get(import.meta.env.VITE_API + `post_att/${id}`);
       setData(res.data.data);
-      // ตรวจสอบสถานะไลค์
       if (userId) {
         const resCheck = await axios.get(
           import.meta.env.VITE_API + `post/likes/check/${id}/${userId}`
@@ -58,8 +56,6 @@ function Detail_Att() {
     }
   };
 
-
-  // ฟังก์ชันไลค์/อันไลค์
   const handlelike = async (item) => {
     if (!userId) {
       alert("กรุณาเข้าสู่ระบบก่อนกดไลค์");
@@ -78,7 +74,6 @@ function Detail_Att() {
         );
         setLiked(true);
       }
-      // รีเฟรชข้อมูลหลังไลค์/อันไลค์
       getDetailAtt();
     } catch (err) {
       console.log("Error like/unlike post : ", err);
@@ -88,7 +83,7 @@ function Detail_Att() {
   useEffect(() => {
     getDetailAtt();
     getNearbyAtt();
-    // eslint-disable-next-line
+    
   }, [id]);
 
   if (loading) {
