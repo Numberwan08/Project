@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -87,7 +87,7 @@ function Detall_Event() {
     getEvent();
     getNearbyEvent();
     // eslint-disable-next-line
-  }, []);
+  }, [id]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -273,7 +273,8 @@ function Detall_Event() {
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {nearbyEvent.length > 0 ? (
                     nearbyEvent.map((place, idx) => (
-                      <div key={idx} className="relative group cursor-pointer">
+                     <Link to={`/detall_event/${place.id_event}`}>
+                       <div key={idx} className="relative group cursor-pointer">
                         <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
                           <img
                             src={'http://localhost:3000/'+place.images}
@@ -294,6 +295,7 @@ function Detall_Event() {
                           </p>
                         </div>
                       </div>
+                     </Link>
                     ))
                   ) : (
                     <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>

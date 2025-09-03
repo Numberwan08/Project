@@ -6,6 +6,9 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import {Heart, ThumbsUp} from "lucide-react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -24,6 +27,16 @@ function Detail_Att() {
   const [nearbyAtt, setNearbyAtt] = useState([]);
   const [liked, setLiked] = useState(false);
   const [userId, setUserId] = useState(localStorage.getItem("userId"));
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [commentRating, setCommentRating] = useState(0);
+  const [commentImage, setCommentImage] = useState(null);
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentError, setCommentError] = useState("");
+  const [comments, setComments] = useState([]);
+  const [commentPage, setCommentPage] = useState(1);
+  const [commentCount, setCommentCount] = useState(0);
+  const COMMENTS_PER_PAGE = 3;
 
   const getDetailAtt = async () => {
     try {
@@ -56,9 +69,21 @@ function Detail_Att() {
     }
   };
 
+  const getCommentCount = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API}post/count_comment/${id}`);
+      setCommentCount(res.data.data);
+    } catch (err) {
+      console.log("Error getting comment count:", err);
+    }
+  };
+
   const handlelike = async (item) => {
     if (!userId) {
-      alert("กรุณาเข้าสู่ระบบก่อนกดไลค์");
+      toast.error("กรุณาเข้าสู่ระบบก่อนกดไลค์!", {
+              position: "top-center",
+              autoClose: 1500
+            });
       return;
     }
     try {
@@ -80,10 +105,64 @@ function Detail_Att() {
     }
   };
 
+  const handleSubmitComment = async (e) => {
+    e.preventDefault();
+    setCommentLoading(true);
+    setCommentError("");
+    try {
+      if (!userId) {
+        setCommentError("กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น");
+        setCommentLoading(false);
+        return;
+      }
+      if (!commentText) {
+        setCommentError("กรุณากรอกข้อความ");
+        setCommentLoading(false);
+        return;
+      }
+      const formData = new FormData();
+      formData.append("userId", userId);
+      formData.append("comment", commentText);
+      formData.append("star", commentRating);
+      if (commentImage) formData.append("image", commentImage);
+      await axios.post(
+        `${import.meta.env.VITE_API}post/comment/${id}`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      setShowCommentModal(false);
+      setCommentText("");
+      setCommentRating(0);
+      setCommentImage(null);
+      toast.success("โพสต์ความคิดเห็นสำเร็จ!", {
+              position: "top-center",
+              autoClose: 1000,
+              onClose: () => window.location.reload(),
+            });
+    } catch (err) {
+      setCommentError("เกิดข้อผิดพลาดในการส่งความคิดเห็น");
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
   useEffect(() => {
     getDetailAtt();
     getNearbyAtt();
-    
+    getCommentCount();
+    // ดึงคอมเมนต์
+    const fetchComments = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API}post/comment_id/${id}`);
+        // เรียงจาก date_comment ล่าสุดขึ้นก่อน
+        const sorted = (res.data.data || []).sort((a, b) => new Date(b.date_comment) - new Date(a.date_comment));
+        setComments(sorted);
+        setCommentPage(1); // reset page เมื่อ id เปลี่ยน
+      } catch (err) {
+        setComments([]);
+      }
+    };
+    fetchComments();
   }, [id]);
 
   if (loading) {
@@ -276,7 +355,10 @@ function Detail_Att() {
                   การดำเนินการ
                 </h3>
                 <div className="space-y-3">
-                  <button className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                  <button
+                    className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+                    onClick={() => setShowCommentModal(true)}
+                  >
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -290,43 +372,52 @@ function Detail_Att() {
                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <span>เพิ่มรูปภาพ</span>
-                  </button>
-
-                  <button className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                      />
-                    </svg>
-                    <span>เพิ่มการรีวิว</span>
+                    <span>แสดงความคิดเห็น</span>
                   </button>
                 </div>
               </div>
 
               {/* Recommendation Badge */}
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-4 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <svg
-                    className="w-6 h-6 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span className="font-bold">สถานที่แนะนำ</span>
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-xl text-white">ความคิดเห็น ({commentCount})</h3>
                 </div>
-                <p className="text-purple-100 text-sm">
-                  สถานที่ยอดนิยมที่ควรไปเยือน
-                </p>
+                {comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments
+                      .slice((commentPage - 1) * COMMENTS_PER_PAGE, commentPage * COMMENTS_PER_PAGE)
+                      .map((item, idx) => (
+                        <div key={idx} className="bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow">
+                          <div className="flex items-center mb-2">
+                            <span className="font-semibold mr-2">{item.first_name}</span>
+                            <span className="text-xs text-gray-500">{item.date_comment && new Date(item.date_comment).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })}</span>
+                          </div>
+                          <div className="mb-2">
+                            <span className="ml-2 text-gray-600">{item.comment}</span>
+                          </div>
+                          {item.images && (
+                            <img src={item.images} alt="comment" className="mt-2 rounded-lg max-h-32" />
+                          )}
+                        </div>
+                      ))}
+                    {/* Pagination */}
+                    <div className="flex justify-center mt-4 space-x-2">
+                      <button
+                        className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                        onClick={() => setCommentPage(p => Math.max(1, p - 1))}
+                        disabled={commentPage === 1}
+                      >ก่อนหน้า</button>
+                      <span className="px-2 text-white">หน้า {commentPage} / {Math.ceil(comments.length / COMMENTS_PER_PAGE)}</span>
+                      <button
+                        className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                        onClick={() => setCommentPage(p => Math.min(Math.ceil(comments.length / COMMENTS_PER_PAGE), p + 1))}
+                        disabled={commentPage === Math.ceil(comments.length / COMMENTS_PER_PAGE)}
+                      >ถัดไป</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-purple-100 text-sm">ยังไม่มีความคิดเห็น</p>
+                )}
               </div>
             </div>
           </div>
@@ -364,6 +455,60 @@ function Detail_Att() {
            </div>
         </div>
       )}
+      {showCommentModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 relative">
+      <button
+        className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
+        onClick={() => setShowCommentModal(false)}
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h2 className="text-xl font-bold mb-4 text-gray-800">แสดงความคิดเห็น</h2>
+      <form onSubmit={handleSubmitComment} className="space-y-4">
+        <textarea
+          className="w-full border rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
+          rows={4}
+          placeholder="เขียนความคิดเห็นของคุณ..."
+          value={commentText}
+          onChange={e => setCommentText(e.target.value)}
+          required
+        />
+        <div className="flex items-center space-x-2">
+          <span className="text-gray-700">ให้คะแนน:</span>
+          {[1,2,3,4,5].map(num => (
+            <button
+              type="button"
+              key={num}
+              className={`w-8 h-8 rounded-full flex items-center justify-center border ${commentRating === num ? 'bg-purple-400 text-white' : 'bg-gray-100 text-gray-600'}`}
+              onClick={() => setCommentRating(num)}
+            >{num}</button>
+          ))}
+        </div>
+        <div>
+          <label className="block text-gray-700 mb-1">เพิ่มรูปภาพ (ถ้ามี)</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={e => setCommentImage(e.target.files[0])}
+            className="block w-full"
+          />
+        </div>
+        {commentError && <p className="text-red-500 text-sm">{commentError}</p>}
+        <button
+          type="submit"
+          className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-semibold"
+          disabled={commentLoading}
+        >
+          {commentLoading ? "กำลังส่ง..." : "ส่งความคิดเห็น"}
+        </button>
+      </form>
+    </div>
+  </div>
+)}
+      <ToastContainer />
     </div>
   );
 }

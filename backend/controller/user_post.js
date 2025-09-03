@@ -1,7 +1,10 @@
-// ดึงสถานที่ใกล้เคียงจาก database
-
+const dayjs = require("dayjs");
+require("dayjs/locale/th");
+dayjs.locale("th");
+const getFormattedNow = () => dayjs().format("YYYY-MM-DD HH:mm:ss");
 const db = require('../config/db');
 const fs = require('fs');
+const { log } = require("console");
 const deleteImage =(path)=>{
     fs.unlink(path,(err)=>{
         if(err){
@@ -12,13 +15,20 @@ const deleteImage =(path)=>{
     });
 };
 
+
+
 exports.get_post = async (req ,res ) => {
     try{
-        const [rows] = await db.promise().query(`SELECT COUNT(t2.id_post) likes,t1.*,t3.first_name FROM user_post t1
-                LEFT JOIN like_post t2 on t1.id_post=t2.id_post
-                LEFT JOIN user t3 on t1.id_user=t3.id_user
-                GROUP BY t1.id_post `);
-
+        const [rows] = await db.promise().query(`SELECT 
+                                COUNT(DISTINCT t2.id_post) AS likes,
+                                COUNT(DISTINCT t4.id_post) AS comments,
+                                t1.*,
+                                t3.*
+                            FROM user_post t1
+                            LEFT JOIN like_post t2 ON t1.id_post = t2.id_post
+                            LEFT JOIN user t3 ON t1.id_user = t3.id_user
+                            LEFT JOIN comment_post t4 ON t1.id_post = t4.id_post
+                            GROUP BY t1.id_post;`);
         if(rows.length === 0){
             return res.status(404).json({ mag: "ไม่พบโพสต์"});
         }
@@ -35,6 +45,52 @@ exports.get_post = async (req ,res ) => {
         console.log("error get post", err);
         return res.status(500).json({
             msg: "ไม่สามารถดึงข้อมูลโพสต์ได้",
+            error: err.message
+        });
+    }
+}
+
+exports.count_comment = async (req ,res ) => {
+    
+    try{
+        const {id_post} = req.params;
+        const [rows] = await db.promise().query(`SELECT COUNT(t2.id_post)comment  FROM user_post t1 JOIN comment_post t2 ON t1.id_post=t2.id_post WHERE t1.id_post = ?`,[id_post]);
+        if(rows.length === 0){
+            return res.status(404).json({ mag: "ไม่พบคอมเมนต์"});
+        }
+        
+        return res.status(200).json({mag: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: rows[0].comment_count});
+        
+    }catch(err){
+        console.log("error get comment count", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงข้อมูลคอมเมนต์ได้",
+            error: err.message
+        });
+    }
+}
+
+exports.get_comment = async (req ,res ) => {
+
+    try{
+        const {id_post} = req.params;
+        const [rows] = await db.promise().query(`SELECT t3.*,t1.*,t2.* FROM user_post t1 JOIN comment_post t2 on t1.id_post=t2.id_post JOIN user t3 on t3.id_user=t1.id_user WHERE t1.id_post = ?`,[id_post]);
+        if(rows.length === 0){
+            return res.status(404).json({ mag: "ไม่พบคอมเมนต์"});
+        }
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
+            user_image: row.user_image ? `${req.protocol}://${req.headers.host}/${row.user_image}`: null,
+        }));
+
+        return res.status(200).json({mag: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: formatData});
+        
+    }catch(err){
+        console.log("error get comment", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงข้อมูลคอมเมนต์ได้",
             error: err.message
         });
     }
@@ -373,13 +429,17 @@ exports.nearby = async (req, res) => {
 }
 
 exports.comment_post = async (req, res) => {
-    const {id,id_post} = req.params;
-    const {userId, date_comment, start, comment} = req.body;
+    
+    // return console.log(req.body);
+    const {id_post} = req.params;
+    const {userId, date_comment, star, comment} = req.body;
     const image = req.file;
-    const postDate = date_comment || new Date().toISOString();
+    
+    
 
     try{
-        const [rows] =await db.promise().query("INSERT INTO comment_post (id_user,date_comment,images,start,comment) VALUES (?,?,?,?,?,?)",[id,id_post,userId,postDate,image,start,comment]);
+        const [rows] =await db.promise().query(`INSERT INTO comment_post (id_post,id_user,date_comment,images,star,comment) VALUES (?,?,?,?,?,?)`
+                                                ,[id_post,userId,getFormattedNow(),image.path,star,comment]);
         if(rows.affectedRows === 0){
             if(image && image.path){
                 deleteImage(image.path);

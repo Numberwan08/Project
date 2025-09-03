@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const menuItems = [
@@ -23,6 +23,7 @@ const menuItems = [
 
 const Navbar = () => {
   const { isLogin, logout, name } = useAuth();
+  const location = useLocation();
 
   return (
     <nav className="bg-white shadow-md py-4 px-6 fixed top-0 left-0 w-full z-50">
@@ -33,7 +34,11 @@ const Navbar = () => {
             <li key={index}>
               <Link
                 to={item.path}
-                className="text-gray-700 hover:text-blue-500 transition duration-200 font-medium"
+                className={`text-gray-700 hover:text-purple-500 transition duration-200 font-medium ${
+  location.pathname === item.path
+    ? "text-purple-800 font-bold bg-purple-100 px-3 py-1 rounded"
+    : ""
+}`}
               >
                 {item.label}
               </Link>
@@ -52,7 +57,7 @@ const Navbar = () => {
                   tabIndex={0}
                   className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
                 >
-                 <li>
+                  <li>
                     <a href="/menu/menu_att">เพิ่มสถานที่</a>
                   </li>
                   <li>
@@ -65,12 +70,13 @@ const Navbar = () => {
                     <a href="/menu/menu_profile">ข้อมูลโพสต์</a>
                   </li>
                   <Link to="/">
-                  <li
-                    onClick={() => logout()}
-                    className="bg-red-100 text-red-600 hover:bg-red-200 rounded-md px-2 py-1 font-semibold cursor-pointer"
-                  >
-                    ออกจากระบบ
-                  </li></Link>
+                    <li
+                      onClick={() => logout()}
+                      className="bg-red-100 text-red-600 hover:bg-red-200 rounded-md px-2 py-1 font-semibold cursor-pointer"
+                    >
+                      ออกจากระบบ
+                    </li>
+                  </Link>
                 </ul>
               </div>
             </>

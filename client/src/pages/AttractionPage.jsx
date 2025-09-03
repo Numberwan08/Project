@@ -95,7 +95,7 @@ const filteredPlaces = places
                     <div>โพสต์โดย: {item.first_name}</div>
                     <div className="flex items-center gap-1">
                       <MessageCircle color="#9900FF" />
-                      <span>0</span>
+                      <span>{item.comments}</span>
                     </div>
                   </div>
                 <Link to={`/detall_att/${item.id_post}`}>

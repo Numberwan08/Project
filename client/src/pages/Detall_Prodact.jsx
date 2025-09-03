@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -48,7 +48,7 @@ function Detall_Prodact() {
   useEffect(() => {
     getDetailProduct();
     getNearbyProduct();
-  }, []);
+  }, [id]);
 
   if (loading) {
     return (
@@ -136,12 +136,12 @@ function Detall_Prodact() {
               </div>
 
               {/* Related Products */}
-              
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">สินค้าใกล้เคียง</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">สินค้าใกล้เคียง</h2>
                   {nearbyProduct.length > 0 ? (
                     nearbyProduct.map((place, idx) => (
-                      <div key={idx} className="relative group cursor-pointer">
+                    <Link to={`/detall_product/${place.id_product}`}>
+                     <div key={idx} className="relative group cursor-pointer">
                         <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
                           <img
                             src={'http://localhost:3000/'+place.images}
@@ -162,6 +162,7 @@ function Detall_Prodact() {
                           </p>
                         </div>
                       </div>
+                    </Link>
                     ))
                   ) : (
                     <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>

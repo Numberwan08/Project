@@ -21,9 +21,10 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsLogin(false);
     setName("");
-    localStorage.removeItem("isLogin");
-    localStorage.removeItem("name");
-    localStorage.removeItem("userId");
+    setUserId("");
+    localStorage.removeItem("isLogin","name","userId");
+    // localStorage.removeItem("name");
+    // localStorage.removeItem("userId");
   };
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem("name", name);
     localStorage.setItem("userId", userId);
-  }, [name]);
+  }, [name , userId]);
 
   return (
     <AuthContext.Provider value={{ isLogin, login, logout, setName, name , setUserId, userId }}>

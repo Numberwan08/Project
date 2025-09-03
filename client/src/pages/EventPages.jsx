@@ -124,10 +124,6 @@ function EventPages() {
                   <div className="text-xs text-gray-500">
                     โพสต์โดย: {item.first_name}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MessageCircle color="#9900FF" />
-                    <span>0</span>
-                  </div>
                 </div>
 
                 <Link to={`/detall_event/${item.id_event}`}>

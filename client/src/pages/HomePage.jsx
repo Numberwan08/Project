@@ -8,6 +8,7 @@ function HomePage() {
   const [events, setEvents] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => {
     setLoading(true);
@@ -31,7 +32,7 @@ function HomePage() {
       setLoading(false);
     });
   }, []);
-
+   
   const topCulture = places.filter((i) => i.type == 1).slice(0, 4);
 
   const topEvents = events.filter((i) => i.type == 2).slice(0, 3);
@@ -64,7 +65,7 @@ function HomePage() {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 mt-20">
       <div className="container mx-auto px-4 py-8">
@@ -101,7 +102,7 @@ function HomePage() {
                     <div>โพสต์โดย: {item.first_name}</div>
                     <div className="flex items-center gap-1">
                       <MessageCircle color="#9900FF" />
-                      <span>0</span>
+                      <span>{item.comments}</span>
                     </div>
                   </div>
 
@@ -151,10 +152,6 @@ function HomePage() {
                         <span>{item.likes}</span>
                       </div>
                       <div>โพสต์โดย: {item.first_name}</div>
-                      <div className="flex items-center gap-1">
-                        <MessageCircle color="#4093ffff" />
-                        <span>0</span>
-                      </div>
                     </div>
                     <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {item.name_event}
