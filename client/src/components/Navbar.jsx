@@ -69,6 +69,9 @@ const Navbar = () => {
                   <li>
                     <a href="/menu/menu_profile">ข้อมูลโพสต์</a>
                   </li>
+                  <li>
+                    <a href="/menu/profile">แก้ไขโปรไฟล์</a>
+                  </li>
                   <Link to="/">
                     <li
                       onClick={() => logout()}

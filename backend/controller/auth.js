@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const bcrypt = require("bcrypt");
+const e = require("express");
 const jwt = require("jsonwebtoken");
 const { use } = require("react");
 
@@ -171,4 +172,68 @@ exports.adminLogin = async (req , res) => {
 
 exports.checktoken = (req,res)=>{
     return res.json({msg: `ยินดีตอนรับ ${req.user.first_name}` })
+}
+
+
+exports.get_user = async (req, res) =>{
+    try{
+        const [rows] = await db.promise().query("SELECT * FROM user WHERE id_user = ?", [req.params.id]);
+        if(rows.length === 0){
+            console.table(rows);
+            return res.status(404).json({msg : "ไม่พบผู้ใช้งานนี้"})
+        }
+        // console.log(rows);
+        const user = rows[0];
+        console.log(user);
+        return res.status(200).json({data : user})
+    }catch(err){
+        console.log("error get user", err);
+        return res.status(500).json({
+            msg : "error get user",
+            error : err.message
+        })
+    }
+}
+
+exports.edit_user = async (req, res) =>{
+    try{
+        const {
+            first_name,
+            last_name,
+            Email
+        } = req.body;
+
+        const [result] = await db.promise().query("UPDATE user SET first_name = ?, last_name = ?, Email = ? WHERE id_user = ?",[
+            first_name,
+            last_name,
+            Email,
+            req.params.id
+        ]);
+
+        if(result.affectedRows === 0){
+            return res.status(400).json({
+                msg : "error edit profile",
+                error : "ไม่สามารถแก้ไขโปรไฟล์ได้"
+            })
+        }
+
+        const [rows] = await db.promise().query("SELECT * FROM user WHERE id_user = ?", [req.params.id]);
+        if(rows.length === 0){
+            console.table(rows);
+            return res.status(404).json({msg : "ไม่พบผู้ใช้งานนี้"})
+        }
+        const user = rows[0];
+
+        return res.status(200).json({
+            msg : "edit profile success",
+            data : user
+        })  
+        
+    }catch(err){
+        console.log("error edit profile", err);
+        return res.status(500).json({
+            msg : "error edit profile",
+            error : err.message
+        })
+    }
 }

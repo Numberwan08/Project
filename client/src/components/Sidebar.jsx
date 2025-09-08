@@ -12,27 +12,27 @@ import { Link } from "react-router-dom";
 
 // รายการเมนูทั้งหมด
 const menuItems = [
-  { label: "เพิ่มสถานที่ท่องเที่ยว", icon: <Users size={20} />, path: "/menu/menu_att" },
+  { label: "เพิ่มสถานที่ท่องเที่ยว", path: "/menu/menu_att" },
   {
     label: "เพิ่มกิจกรรม",
-    icon: <BookText size={20} />,
     path: "/menu/menu_event",
   },
-  { label: "เพิ่มสินค้า", icon: <Settings size={20} />, path: "/menu/menu_prodact" },
+  { label: "เพิ่มสินค้า", path: "/menu/menu_prodact" },
   {
     label: "โพสต์ของผู้ใช้",
-    icon: <MailWarning size={20} />,
     path: "/menu/menu_profile",
   },
   {
     label: "กิจกรรมของผู้ใช้",
-    icon: <MailWarning size={20} />,
     path: "/menu/show_event",
   },
   {
     label: "สินค้าผู้ใช้",
-    icon: <MailWarning size={20} />,
     path :"/menu/show_product",
+  },
+  {
+    label:"แก้ไขโปรไฟล์",
+    path:"/menu/profile"
   }
 ];
 

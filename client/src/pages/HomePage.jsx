@@ -36,7 +36,7 @@ function HomePage() {
     .sort((a, b) => (b.star || 0) - (a.star || 0))
     .slice(0, 4);
 
-  const topEvents = events.filter((i) => i.type == 2).slice(0, 3);
+  const topEvents = shuffle(events.filter((i) => i.type == 2)).slice(0, 3);
 
   const recommendLeft = shuffle([
     ...places.filter((i) => i.type == 1),

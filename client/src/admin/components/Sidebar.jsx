@@ -3,9 +3,9 @@ import React from "react";
 import {
   LayoutDashboard,
   Users,
-  LogOut,
-  BookText,
-  MailWarning,
+  FileText,
+  Calendar,
+  Package,
   Settings,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -17,16 +17,24 @@ const menuItems = [
     icon: <LayoutDashboard size={20} />,
     path: "/admin",
   },
-  { label: "จัดการจำนวนผู้ใช้งาน", icon: <Users size={20} />, path: "usermember" },
+  { 
+    label: "จัดการจำนวนผู้ใช้งาน", 
+    icon: <Users size={20} />, 
+    path: "usermember" 
+  },
   {
     label: "จัดการโพสต์",
-    icon: <BookText size={20} />,
+    icon: <FileText size={20} />,
     path: "post",
   },
-  { label: "จัดการกิจกรรม", icon: <Settings size={20} />, path: "event" },
+  { 
+    label: "จัดการกิจกรรม", 
+    icon: <Calendar size={20} />, 
+    path: "event" 
+  },
   {
     label: "จัดการสินค้า",
-    icon: <MailWarning size={20} />,
+    icon: <Package size={20} />,
     path: "product",
   }
 ];

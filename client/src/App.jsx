@@ -25,6 +25,8 @@ import Menu_Profile from "./pages/Menu_Profile";
 import Show_Event from "./pages/show_event";
 import Show_Product from "./pages/show_product";
 import Adminlogin from "./admin/pages/Adminlogin";
+import { Edit } from "lucide-react";
+import Editprofile from "./pages/Editprofile";
 
 function App() {
   const router = createBrowserRouter([
@@ -119,6 +121,10 @@ function App() {
         {
           path:"/menu/show_product",
           element:<Show_Product/>
+        },
+        {
+          path:"/menu/profile",
+          element:<Editprofile/>
         }
       ]
     },
