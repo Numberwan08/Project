@@ -24,7 +24,7 @@ function Detall_Prodact() {
     try {
       setLoading(true);
       const res = await axios.get(import.meta.env.VITE_API + `get_product/${id}`);
-      console.log(res.data.data[0]);
+      // console.log(res.data.data[0]);
       setData(res.data.data);
     } catch (err) {
       console.log("error get data", err);
@@ -140,8 +140,8 @@ function Detall_Prodact() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {nearbyProduct.length > 0 ? (
                     nearbyProduct.map((place, idx) => (
-                    <Link to={`/detall_product/${place.id_product}`}>
-                     <div key={idx} className="relative group cursor-pointer">
+                    <Link to={`/detall_product/${place.id_product}`} key={idx}>
+                     <div  className="relative group cursor-pointer">
                         <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
                           <img
                             src={'http://localhost:3000/'+place.images}

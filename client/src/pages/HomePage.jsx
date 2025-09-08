@@ -32,7 +32,9 @@ function HomePage() {
     });
   }, []);
 
-  const topCulture = places.filter((i) => i.type == 1).slice(0, 4);
+  const topCulture = [...places.filter((i) => i.type == 1)]
+    .sort((a, b) => (b.star || 0) - (a.star || 0))
+    .slice(0, 4);
 
   const topEvents = events.filter((i) => i.type == 2).slice(0, 3);
 
@@ -75,7 +77,7 @@ function HomePage() {
             </h1>
             <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full"></div>
           </div>
-
+          {/*สถานที่ท่องเที่ยวเชิงวัฒนธรรมยอดนิยม*/}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {topCulture.map((item, idx) => (
               <div
@@ -111,7 +113,7 @@ function HomePage() {
                     </h3>
                     <div className="flex-shrink-0">
                       <h4 className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                        คะแนน {item.star && item.star !== 0 ? item.star : '0'}
+                        คะแนน {item.star && item.star !== 0 ? item.star : "0"}
                       </h4>
                     </div>
                   </div>
@@ -136,7 +138,7 @@ function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {topEvents.map((item, idx)  => (
+              {topEvents.map((item, idx) => (
                 <div
                   className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group"
                   key={item.id_event || idx}

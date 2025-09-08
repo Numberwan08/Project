@@ -553,81 +553,116 @@ function Detail_Att() {
           </div>
         </div>
       )}
-      {showCommentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 relative">
-            <button
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
-              onClick={() => setShowCommentModal(false)}
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <h2 className="text-xl font-bold mb-4 text-gray-800">
-              แสดงความคิดเห็น
-            </h2>
-            <form onSubmit={handleSubmitComment} className="space-y-4">
-              <textarea
-                className="w-full border rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
-                rows={4}
-                placeholder="เขียนความคิดเห็นของคุณ..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                required
-              />
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-700">ให้คะแนน:</span>
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <button
-                    type="button"
-                    key={num}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center border ${
-                      commentRating === num
-                        ? "bg-purple-400 text-white"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                    onClick={() => setCommentRating(num)}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
-              <div>
-                <label className="block text-gray-700 mb-1">
-                  เพิ่มรูปภาพ (ถ้ามี)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setCommentImage(e.target.files[0])}
-                  className="block w-full"
-                />
-              </div>
-              {commentError && (
-                <p className="text-red-500 text-sm">{commentError}</p>
-              )}
-              <button
-                type="submit"
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-semibold"
-                disabled={commentLoading}
-              >
-                {commentLoading ? "กำลังส่ง..." : "ส่งความคิดเห็น"}
-              </button>
-            </form>
-          </div>
+     {showCommentModal && (
+  <div className="modal modal-open">
+    <div className="modal-box max-w-lg relative">
+      {/* Close Button */}
+      <button
+        className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
+        onClick={() => setShowCommentModal(false)}
+      >
+        ✕
+      </button>
+
+      {/* Header */}
+      <h2 className="text-2xl font-bold mb-6 text-base-content flex items-center gap-2">
+        💬 แสดงความคิดเห็น
+      </h2>
+
+      {/* Form */}
+      <form onSubmit={handleSubmitComment} className="space-y-6">
+        {/* Comment Text Area */}
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text font-medium">ความคิดเห็นของคุณ</span>
+          </label>
+          <textarea
+            className="textarea textarea-bordered textarea-primary h-24 resize-none focus:textarea-primary"
+            placeholder="เขียนความคิดเห็นของคุณ..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            required
+          />
         </div>
-      )}
+
+        {/* Rating Section */}
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text font-medium">ให้คะแนน</span>
+          </label>
+          <div className="rating rating-lg">
+            {[1, 2, 3, 4, 5].map((num) => (
+              <input
+                key={num}
+                type="radio"
+                name="rating"
+                className="mask mask-star-2 bg-orange-400"
+                checked={commentRating === num}
+                onChange={() => setCommentRating(num)}
+              />
+            ))}
+          </div>
+          <label className="label">
+            <span className="label-text-alt">คะแนน: {commentRating}/5</span>
+          </label>
+        </div>
+
+        {/* Image Upload */}
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text font-medium">เพิ่มรูปภาพ (ถ้ามี)</span>
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setCommentImage(e.target.files[0])}
+            className="file-input file-input-bordered file-input-primary w-full"
+          />
+        </div>
+
+        {/* Error Message */}
+        {commentError && (
+          <div className="alert alert-error">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{commentError}</span>
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <div className="modal-action">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => setShowCommentModal(false)}
+          >
+            ยกเลิก
+          </button>
+          <button
+            type="submit"
+            className={`btn btn-primary ${commentLoading ? 'loading' : ''}`}
+            disabled={commentLoading}
+          >
+            {commentLoading ? (
+              <>
+                <span className="loading loading-spinner"></span>
+                กำลังส่ง...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                ส่งความคิดเห็น
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
       <ToastContainer />
     </div>
   );

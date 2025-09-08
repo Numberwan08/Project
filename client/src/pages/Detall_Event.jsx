@@ -273,8 +273,8 @@ function Detall_Event() {
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {nearbyEvent.length > 0 ? (
                     nearbyEvent.map((place, idx) => (
-                     <Link to={`/detall_event/${place.id_event}`}>
-                       <div key={idx} className="relative group cursor-pointer">
+                     <Link to={`/detall_event/${place.id_event}` } key={idx}>
+                       <div  className="relative group cursor-pointer">
                         <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
                           <img
                             src={'http://localhost:3000/'+place.images}

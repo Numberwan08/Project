@@ -57,7 +57,7 @@ exports.get_post = async (req ,res ) => {
         const [rows] = await db.promise().query(`SELECT 
                                 COUNT(DISTINCT t2.id_post) AS likes,
                                 COUNT(DISTINCT t4.id_comment) AS comments,
-                                LEAST(AVG(t4.star), 5) AS star,
+                                ROUND(LEAST(AVG(t4.star), 5), 2) AS star,
                                 t1.*,
                                 t3.*
                             FROM user_post t1
@@ -142,7 +142,7 @@ exports.post_att = async (req ,res ) => {
 
         const [rows] = await db.promise().query(`SELECT t1.id_post,t1.name_location,t1.detail_location,t1.phone,t1.detail_att,t1.date,t1.images,t1.latitude,t1.longitude,t2.first_name,
             count(t3.id_post) likes,
-            LEAST(AVG(t4.star), 5) AS star
+            ROUND(LEAST(AVG(t4.star), 5), 2) AS star
             FROM user_post t1 
             JOIN user t2 ON t1.id_user = t2.id_user
             JOIN like_post t3 ON t1.id_post = t3.id_post
