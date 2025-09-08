@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import {Heart, ThumbsUp} from "lucide-react";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Heart, ThumbsUp } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -35,7 +35,6 @@ function Detail_Att() {
   const [commentError, setCommentError] = useState("");
   const [comments, setComments] = useState([]);
   const [commentPage, setCommentPage] = useState(1);
-  const [commentCount, setCommentCount] = useState(0);
   const COMMENTS_PER_PAGE = 3;
 
   const getDetailAtt = async () => {
@@ -63,27 +62,17 @@ function Detail_Att() {
       const res = await axios.get(import.meta.env.VITE_API + `nearby/${id}`);
       console.log("Nearby data:", res.data);
       setNearbyAtt(res.data.data || []);
-      
     } catch (err) {
-      console.log("Error get nearby : ", err); 
-    }
-  };
-
-  const getCommentCount = async () => {
-    try {
-      const res = await axios.get(`${import.meta.env.VITE_API}post/count_comment/${id}`);
-      setCommentCount(res.data.data);
-    } catch (err) {
-      console.log("Error getting comment count:", err);
+      console.log("Error get nearby : ", err);
     }
   };
 
   const handlelike = async (item) => {
     if (!userId) {
       toast.error("กรุณาเข้าสู่ระบบก่อนกดไลค์!", {
-              position: "top-center",
-              autoClose: 1500
-            });
+        position: "top-center",
+        autoClose: 1500,
+      });
       return;
     }
     try {
@@ -135,10 +124,10 @@ function Detail_Att() {
       setCommentRating(0);
       setCommentImage(null);
       toast.success("โพสต์ความคิดเห็นสำเร็จ!", {
-              position: "top-center",
-              autoClose: 1000,
-              onClose: () => window.location.reload(),
-            });
+        position: "top-center",
+        autoClose: 100,
+        onClose: () => window.location.reload(),
+      });
     } catch (err) {
       setCommentError("เกิดข้อผิดพลาดในการส่งความคิดเห็น");
     } finally {
@@ -146,16 +135,40 @@ function Detail_Att() {
     }
   };
 
+  const handleDeleteComment = async (id_comment) => {
+    if (!window.confirm("คุณต้องการลบความคิดเห็นนี้ใช่หรือไม่?")) return;
+    try {
+      const res = await axios.delete(
+        `${import.meta.env.VITE_API}delete_comment/${id_comment}`
+      );
+      console.log(res.data);
+      toast.success("ลบความคิดเห็นสำเร็จ!", {
+        position: "top-center",
+        autoClose: 1000,
+      });
+      // รีเฟรชคอมเมนต์ใหม่
+      setComments(comments.filter((c) => c.id_comment !== id_comment));
+    } catch (err) {
+      toast.error("เกิดข้อผิดพลาดในการลบความคิดเห็น", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    }
+  };
+
   useEffect(() => {
     getDetailAtt();
     getNearbyAtt();
-    getCommentCount();
     // ดึงคอมเมนต์
     const fetchComments = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API}post/comment_id/${id}`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_API}post/comment_id/${id}`
+        );
         // เรียงจาก date_comment ล่าสุดขึ้นก่อน
-        const sorted = (res.data.data || []).sort((a, b) => new Date(b.date_comment) - new Date(a.date_comment));
+        const sorted = (res.data.data || []).sort(
+          (a, b) => new Date(b.date_comment) - new Date(a.date_comment)
+        );
         setComments(sorted);
         setCommentPage(1); // reset page เมื่อ id เปลี่ยน
       } catch (err) {
@@ -193,16 +206,33 @@ function Detail_Att() {
               {/* Title and Like Section */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <h1 className="text-3xl font-bold text-gray-800">
+                  {/* Left side - Location name */}
+                  <h1 className="text-3xl font-bold text-gray-800 flex-1 pr-4">
                     {item.name_location}
                   </h1>
-                  <div className="flex items-center space-x-2">
-                    <ThumbsUp
-                      color={liked ? "#22c55e" : "#ef4444"}
-                      onClick={() => handlelike(item)}
-                      className={`cursor-pointer ${liked ? "scale-110" : ""}`}
-                    />
-                    {item.likes}
+
+                  {/* Right side - Rating and Like button */}
+                  <div className="flex items-center space-x-4 flex-shrink-0">
+                    {/* Rating */}
+                    <div className="flex items-center bg-yellow-100 px-3 py-1 rounded-full">
+                      <h4 className="text-sm font-semibold text-yellow-800 whitespace-nowrap">
+                        คะแนน {item.star && item.star !== 0 ? item.star : 'ไม่มีคะแนน'}
+                      </h4>
+                    </div>
+
+                    {/* Like button */}
+                    <div className="flex items-center space-x-2">
+                      <ThumbsUp
+                        color={liked ? "#22c55e" : "#ef4444"}
+                        onClick={() => handlelike(item)}
+                        className={`cursor-pointer transition-transform ${
+                          liked ? "scale-110" : ""
+                        }`}
+                      />
+                      <span className="text-sm font-medium text-gray-600">
+                        {item.likes}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -233,26 +263,40 @@ function Detail_Att() {
                 <div className="text-gray-700 leading-relaxed">
                   <p>{item.detail_att}</p>
                 </div>
-                <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                  <h3 className="font-semibold text-purple-800 mb-2">
-                    ข้อมูลติดต่อ
-                  </h3>
-                  <p className="text-purple-700">เบอร์โทรศัพท์: {item.phone}</p>
-                  <h3 className="font-semibold text-purple-800 mt-2 mb-2">
-                    ผู้โพสต์
-                  </h3>
-                  <p className="text-purple-700">โดย {item.first_name}</p>
-                  <h3 className="font-semibold text-purple-800 mt-2 mb-2">
-                    วันที่โพสต์
-                  </h3>
-                  <p className="text-purple-700">
-                    {item.date &&
-                      new Date(item.date).toLocaleDateString("th-TH", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                  </p>
+                <h3 className="font-semibold text-purple-800 mb-2">
+                  ข้อมูลติดต่อ
+                </h3>
+                <div className="flex items-start gap-8 bg-purple-50 p-4 rounded-2xl shadow-md">
+                  {/* เบอร์โทรศัพท์ */}
+                  <div>
+                    <h3 className="font-semibold text-purple-800 mb-1">
+                      เบอร์โทรศัพท์
+                    </h3>
+                    <p className="text-purple-700">{item.phone}</p>
+                  </div>
+
+                  {/* ผู้โพสต์ */}
+                  <div>
+                    <h3 className="font-semibold text-purple-800 mb-1">
+                      ผู้โพสต์
+                    </h3>
+                    <p className="text-purple-700">{item.first_name}</p>
+                  </div>
+
+                  {/* วันที่โพสต์ */}
+                  <div>
+                    <h3 className="font-semibold text-purple-800 mb-1">
+                      วันที่โพสต์
+                    </h3>
+                    <p className="text-purple-700">
+                      {item.date &&
+                        new Date(item.date).toLocaleDateString("th-TH", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -264,29 +308,29 @@ function Detail_Att() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {nearbyAtt.length > 0 ? (
                     nearbyAtt.map((place, idx) => (
-                     <Link to={`/detall_att/${place.id_post}`}>
-                       <div key={idx} className="relative group cursor-pointer">
-                        <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
-                          <img
-                            src={'http://localhost:3000/'+place.images}
-                            alt={place.name_location}
-                            className="h-28 object-cover rounded-lg"
-                            style={{ maxWidth: '100%' }}
-                          />
+                      <Link to={`/detall_att/${place.id_post}`} key={idx}>
+                        <div className="relative group cursor-pointer">
+                          <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
+                            <img
+                              src={"http://localhost:3000/" + place.images}
+                              alt={place.name_location}
+                              className="h-28 object-cover rounded-lg"
+                              style={{ maxWidth: "100%" }}
+                            />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
+                            <p className="text-white text-sm font-medium">
+                              {place.name_location}
+                            </p>
+                            <p className="text-purple-100 text-xs">
+                              {place.detail_location}
+                            </p>
+                            <p className="text-purple-200 text-xs">
+                              ระยะทาง {place.distance.toFixed(2)} กม.
+                            </p>
+                          </div>
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
-                          <p className="text-white text-sm font-medium">
-                            {place.name_location}
-                          </p>
-                          <p className="text-purple-100 text-xs">
-                            {place.detail_location}
-                          </p>
-                          <p className="text-purple-200 text-xs">
-                            ระยะทาง {place.distance.toFixed(2)} กม.
-                          </p>
-                        </div>
-                      </div>
-                     </Link>
+                      </Link>
                     ))
                   ) : (
                     <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
@@ -379,24 +423,59 @@ function Detail_Att() {
 
               {/* Recommendation Badge */}
               <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-xl text-white">ความคิดเห็น ({commentCount})</h3>
-                </div>
+                <h3 className="font-bold text-xl mb-4 text-white">
+                  ความคิดเห็น
+                </h3>
                 {comments.length > 0 ? (
                   <div className="space-y-4">
                     {comments
-                      .slice((commentPage - 1) * COMMENTS_PER_PAGE, commentPage * COMMENTS_PER_PAGE)
+                      .slice(
+                        (commentPage - 1) * COMMENTS_PER_PAGE,
+                        commentPage * COMMENTS_PER_PAGE
+                      )
                       .map((item, idx) => (
-                        <div key={idx} className="bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow">
+                        <div
+                          key={idx}
+                          className="bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow"
+                        >
+                          {/* ปุ่มลบคอมเมนต์ เฉพาะเจ้าของ */}
+                          {userId === String(item.id_user) && (
+                            <button
+                              className="text-red-500 hover:text-red-700 float-right mb-2"
+                              onClick={() =>
+                                handleDeleteComment(item.id_comment)
+                              }
+                            >
+                              ลบความคิดเห็น
+                            </button>
+                          )}
                           <div className="flex items-center mb-2">
-                            <span className="font-semibold mr-2">{item.first_name}</span>
-                            <span className="text-xs text-gray-500">{item.date_comment && new Date(item.date_comment).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })}</span>
+                            <span className="font-semibold mr-2">
+                              {item.first_name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {item.date_comment &&
+                                new Date(item.date_comment).toLocaleDateString(
+                                  "th-TH",
+                                  {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  }
+                                )}
+                            </span>
                           </div>
                           <div className="mb-2">
-                            <span className="ml-2 text-gray-600">{item.comment}</span>
+                            <span className="ml-2 text-gray-600">
+                              {item.comment}
+                            </span>
                           </div>
                           {item.images && (
-                            <img src={item.images} alt="comment" className="mt-2 rounded-lg max-h-32" />
+                            <img
+                              src={item.images}
+                              alt="comment"
+                              className="mt-2 rounded-lg max-h-32"
+                            />
                           )}
                         </div>
                       ))}
@@ -404,15 +483,34 @@ function Detail_Att() {
                     <div className="flex justify-center mt-4 space-x-2">
                       <button
                         className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
-                        onClick={() => setCommentPage(p => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setCommentPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={commentPage === 1}
-                      >ก่อนหน้า</button>
-                      <span className="px-2 text-white">หน้า {commentPage} / {Math.ceil(comments.length / COMMENTS_PER_PAGE)}</span>
+                      >
+                        ก่อนหน้า
+                      </button>
+                      <span className="px-2 text-white">
+                        หน้า {commentPage} /{" "}
+                        {Math.ceil(comments.length / COMMENTS_PER_PAGE)}
+                      </span>
                       <button
                         className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
-                        onClick={() => setCommentPage(p => Math.min(Math.ceil(comments.length / COMMENTS_PER_PAGE), p + 1))}
-                        disabled={commentPage === Math.ceil(comments.length / COMMENTS_PER_PAGE)}
-                      >ถัดไป</button>
+                        onClick={() =>
+                          setCommentPage((p) =>
+                            Math.min(
+                              Math.ceil(comments.length / COMMENTS_PER_PAGE),
+                              p + 1
+                            )
+                          )
+                        }
+                        disabled={
+                          commentPage ===
+                          Math.ceil(comments.length / COMMENTS_PER_PAGE)
+                        }
+                      >
+                        ถัดไป
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -452,62 +550,84 @@ function Detail_Att() {
                 />
               </svg>
             </button>
-           </div>
+          </div>
         </div>
       )}
       {showCommentModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 relative">
-      <button
-        className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
-        onClick={() => setShowCommentModal(false)}
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-      <h2 className="text-xl font-bold mb-4 text-gray-800">แสดงความคิดเห็น</h2>
-      <form onSubmit={handleSubmitComment} className="space-y-4">
-        <textarea
-          className="w-full border rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
-          rows={4}
-          placeholder="เขียนความคิดเห็นของคุณ..."
-          value={commentText}
-          onChange={e => setCommentText(e.target.value)}
-          required
-        />
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-700">ให้คะแนน:</span>
-          {[1,2,3,4,5].map(num => (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 relative">
             <button
-              type="button"
-              key={num}
-              className={`w-8 h-8 rounded-full flex items-center justify-center border ${commentRating === num ? 'bg-purple-400 text-white' : 'bg-gray-100 text-gray-600'}`}
-              onClick={() => setCommentRating(num)}
-            >{num}</button>
-          ))}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
+              onClick={() => setShowCommentModal(false)}
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              แสดงความคิดเห็น
+            </h2>
+            <form onSubmit={handleSubmitComment} className="space-y-4">
+              <textarea
+                className="w-full border rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"
+                rows={4}
+                placeholder="เขียนความคิดเห็นของคุณ..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                required
+              />
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-700">ให้คะแนน:</span>
+                {[1, 2, 3, 4, 5].map((num) => (
+                  <button
+                    type="button"
+                    key={num}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                      commentRating === num
+                        ? "bg-purple-400 text-white"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                    onClick={() => setCommentRating(num)}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">
+                  เพิ่มรูปภาพ (ถ้ามี)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCommentImage(e.target.files[0])}
+                  className="block w-full"
+                />
+              </div>
+              {commentError && (
+                <p className="text-red-500 text-sm">{commentError}</p>
+              )}
+              <button
+                type="submit"
+                className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-semibold"
+                disabled={commentLoading}
+              >
+                {commentLoading ? "กำลังส่ง..." : "ส่งความคิดเห็น"}
+              </button>
+            </form>
+          </div>
         </div>
-        <div>
-          <label className="block text-gray-700 mb-1">เพิ่มรูปภาพ (ถ้ามี)</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={e => setCommentImage(e.target.files[0])}
-            className="block w-full"
-          />
-        </div>
-        {commentError && <p className="text-red-500 text-sm">{commentError}</p>}
-        <button
-          type="submit"
-          className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg font-semibold"
-          disabled={commentLoading}
-        >
-          {commentLoading ? "กำลังส่ง..." : "ส่งความคิดเห็น"}
-        </button>
-      </form>
-    </div>
-  </div>
-)}
+      )}
       <ToastContainer />
     </div>
   );

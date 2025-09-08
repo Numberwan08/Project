@@ -8,7 +8,6 @@ function HomePage() {
   const [events, setEvents] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  
 
   useEffect(() => {
     setLoading(true);
@@ -32,7 +31,7 @@ function HomePage() {
       setLoading(false);
     });
   }, []);
-   
+
   const topCulture = places.filter((i) => i.type == 1).slice(0, 4);
 
   const topEvents = events.filter((i) => i.type == 2).slice(0, 3);
@@ -65,7 +64,7 @@ function HomePage() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 mt-20">
       <div className="container mx-auto px-4 py-8">
@@ -106,9 +105,16 @@ function HomePage() {
                     </div>
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors">
-                    {item.name_location}
-                  </h3>
+                  <div className="flex justify-between items-start gap-4">
+                    <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors flex-1">
+                      {item.name_location}
+                    </h3>
+                    <div className="flex-shrink-0">
+                      <h4 className="text-sm font-medium text-gray-600 whitespace-nowrap">
+                        คะแนน {item.star && item.star !== 0 ? item.star : '0'}
+                      </h4>
+                    </div>
+                  </div>
                   <Link to={`/detall_att/${item.id_post}`}>
                     <button className="w-full bg-gradient-to-r cursor-pointer from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       ดูรายละเอียด
@@ -130,7 +136,7 @@ function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {topEvents.map((item, idx) => (
+              {topEvents.map((item, idx)  => (
                 <div
                   className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group"
                   key={item.id_event || idx}

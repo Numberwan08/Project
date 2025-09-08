@@ -1,7 +1,9 @@
 // ดึงสถานที่ใกล้เคียง
 
 const express = require('express');
-const { get_post, add_post, edit_post, delete_post, get_post_me, post_att, likes, likes_check,nearby, comment_post,get_comment, count_comment } = require('../controller/user_post');
+const { get_post, add_post, edit_post, delete_post, get_post_me, post_att,
+likes, likes_check,nearby, comment_post,get_comment,
+count_comment,delete_comment} = require('../controller/user_post');
 const router = express.Router();
 
 
@@ -22,5 +24,6 @@ router.delete("/post/likes/:id_post/:id_user", require('../controller/user_post'
 router.post("/post/comment/:id_post",uploadToPostImg.single("image"),comment_post);
 router.get("/post/comment_id/:id_post",get_comment);
 router.get("/post/count_comment/:id_post",count_comment);
+router.delete("/delete_comment/:id",delete_comment);
 
 module.exports = router;

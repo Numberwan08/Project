@@ -16,7 +16,7 @@ import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
 import Detall_Event from "./pages/Detall_Event";
 import Detall_Prodact from "./pages/Detall_Prodact";
-import Detall_Att from "./pages/Detall_att";
+import Detall_Att from "./pages/Detall_Att";
 import Uselayuot from "./layout/Uselayout";
 import Menu_Att from "./pages/Menu_Att";
 import Menu_Event from "./pages/Menu_Event";

@@ -15,20 +15,57 @@ const deleteImage =(path)=>{
     });
 };
 
+exports.delete_comment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // ค้นหาคอมเมนต์ก่อนเพื่อจะได้ path ของภาพ
+        const [rows] = await db.promise().query("SELECT images FROM comment_post WHERE id_comment = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({
+                msg: "คอมเมนต์ไม่พบ",
+                error: "คอมเมนต์ไม่พบ"
+            });
+        }
+        // ลบไฟล์ภาพถ้ามี
+        const imagePath = rows[0].images;
+        if (imagePath && fs.existsSync(imagePath)) {
+            deleteImage(imagePath);
+        }
+        // ลบคอมเมนต์ในฐานข้อมูล
+        const [result] = await db.promise().query("DELETE FROM comment_post WHERE id_comment = ?", [id]);
+        if (result.affectedRows === 0) {
+            return res.status(400).json({
+                msg: "ไม่สามารถลบคอมเมนต์ได้",
+                error: "ไม่สามารถลบคอมเมนต์ได้"
+            });
+        }
+        return res.status(200).json({
+            msg: "ลบคอมเมนต์สำเร็จ"
+        });
+    } catch (err) {
+        console.log("error delete comment", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถลบคอมเมนต์ได้",
+            error: err.message
+        });
+    }
+}
 
 
 exports.get_post = async (req ,res ) => {
     try{
         const [rows] = await db.promise().query(`SELECT 
                                 COUNT(DISTINCT t2.id_post) AS likes,
-                                COUNT(DISTINCT t4.id_post) AS comments,
+                                COUNT(DISTINCT t4.id_comment) AS comments,
+                                LEAST(AVG(t4.star), 5) AS star,
                                 t1.*,
                                 t3.*
                             FROM user_post t1
                             LEFT JOIN like_post t2 ON t1.id_post = t2.id_post
                             LEFT JOIN user t3 ON t1.id_user = t3.id_user
                             LEFT JOIN comment_post t4 ON t1.id_post = t4.id_post
-                            GROUP BY t1.id_post;`);
+                            GROUP BY t1.id_post;
+                            `);
         if(rows.length === 0){
             return res.status(404).json({ mag: "ไม่พบโพสต์"});
         }
@@ -74,7 +111,10 @@ exports.get_comment = async (req ,res ) => {
 
     try{
         const {id_post} = req.params;
-        const [rows] = await db.promise().query(`SELECT t3.*,t1.*,t2.* FROM user_post t1 JOIN comment_post t2 on t1.id_post=t2.id_post JOIN user t3 on t3.id_user=t1.id_user WHERE t1.id_post = ?`,[id_post]);
+        const [rows] = await db.promise().query(`SELECT t3.*,t1.*,t2.* FROM user_post t1 
+            JOIN comment_post t2 on t1.id_post=t2.id_post 
+            JOIN user t3 on t3.id_user=t1.id_user 
+            WHERE t1.id_post = ?`,[id_post]);
         if(rows.length === 0){
             return res.status(404).json({ mag: "ไม่พบคอมเมนต์"});
         }
@@ -101,10 +141,12 @@ exports.post_att = async (req ,res ) => {
         const {id} = req.params;
 
         const [rows] = await db.promise().query(`SELECT t1.id_post,t1.name_location,t1.detail_location,t1.phone,t1.detail_att,t1.date,t1.images,t1.latitude,t1.longitude,t2.first_name,
-            count(t3.id_post) likes
+            count(t3.id_post) likes,
+            LEAST(AVG(t4.star), 5) AS star
             FROM user_post t1 
             JOIN user t2 ON t1.id_user = t2.id_user
             JOIN like_post t3 ON t1.id_post = t3.id_post
+            JOIN comment_post t4 ON t1.id_post = t4.id_post
             WHERE t1.id_post= ?
             `,[id]);
 
@@ -429,17 +471,15 @@ exports.nearby = async (req, res) => {
 }
 
 exports.comment_post = async (req, res) => {
-    
-    // return console.log(req.body);
     const {id_post} = req.params;
-    const {userId, date_comment, star, comment} = req.body;
+    const {id_comment,userId, star, comment} = req.body;
     const image = req.file;
     
     
 
     try{
-        const [rows] =await db.promise().query(`INSERT INTO comment_post (id_post,id_user,date_comment,images,star,comment) VALUES (?,?,?,?,?,?)`
-                                                ,[id_post,userId,getFormattedNow(),image.path,star,comment]);
+        const [rows] =await db.promise().query(`INSERT INTO comment_post (id_comment,id_post,id_user,date_comment,images,star,comment) VALUES (?,?,?,?,?,?,?)`
+                                                ,[id_comment,id_post,userId,getFormattedNow(),image.path,star,comment]);
         if(rows.affectedRows === 0){
             if(image && image.path){
                 deleteImage(image.path);
