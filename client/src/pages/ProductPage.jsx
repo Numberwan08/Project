@@ -77,12 +77,13 @@ function ProductPage() {
               </figure>
               <div className="card-body">
                 <p className="font-bold">{item.name_product}</p>
-                <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                <p className="text-sm text-gray-600 line-clamp-2">
                   {item.detail_product}
                 </p>
-                <p className="text-rose-600 font-bold mb-2">
+                <p className="text-rose-600 font-bold">
                   ราคา: {item.price} บาท
                 </p>
+                 <div className="truncate max-w-[150px]  text-gray-500" title={item.first_name}>โพสต์โดย: {item.first_name}</div>
                 <Link to={`/detall_product/${item.id_product}`}>
                   <button className="btn bg-purple-600 text-base-100 w-full">รายละเอียดสินค้า</button>
                 </Link>

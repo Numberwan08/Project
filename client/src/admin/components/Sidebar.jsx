@@ -7,6 +7,7 @@ import {
   Calendar,
   Package,
   Settings,
+  MapPin,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -23,9 +24,9 @@ const menuItems = [
     path: "usermember" 
   },
   {
-    label: "จัดการโพสต์",
-    icon: <FileText size={20} />,
-    path: "post",
+    label: "จัดการสถานที่ท่องเที่ยว",
+    icon: <MapPin size={20} />,
+    path: "places",
   },
   { 
     label: "จัดการกิจกรรม", 
@@ -73,9 +74,9 @@ const Sidebar = ({ isOpen = true }) => {
 
       <nav className="p-4 space-y-2 overflow-y-auto max-h-[calc(100vh-150px)]">
         {menuItems.map((item, index) => {
-          const isActive = activeItem === item.label;
+          const isActive = activeItem === item.path;
           return (
-            <div key={index} onClick={() => handleItemClick(item.label)}>
+            <div key={index} onClick={() => handleItemClick(item.path)}>
              <Link
                 to={item.path}>
                  <span

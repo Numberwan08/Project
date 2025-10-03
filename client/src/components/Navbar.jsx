@@ -15,10 +15,10 @@ const menuItems = [
     label: "กิจกรรม",
     path: "/event",
   },
-  {
-    label: "สินค้า",
-    path: "/product",
-  },
+  // {
+  //   label: "สินค้า",
+  //   path: "/product",
+  // },
 ];
 
 const Navbar = () => {
@@ -57,17 +57,17 @@ const Navbar = () => {
                   tabIndex={0}
                   className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
                 >
-                  <li>
+                  {/* <li>
                     <a href="/menu/menu_att">เพิ่มสถานที่</a>
-                  </li>
+                  </li> */}
                   <li>
                     <a href="/menu/menu_event">เพิ่มกิจกรรม</a>
                   </li>
-                  <li>
+                  {/* <li>
                     <a href="/menu/menu_prodact">เพิ่มสินค้า</a>
-                  </li>
+                  </li> */}
                   <li>
-                    <a href="/menu/menu_profile">ข้อมูลโพสต์</a>
+                    <a href="/menu/Show_Event">ข้อมูลกิจกรรม</a>
                   </li>
                   <li>
                     <a href="/menu/profile">แก้ไขโปรไฟล์</a>

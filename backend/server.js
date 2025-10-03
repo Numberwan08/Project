@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
 
 readdirSync("./routes").map((name) => {
   try {
-    console.log("./routes/" + name)
+    // console.log("./routes/" + name)
     app.use("/api", require("./routes/" + name));
   } catch (err) {
     console.error("Error loading route file:", name, err.message);

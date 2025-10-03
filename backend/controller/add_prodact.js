@@ -16,7 +16,7 @@ exports.get_product_id = async (req,res)=>{
     try{
         const {id} =req.params;
         const [rows] =await db.promise().query(`SELECT 
-        t1.name_product,t1.detail_product,t1.phone,t1.latitude,t1.longitude,t1.price,t1.images,t2.first_name
+        t1.id_product,t1.name_product,t1.detail_product,t1.phone,t1.latitude,t1.longitude,t1.price,t1.images,t2.first_name
         FROM user_prodact t1 JOIN user t2 ON t1.id_user = t2.id_user WHERE t1.id_product=?`,[id]);
         if(rows.length === 0){
             return res.status(404).json({mag:"ไม่พบสินค้า"});
@@ -27,12 +27,12 @@ exports.get_product_id = async (req,res)=>{
             images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
         }));
 
-        return res.status(200).json({mag:"ดึงข้อมูลสินค้าสำเร็จ",data:formatData});
+        return res.status(200).json({msg:"ดึงข้อมูลสินค้าสำเร็จ",data:formatData});
 
     }catch(err){
         console.log("error get data");
         return res.status(500).json({
-            mag :"ไม่สามารถดึงข้อมูลสินค้าได้",
+            msg :"ไม่สามารถดึงข้อมูลสินค้าได้",
             error: err.message
         })
         
@@ -41,16 +41,16 @@ exports.get_product_id = async (req,res)=>{
 
 exports.get_prodact = async (req , res )=>{
     try{
-        const [rows] = await db.promise().query("SELECT * FROM user_prodact");
+        const [rows] = await db.promise().query(`SELECT * FROM user_prodact t1 JOIN user t2 ON t1.id_user = t2.id_user`);
         if(rows.length===0){
-            return res.status(404).json({ mag:"ไม่พบสินค้า"})
+            return res.status(404).json({ msg:"ไม่พบสินค้า"})
         }
         const formatData = rows.map((row)=>({
             ...row,
             images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
         }));
 
-        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
+        return res.status(200).json({msg: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
 
     }catch(err){
         console.log("error get post", err);
@@ -63,9 +63,16 @@ exports.get_prodact = async (req , res )=>{
 exports.get_product_me = async (req , res )=>{
     const {id} = req.params;
     try{
-        const [rows] =await db.promise().query("SELECT * FROM user_prodact WHERE id_user = ?",[id]);
+        const [rows] =await db.promise().query(`SELECT 
+                        t1.*,          
+                        t2.*, 
+                        t3.* 
+                    FROM user_prodact t1
+                    JOIN user t2 ON t1.id_user = t2.id_user
+                    JOIN user_post t3 ON t1.id_post = t3.id_post
+                    WHERE t1.id_user = ?`,[id]);
         if(rows.length === 0){
-            return res.status(404).json({mag:"ไม่พบสินค้า"});
+            return res.status(404).json({msg:"ไม่พบสินค้า"});
         }
 
         const formatData = rows.map((row)=>({
@@ -73,11 +80,11 @@ exports.get_product_me = async (req , res )=>{
             images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
         }));
 
-        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
+        return res.status(200).json({msg: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
 
     }catch(err){
         console.log("error get product");
-        return res.status(500).json({ mag:"ไม่สามารถดึงข้อมูลได้", error:err.message})
+        return res.status(500).json({ msg:"ไม่สามารถดึงข้อมูลได้", error:err.message})
     }
 }
 
@@ -86,6 +93,7 @@ exports.add_prodact = async (req , res )=>{
 
     const {
         id_user,
+        id_post,
         name_product,
         detail_product,
         phone,
@@ -98,9 +106,10 @@ exports.add_prodact = async (req , res )=>{
     const image = req.file;
     try{
 
-        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,name_product,detail_product,phone,latitude,longitude,price,images,type)VALUES (?,?,?,?,?,?,?,?,?,?)",[
+        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,id_post,name_product,detail_product,phone,latitude,longitude,price,images,type)VALUES (?,?,?,?,?,?,?,?,?,?,?)",[
             max_id+1,
             id_user,
+            id_post,
             name_product,
             detail_product,
             phone,
@@ -114,12 +123,12 @@ exports.add_prodact = async (req , res )=>{
         if(rows.affectedRows === 0 ){
             deleteImage(image.path);
             return res.status(400).json({
-                mag:"ไม่สามารถเพิ่มได้",
+                msg:"ไม่สามารถเพิ่มได้",
                 error:"ไม่สามารถเพิ่มได้"
             })
         }
 
-        return res.status(201).json({mag:"sucess"});
+        return res.status(201).json({msg:"เพิ่มสินค้าสำเร็จ"});
         
     }catch(err){
     deleteImage(image.path);
@@ -267,5 +276,58 @@ exports.nearby_product = async (req, res) => {
     } catch (err) {
         console.log("error nearby", err);
         return res.status(500).json({ msg: "ไม่สามารถดึงสถานที่ใกล้เคียงได้", error: err.message });
+    }
+}
+
+exports.get_products_by_post = async (req, res) => {
+    const { id_post } = req.params;
+    try {
+        const [rows] = await db.promise().query(`
+            SELECT t1.*, t2.first_name 
+            FROM user_prodact t1 
+            JOIN user t2 ON t1.id_user = t2.id_user 
+            WHERE t1.id_post = ? 
+            ORDER BY t1.id_product DESC
+        `, [id_post]);
+
+        const formatData = rows.map((row) => ({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}` : null,
+        }));
+
+        return res.status(200).json({ msg: "ดึงข้อมูลสินค้าสำเร็จ", data: formatData });
+    } catch (err) {
+        console.log("error get products by post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงข้อมูลสินค้าได้",
+            error: err.message
+        });
+    }
+}
+
+exports.get_random_products_by_post = async (req, res) => {
+    const { id_post } = req.params;
+    try {
+        const [rows] = await db.promise().query(`
+            SELECT t1.*, t2.first_name 
+            FROM user_prodact t1 
+            JOIN user t2 ON t1.id_user = t2.id_user 
+            WHERE t1.id_post = ? 
+            ORDER BY RAND() 
+            LIMIT 3
+        `, [id_post]);
+
+        const formatData = rows.map((row) => ({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}` : null,
+        }));
+
+        return res.status(200).json({ msg: "ดึงข้อมูลสินค้าแนะนำสำเร็จ", data: formatData });
+    } catch (err) {
+        console.log("error get random products by post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงข้อมูลสินค้าแนะนำได้",
+            error: err.message
+        });
     }
 }

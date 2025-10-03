@@ -18,7 +18,6 @@ const deleteImage =(path)=>{
 exports.delete_comment = async (req, res) => {
     try {
         const { id } = req.params;
-        // ค้นหาคอมเมนต์ก่อนเพื่อจะได้ path ของภาพ
         const [rows] = await db.promise().query("SELECT images FROM comment_post WHERE id_comment = ?", [id]);
         if (rows.length === 0) {
             return res.status(404).json({
@@ -26,12 +25,10 @@ exports.delete_comment = async (req, res) => {
                 error: "คอมเมนต์ไม่พบ"
             });
         }
-        // ลบไฟล์ภาพถ้ามี
         const imagePath = rows[0].images;
         if (imagePath && fs.existsSync(imagePath)) {
             deleteImage(imagePath);
         }
-        // ลบคอมเมนต์ในฐานข้อมูล
         const [result] = await db.promise().query("DELETE FROM comment_post WHERE id_comment = ?", [id]);
         if (result.affectedRows === 0) {
             return res.status(400).json({
@@ -54,29 +51,34 @@ exports.delete_comment = async (req, res) => {
 
 exports.get_post = async (req ,res ) => {
     try{
-        const [rows] = await db.promise().query(`SELECT 
-                                COUNT(DISTINCT t2.id_post) AS likes,
-                                COUNT(DISTINCT t4.id_comment) AS comments,
-                                ROUND(LEAST(AVG(t4.star), 5), 2) AS star,
-                                t1.*,
-                                t3.*
-                            FROM user_post t1
-                            LEFT JOIN like_post t2 ON t1.id_post = t2.id_post
-                            LEFT JOIN user t3 ON t1.id_user = t3.id_user
-                            LEFT JOIN comment_post t4 ON t1.id_post = t4.id_post
-                            GROUP BY t1.id_post;
-                            `);
-        if(rows.length === 0){
-            return res.status(404).json({ mag: "ไม่พบโพสต์"});
-        }
+        const sql = `
+            SELECT 
+                p.*,
+                COALESCE(l.likes, 0) AS likes,
+                COALESCE(c.comments, 0) AS comments,
+                COALESCE(c.avg_star, 0) AS star
+            FROM user_post p
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS likes
+                FROM like_post
+                GROUP BY id_post
+            ) l ON p.id_post = l.id_post
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
+                FROM comment_post
+                GROUP BY id_post
+            ) c ON p.id_post = c.id_post
+            ORDER BY likes DESC 
+        `;
 
+        const [rows] = await db.promise().query(sql);
+        
         const formatData = rows.map((row)=>({
             ...row,
             images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
         }));
 
-        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
-
+        return res.status(200).json({msg: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
 
     }catch(err){
         console.log("error get post", err);
@@ -113,10 +115,10 @@ exports.get_comment = async (req ,res ) => {
         const {id_post} = req.params;
         const [rows] = await db.promise().query(`SELECT t3.*,t1.*,t2.* FROM user_post t1 
             JOIN comment_post t2 on t1.id_post=t2.id_post 
-            JOIN user t3 on t3.id_user=t1.id_user 
+            JOIN user t3 on t3.id_user=t2.id_user 
             WHERE t1.id_post = ?`,[id_post]);
         if(rows.length === 0){
-            return res.status(404).json({ mag: "ไม่พบคอมเมนต์"});
+            return res.status(404).json({ msg: "ไม่พบคอมเมนต์"});
         }
 
         const formatData = rows.map((row)=>({
@@ -125,7 +127,7 @@ exports.get_comment = async (req ,res ) => {
             user_image: row.user_image ? `${req.protocol}://${req.headers.host}/${row.user_image}`: null,
         }));
 
-        return res.status(200).json({mag: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: formatData});
+        return res.status(200).json({msg: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: formatData});
         
     }catch(err){
         console.log("error get comment", err);
@@ -140,18 +142,37 @@ exports.post_att = async (req ,res ) => {
     try{
         const {id} = req.params;
 
-        const [rows] = await db.promise().query(`SELECT t1.id_post,t1.name_location,t1.detail_location,t1.phone,t1.detail_att,t1.date,t1.images,t1.latitude,t1.longitude,t2.first_name,
-            count(t3.id_post) likes,
-            ROUND(LEAST(AVG(t4.star), 5), 2) AS star
-            FROM user_post t1 
-            JOIN user t2 ON t1.id_user = t2.id_user
-            JOIN like_post t3 ON t1.id_post = t3.id_post
-            JOIN comment_post t4 ON t1.id_post = t4.id_post
-            WHERE t1.id_post= ?
-            `,[id]);
+        const [rows] = await db.promise().query(`SELECT 
+    t1.id_post,
+    t1.name_location,
+    t1.detail_location,
+    t1.phone,
+    t1.detail_att,
+    t1.date,
+    t1.images,
+    t1.latitude,
+    t1.longitude,
+    'Admin' as first_name,
+    COALESCE(l.like_count, 0) AS likes,
+    COALESCE(c.avg_star, 0) AS star
+FROM user_post t1
+
+LEFT JOIN (
+    SELECT id_post, COUNT(*) AS like_count
+    FROM like_post
+    GROUP BY id_post
+) l ON t1.id_post = l.id_post
+
+LEFT JOIN (
+    SELECT id_post, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
+    FROM comment_post
+    GROUP BY id_post
+) c ON t1.id_post = c.id_post
+
+WHERE t1.id_post = ?`,[id]);
 
         if(rows.length === 0){
-            return res.status(404).json({ mag: "ไม่พบโพสต์"});
+            return res.status(404).json({ msg: "ไม่พบโพสต์"});
         }
 
         const formatData = rows.map((row)=>({
@@ -159,13 +180,57 @@ exports.post_att = async (req ,res ) => {
             images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
         }));
 
-        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
+        return res.status(200).json({msg: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
 
 
     }catch(err){
         console.log("error get post", err);
         return res.status(500).json({
-            mag: "ไม่สามารถดึงข้อมูลโพสต์ได้",
+            msg: "ไม่สามารถดึงข้อมูลโพสต์ได้",
+            error: err.message
+        });
+    }
+}
+
+exports.get_single_post = async (req, res) => {
+    const {id} = req.params;
+    try{
+        const sql = `
+            SELECT 
+                p.*,
+                COALESCE(l.likes, 0) AS likes,
+                COALESCE(c.comments, 0) AS comments,
+                COALESCE(c.avg_star, 0) AS star
+            FROM user_post p
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS likes
+                FROM like_post
+                GROUP BY id_post
+            ) l ON p.id_post = l.id_post
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
+                FROM comment_post
+                GROUP BY id_post
+            ) c ON p.id_post = c.id_post
+            WHERE p.id_post = ?
+        `;
+        const [rows] = await db.promise().query(sql, [id]);
+
+        if(rows.length === 0){
+            return res.status(404).json({ msg: "ไม่พบโพสต์"});
+        }
+
+        const formatData = {
+            ...rows[0],
+            images: rows[0].images ? `${req.protocol}://${req.headers.host}/${rows[0].images}`: null,
+        };
+
+        return res.status(200).json({msg: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
+
+    }catch(err){
+        console.log("error get single post", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงข้อมูลโพสต์ได้",
             error: err.message
         });
     }
@@ -174,10 +239,30 @@ exports.post_att = async (req ,res ) => {
 exports.get_post_me = async (req ,res ) => {
     const {id} =req.params;
     try{
-        const [rows] = await db.promise().query("SELECT * FROM user_post WHERE id_user = ?",[id]);
+        const sql = `
+            SELECT 
+                p.*,
+                COALESCE(l.likes, 0) AS likes,
+                COALESCE(c.comments, 0) AS comments,
+                COALESCE(c.avg_star, 0) AS star
+            FROM user_post p
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS likes
+                FROM like_post
+                GROUP BY id_post
+            ) l ON p.id_post = l.id_post
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
+                FROM comment_post
+                GROUP BY id_post
+            ) c ON p.id_post = c.id_post
+            WHERE p.id_user = ?
+            ORDER BY p.date DESC
+        `;
+        const [rows] = await db.promise().query(sql, [id]);
 
         if(rows.length === 0){
-            return res.status(404).json({ mag: "ไม่พบโพสต์"});
+            return res.status(404).json({ msg: "ไม่พบโพสต์"});
         }
 
         const formatData = rows.map((row)=>({
@@ -185,8 +270,7 @@ exports.get_post_me = async (req ,res ) => {
             images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
         }));
 
-        return res.status(200).json({mag: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
-
+        return res.status(200).json({msg: "ดึงข้อมูลโพสต์สำเร็จ", data: formatData});
 
     }catch(err){
         console.log("error get post", err);
@@ -200,7 +284,6 @@ exports.get_post_me = async (req ,res ) => {
 
 exports.add_post = async (req, res) => {
   const {
-    id_user,
     name_location,
     detail_location,
     phone,
@@ -208,21 +291,26 @@ exports.add_post = async (req, res) => {
     latitude,
     longitude,
     date,
-    type
+    type,
+    type_name
   } = req.body;
 
   const image = req.file;
   const postDate = date || new Date().toISOString();
 
   try {
-    const [[{max_id}]] = await db.promise().query("SELECT MAX(id_post) as max_id FROM user_post ")
+    if (!image) {
+      return res.status(400).json({
+        msg: "กรุณาเลือกรูปภาพ",
+        error: "กรุณาเลือกรูปภาพ",
+      });
+    }
+
     const [rows] = await db
       .promise()
       .query(
-        "INSERT INTO user_post (id_post,id_user, name_location, detail_location, phone, detail_att, images, latitude, longitude ,date,type) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO user_post (name_location, detail_location, phone, detail_att, images, latitude, longitude, date, type, type_name) VALUES (?,?,?,?,?,?,?,?,?,?)",
         [
-            max_id+1,
-          id_user,
           name_location,
           detail_location,
           phone,
@@ -231,7 +319,8 @@ exports.add_post = async (req, res) => {
           latitude,
           longitude,
           postDate,
-          type
+          type || 1,
+          type_name,
         ]
       );
 
@@ -243,9 +332,11 @@ exports.add_post = async (req, res) => {
       });
     }
 
-    return res.status(201).json({ msg: "add post sucess" });
+    return res.status(201).json({ msg: "เพิ่มโพสต์สำเร็จ" });
   } catch (err) {
-    deleteImage(image.path);
+    if (image && image.path) {
+      deleteImage(image.path);
+    }
     console.log("error user_post", err);
     return res.status(500).json({
       msg: "ไม่สามารถโพสต์ได้",
@@ -265,41 +356,49 @@ exports.edit_post = async (req, res) => {
         phone,
         detail_att,
         latitude,
-        longitude
+        longitude,
+        type_name
     } = req.body;
 
     try {
         let imagePath = null;
-        // ถ้ามีการอัปโหลดไฟล์ใหม่
         if (req.file) {
             imagePath = req.file.path;
 
-            // ลบรูปเดิม (ถ้ามี)
             const [oldRows] = await db.promise().query("SELECT images FROM user_post WHERE id_post = ?", [id]);
             if (oldRows.length > 0 && oldRows[0].images && fs.existsSync(oldRows[0].images)) {
                 deleteImage(oldRows[0].images);
             }
         }
 
-        // ถ้าไม่ได้อัปโหลดรูปใหม่ ให้ใช้ path เดิม
         if (!imagePath) {
             const [oldRows] = await db.promise().query("SELECT images FROM user_post WHERE id_post = ?", [id]);
             imagePath = oldRows.length > 0 ? oldRows[0].images : null;
         }
 
         const [rows] = await db.promise().query(
-            "UPDATE user_post SET name_location = ?, detail_location = ?, phone = ?, detail_att = ?, images = ?, latitude = ?, longitude = ? WHERE id_post = ?",
+            `UPDATE user_post 
+             SET name_location = ?, 
+                 detail_location = ?, 
+                 phone = ?, 
+                 detail_att = ?, 
+                 images = ?, 
+                 latitude = ?, 
+                 longitude = ?, 
+                 type_name = ?
+             WHERE id_post = ?`,
             [
-                name_location,
-                detail_location,
-                phone,
-                detail_att,
-                imagePath,
-                latitude,
-                longitude,
-                id
+              name_location,
+              detail_location,
+              phone,
+              detail_att,
+              imagePath,
+              latitude,
+              longitude,
+              type_name,
+              id
             ]
-        );
+          );
 
         if (rows.affectedRows === 0) {
             return res.status(404).json({
@@ -324,8 +423,6 @@ exports.edit_post = async (req, res) => {
 exports.delete_post = async (req, res) => {
     try {
         const { id } = req.params;
-
-        // ค้นหาโพสต์ก่อนเพื่อจะได้ path ของภาพ
         const [rows] = await db.promise().query("SELECT * FROM user_post WHERE id_post = ?", [id]);
 
         if (rows.length === 0) {
@@ -335,13 +432,11 @@ exports.delete_post = async (req, res) => {
             });
         }
 
-        // ลบไฟล์ภาพถ้ามี
         const imagePath = rows[0].images;
         if (imagePath && fs.existsSync(imagePath)) {
             deleteImage(imagePath);
         }
 
-        // ลบโพสต์ในฐานข้อมูล
         const [result] = await db.promise().query("DELETE FROM user_post WHERE id_post = ?", [id]);
         if (result.affectedRows === 0) {
             return res.status(400).json({
@@ -373,6 +468,7 @@ exports.likes = async (req, res) => {
                 error: "คุณได้กดไลค์โพสต์นี้แล้ว"
             });
         }
+
         const [rows] = await db.promise().query("INSERT INTO like_post (id_post,id_user) VALUES (?,?)",[id, userId]);
         if(rows.affectedRows === 0){
             return res.status(400).json({
@@ -380,6 +476,7 @@ exports.likes = async (req, res) => {
                 error: "ไม่สามารถกดไลค์โพสต์ได้"
             });
         }
+
         return res.status(200).json({
             msg: "กดไลค์โพสต์สำเร็จ"
         });
@@ -392,7 +489,6 @@ exports.likes = async (req, res) => {
     }
 }
 
-// เช็คสถานะไลค์ของ user กับ post
 exports.likes_check = async (req, res) => {
     const { id_post, id_user } = req.params;
     try {
@@ -411,7 +507,6 @@ exports.likes_check = async (req, res) => {
     }
 }
 
-// ยกเลิกไลค์โพสต์
 exports.unlike = async (req, res) => {
     const { id_post, id_user } = req.params;
     try {
@@ -442,9 +537,8 @@ exports.nearby = async (req, res) => {
         if (!current || !current.latitude || !current.longitude) {
             return res.status(404).json({ msg: "ไม่พบข้อมูลสถานที่หลัก" });
         }
-        // ดึงข้อมูลสถานที่อื่น ๆ ทั้งหมด (ยกเว้นตัวเอง)
         const [places] = await db.promise().query("SELECT id_post, name_location, detail_location, latitude, longitude, images FROM user_post WHERE id_post != ? AND latitude IS NOT NULL AND longitude IS NOT NULL", [id]);
-        // คำนวณระยะทาง
+
         function toRad(Value) { return (Value * Math.PI) / 180; }
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371;

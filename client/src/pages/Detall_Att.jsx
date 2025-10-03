@@ -37,6 +37,27 @@ function Detail_Att() {
   const [commentPage, setCommentPage] = useState(1);
   const COMMENTS_PER_PAGE = 3;
 
+  // Product Modal States
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [productData, setProductData] = useState({
+    name_product: "",
+    detail_product: "",
+    phone: "",
+    price: "",
+    latitude: "",
+    longitude: "",
+    type: "3",
+  });
+  const [selectedProductFile, setSelectedProductFile] = useState(null);
+  const [productPreview, setProductPreview] = useState(null);
+  const [productLoading, setProductLoading] = useState(false);
+  const [productError, setProductError] = useState("");
+
+  // Related Products States
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [showAllProducts, setShowAllProducts] = useState(false);
+
   const getDetailAtt = async () => {
     try {
       setLoading(true);
@@ -156,26 +177,150 @@ function Detail_Att() {
     }
   };
 
+  const handleProductImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const path = URL.createObjectURL(file);
+      setSelectedProductFile(file);
+      setProductPreview(path);
+    }
+  };
+
+  const handleSubmitProduct = async (e) => {
+    e.preventDefault();
+    setProductLoading(true);
+    setProductError("");
+
+    try {
+      if (!userId) {
+        setProductError("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้า");
+        setProductLoading(false);
+        return;
+      }
+
+      if (
+        !productData.name_product ||
+        !productData.detail_product ||
+        !productData.phone ||
+        !productData.price
+      ) {
+        setProductError("กรุณากรอกข้อมูลให้ครบถ้วน");
+        setProductLoading(false);
+        return;
+      }
+
+      if (!selectedProductFile) {
+        setProductError("กรุณาเลือกรูปภาพสินค้า");
+        setProductLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("id_user", userId);
+      formData.append("id_post", id);
+      formData.append("name_product", productData.name_product);
+      formData.append("detail_product", productData.detail_product);
+      formData.append("phone", productData.phone);
+      formData.append("price", productData.price);
+      formData.append("type", productData.type);
+      formData.append("image", selectedProductFile);
+
+      await axios.post(`${import.meta.env.VITE_API}product`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setShowProductModal(false);
+      setProductData({
+        name_product: "",
+        detail_product: "",
+        phone: "",
+        price: "",
+        latitude: "",
+        longitude: "",
+        type: "3",
+      });
+      setSelectedProductFile(null);
+      setProductPreview(null);
+
+      toast.success("เพิ่มสินค้าสำเร็จ!", {
+        position: "top-center",
+        autoClose: 500,
+        onClose: () => window.location.reload(),
+      });
+
+      // Refresh related products
+      fetchRelatedProducts();
+    } catch (err) {
+      setProductError("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
+      console.error("Error adding product:", err);
+    } finally {
+      setProductLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id_product) => {
+    if (!window.confirm("คุณต้องการลบสินค้านี้ใช่หรือไม่?")) return;
+    try {
+      await axios.delete(`${import.meta.env.VITE_API}product/${id_product}`);
+      toast.success("ลบสินค้าสำเร็จ!", {
+        position: "top-center",
+        autoClose: 1000,
+      });
+      // รีเฟรชสินค้า
+      fetchRelatedProducts();
+      fetchAllProducts();
+    } catch (err) {
+      toast.error("เกิดข้อผิดพลาดในการลบสินค้า", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    }
+  };
+
+  const fetchRelatedProducts = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API}random_products_by_post/${id}`
+      );
+      setRelatedProducts(res.data.data || []);
+    } catch (err) {
+      console.log("Error fetching related products:", err);
+      setRelatedProducts([]);
+    }
+  };
+
+  const fetchAllProducts = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API}products_by_post/${id}`
+      );
+      setAllProducts(res.data.data || []);
+      setShowAllProducts(true);
+    } catch (err) {
+      console.log("Error fetching all products:", err);
+      setAllProducts([]);
+    }
+  };
+
   useEffect(() => {
     getDetailAtt();
     getNearbyAtt();
-    // ดึงคอมเมนต์
     const fetchComments = async () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API}post/comment_id/${id}`
         );
-        // เรียงจาก date_comment ล่าสุดขึ้นก่อน
         const sorted = (res.data.data || []).sort(
           (a, b) => new Date(b.date_comment) - new Date(a.date_comment)
         );
         setComments(sorted);
-        setCommentPage(1); // reset page เมื่อ id เปลี่ยน
+        setCommentPage(1);
       } catch (err) {
         setComments([]);
       }
     };
     fetchComments();
+    fetchRelatedProducts();
   }, [id]);
 
   if (loading) {
@@ -191,9 +336,7 @@ function Detail_Att() {
       {data.map((item, index) => (
         <div key={index} className="max-w-7xl mx-auto px-4 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* ฝั่งซ้าย - เนื้อหาหลัก */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Main Image */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <img
                   src={item.images}
@@ -203,24 +346,19 @@ function Detail_Att() {
                 />
               </div>
 
-              {/* Title and Like Section */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-start mb-4">
-                  {/* Left side - Location name */}
                   <h1 className="text-3xl font-bold text-gray-800 flex-1 pr-4">
                     {item.name_location}
                   </h1>
 
-                  {/* Right side - Rating and Like button */}
                   <div className="flex items-center space-x-4 flex-shrink-0">
-                    {/* Rating */}
                     <div className="flex items-center bg-yellow-100 px-3 py-1 rounded-full">
                       <h4 className="text-sm font-semibold text-yellow-800 whitespace-nowrap">
-                        คะแนน {item.star && item.star !== 0 ? item.star : 'ไม่มีคะแนน'}
+                        คะแนน {item.star > 0 ? item.star : "ไม่มีคะแนน"}
                       </h4>
                     </div>
 
-                    {/* Like button */}
                     <div className="flex items-center space-x-2">
                       <ThumbsUp
                         color={liked ? "#22c55e" : "#ef4444"}
@@ -298,6 +436,158 @@ function Detail_Att() {
                     </p>
                   </div>
                 </div>
+              </div>
+              {/* Related Products Section */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    สินค้าที่เกี่ยวข้องของชุมชน
+                  </h2>
+                  {relatedProducts.length > 0 && (
+                    <button
+                      onClick={fetchAllProducts}
+                      className="text-purple-600 hover:text-purple-800 cursor-pointer font-medium text-sm transition-colors"
+                    >
+                      สินค้าทั้งหมด
+                    </button>
+                  )}
+                </div>
+
+                {!showAllProducts ? (
+                  // Show random 3 products
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {relatedProducts.length > 0 ? (
+                      relatedProducts.map((product, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        >
+                          <div className="relative mb-3">
+                            <img
+                              src={product.images}
+                              alt={product.name_product}
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                          <h3 className="font-semibold text-gray-800 mb-2 line-clamp-1">
+                            {product.name_product}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            {product.detail_product}
+                          </p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-lg font-bold text-purple-600">
+                              ฿{product.price}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              โดย: {product.first_name}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex justify-between items-center">
+                            <a
+                              href={`tel:${product.phone}`}
+                              className="text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              📞 {product.phone}
+                            </a>
+                            {/* ปุ่มลบสินค้า เฉพาะเจ้าของ */}
+                            {userId === String(product.id_user) && (
+                              <button
+                                className="text-red-500 cursor-pointer hover:text-red-700 text-xs ml-2"
+                                onClick={() =>
+                                  handleDeleteProduct(product.id_product)
+                                }
+                              >
+                                ลบสินค้า
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-3 text-center py-8">
+                        <p className="text-gray-500">
+                          ยังไม่มีสินค้าที่เกี่ยวข้อง
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          เพิ่มสินค้าแรกของคุณเลย!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Show all products
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg  font-semibold text-gray-700">
+                        สินค้าทั้งหมด ({allProducts.length} รายการ)
+                      </h3>
+                      <button
+                        onClick={() => setShowAllProducts(false)}
+                        className="text-gray-600 hover:text-gray-800 font-medium text-sm cursor-pointer transition-colors"
+                      >
+                        ปิด
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                      {allProducts.length > 0 ? (
+                        allProducts.map((product, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          >
+                            <div className="relative mb-3">
+                              <img
+                                src={product.images}
+                                alt={product.name_product}
+                                className="w-full h-32 object-cover rounded-lg"
+                              />
+                            </div>
+                            <h3 className="font-semibold text-gray-800 mb-2 line-clamp-1">
+                              {product.name_product}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                              {product.detail_product}
+                            </p>
+                            <div className="flex justify-between items-center">
+                              <span className="text-lg font-bold text-purple-600">
+                                ฿{product.price}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                โดย: {product.first_name}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex justify-between items-center">
+                              <a
+                                href={`tel:${product.phone}`}
+                                className="text-xs text-blue-600 hover:text-blue-800"
+                              >
+                                📞 {product.phone}
+                              </a>
+                              {/* ปุ่มลบสินค้า เฉพาะเจ้าของ */}
+                              {userId === String(product.id_user) && (
+                                <button
+                                  className="text-red-500 hover:text-red-700 text-xs ml-2"
+                                  onClick={() =>
+                                    handleDeleteProduct(product.id_product)
+                                  }
+                                >
+                                  ลบสินค้า
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-3 text-center py-8">
+                          <p className="text-gray-500">
+                            ยังไม่มีสินค้าที่เกี่ยวข้อง
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Related Places Section */}
@@ -400,7 +690,7 @@ function Detail_Att() {
                 </h3>
                 <div className="space-y-3">
                   <button
-                    className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+                    className="w-full cursor-pointer   bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors mb-3"
                     onClick={() => setShowCommentModal(true)}
                   >
                     <svg
@@ -417,6 +707,26 @@ function Detail_Att() {
                       />
                     </svg>
                     <span>แสดงความคิดเห็น</span>
+                  </button>
+
+                  <button
+                    className="w-full cursor-pointer bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+                    onClick={() => setShowProductModal(true)}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    <span>เพิ่มสินค้า</span>
                   </button>
                 </div>
               </div>
@@ -441,12 +751,12 @@ function Detail_Att() {
                           {/* ปุ่มลบคอมเมนต์ เฉพาะเจ้าของ */}
                           {userId === String(item.id_user) && (
                             <button
-                              className="text-red-500 hover:text-red-700 float-right mb-2"
+                              className="text-red-500 cursor-pointer hover:text-red-700 float-right mb-2"
                               onClick={() =>
                                 handleDeleteComment(item.id_comment)
                               }
                             >
-                              ลบความคิดเห็น
+                              ลบ
                             </button>
                           )}
                           <div className="flex items-center mb-2">
@@ -464,6 +774,19 @@ function Detail_Att() {
                                   }
                                 )}
                             </span>
+                            <div className="flex items-center space-x-1 ml-4">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                                className="w-4 h-4 text-yellow-400"
+                              >
+                                <path d="M12 .587l3.668 7.568L24 9.75l-6 5.85 1.416 8.4L12 19.771l-7.416 4.229L6 15.6 0 9.75l8.332-1.595z" />
+                              </svg>
+                              <span className="text-sm font-medium text-gray-700">
+                                {item.star}
+                              </span>
+                            </div>
                           </div>
                           <div className="mb-2">
                             <span className="ml-2 text-gray-600">
@@ -553,116 +876,347 @@ function Detail_Att() {
           </div>
         </div>
       )}
-     {showCommentModal && (
-  <div className="modal modal-open">
-    <div className="modal-box max-w-lg relative">
-      {/* Close Button */}
-      <button
-        className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
-        onClick={() => setShowCommentModal(false)}
-      >
-        ✕
-      </button>
+      {showCommentModal && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-lg relative ">
+            {/* Close Button */}
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
+              onClick={() => setShowCommentModal(false)}
+            >
+              ✕
+            </button>
 
-      {/* Header */}
-      <h2 className="text-2xl font-bold mb-6 text-base-content flex items-center gap-2">
-        💬 แสดงความคิดเห็น
-      </h2>
+            {/* Header */}
+            <h2 className="text-2xl font-bold mb-6 text-base-content flex items-center gap-2">
+              💬 แสดงความคิดเห็น
+            </h2>
 
-      {/* Form */}
-      <form onSubmit={handleSubmitComment} className="space-y-6">
-        {/* Comment Text Area */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-medium">ความคิดเห็นของคุณ</span>
-          </label>
-          <textarea
-            className="textarea textarea-bordered textarea-primary h-24 resize-none focus:textarea-primary"
-            placeholder="เขียนความคิดเห็นของคุณ..."
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            required
-          />
-        </div>
+            {/* Form */}
+            <form onSubmit={handleSubmitComment} className="space-y-6">
+              {/* Comment Text Area */}
+              <div className="form-control">
+                <label className="label flex mb-2">
+                  <span className="label-text font-medium">
+                    ความคิดเห็นของคุณ
+                  </span>
+                </label>
+                <textarea
+                  className="textarea w-full textarea-bordered textarea-primary h-24 resize-none focus:textarea-primary"
+                  placeholder="เขียนความคิดเห็นของคุณ..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  required
+                />
+              </div>
 
-        {/* Rating Section */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-medium">ให้คะแนน</span>
-          </label>
-          <div className="rating rating-lg">
-            {[1, 2, 3, 4, 5].map((num) => (
-              <input
-                key={num}
-                type="radio"
-                name="rating"
-                className="mask mask-star-2 bg-orange-400"
-                checked={commentRating === num}
-                onChange={() => setCommentRating(num)}
-              />
-            ))}
+              {/* Rating Section */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">ให้คะแนน</span>
+                </label>
+                <div className="rating rating-lg">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <input
+                      key={num}
+                      type="radio"
+                      name="rating"
+                      className="mask mask-star-2 bg-orange-400"
+                      checked={commentRating === num}
+                      onChange={() => setCommentRating(num)}
+                    />
+                  ))}
+                </div>
+                <label className="label">
+                  <span className="label-text-alt">
+                    คะแนน: {commentRating}/5
+                  </span>
+                </label>
+              </div>
+
+              {/* Image Upload */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">
+                    เพิ่มรูปภาพ (ถ้ามี)
+                  </span>
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCommentImage(e.target.files[0])}
+                  className="file-input file-input-bordered file-input-primary w-full"
+                />
+              </div>
+
+              {/* Error Message */}
+              {commentError && (
+                <div className="alert alert-error">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{commentError}</span>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="modal-action">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowCommentModal(false)}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  className={`btn btn-primary ${
+                    commentLoading ? "loading" : ""
+                  }`}
+                  disabled={commentLoading}
+                >
+                  {commentLoading ? (
+                    <>
+                      <span className="loading loading-spinner"></span>
+                      กำลังส่ง...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                        />
+                      </svg>
+                      ส่งความคิดเห็น
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
-          <label className="label">
-            <span className="label-text-alt">คะแนน: {commentRating}/5</span>
-          </label>
         </div>
+      )}
 
-        {/* Image Upload */}
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-medium">เพิ่มรูปภาพ (ถ้ามี)</span>
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setCommentImage(e.target.files[0])}
-            className="file-input file-input-bordered file-input-primary w-full"
-          />
-        </div>
+      {/* Product Modal */}
+      {showProductModal && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-2xl relative">
+            {/* Close Button */}
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
+              onClick={() => setShowProductModal(false)}
+            >
+              ✕
+            </button>
 
-        {/* Error Message */}
-        {commentError && (
-          <div className="alert alert-error">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{commentError}</span>
+            {/* Header */}
+            <h2 className="text-2xl font-bold mb-6 text-base-content flex items-center gap-2">
+              🛍️ เพิ่มสินค้า
+            </h2>
+
+            {/* Form */}
+            <form onSubmit={handleSubmitProduct} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  {/* Image Upload */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        รูปภาพสินค้า
+                      </span>
+                    </label>
+                    <div className="relative">
+                      {productPreview ? (
+                        <img
+                          src={productPreview}
+                          alt="preview"
+                          className="w-full h-32 object-cover rounded-lg border-2 border-primary"
+                        />
+                      ) : (
+                        <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-400">เลือกรูปภาพ</span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={handleProductImageChange}
+                        accept="image/*"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Product Name */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">ชื่อสินค้า</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="input input-bordered input-primary"
+                      value={productData.name_product}
+                      onChange={(e) =>
+                        setProductData({
+                          ...productData,
+                          name_product: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        เบอร์โทรศัพท์
+                      </span>
+                    </label>
+                    <input
+                      type="tel"
+                      className="input input-bordered input-primary"
+                      value={productData.phone}
+                      onChange={(e) =>
+                        setProductData({
+                          ...productData,
+                          phone: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  {/* Product Description */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">
+                        รายละเอียดสินค้า
+                      </span>
+                    </label>
+                    <textarea
+                      className="textarea textarea-bordered textarea-primary h-24 resize-none"
+                      value={productData.detail_product}
+                      onChange={(e) =>
+                        setProductData({
+                          ...productData,
+                          detail_product: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+
+                  {/* Price */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">ราคา (บาท)</span>
+                    </label>
+                    <input
+                      type="number"
+                      className="input input-bordered input-primary"
+                      value={productData.price}
+                      onChange={(e) =>
+                        setProductData({
+                          ...productData,
+                          price: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {productError && (
+                <div className="alert alert-error">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{productError}</span>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="modal-action">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowProductModal(false)}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  className={`btn btn-primary ${
+                    productLoading ? "loading" : ""
+                  }`}
+                  disabled={productLoading}
+                >
+                  {productLoading ? (
+                    <>
+                      <span className="loading loading-spinner"></span>
+                      กำลังเพิ่ม...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                      เพิ่มสินค้า
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-
-        {/* Submit Button */}
-        <div className="modal-action">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => setShowCommentModal(false)}
-          >
-            ยกเลิก
-          </button>
-          <button
-            type="submit"
-            className={`btn btn-primary ${commentLoading ? 'loading' : ''}`}
-            disabled={commentLoading}
-          >
-            {commentLoading ? (
-              <>
-                <span className="loading loading-spinner"></span>
-                กำลังส่ง...
-              </>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                ส่งความคิดเห็น
-              </>
-            )}
-          </button>
         </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
+
       <ToastContainer />
     </div>
   );

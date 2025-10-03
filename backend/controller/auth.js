@@ -15,6 +15,15 @@ exports.register = async ( req , res ) =>{
         dob,
         sex,
         } = req.body;
+        
+        const [existingUser] = await db.promise().query("SELECT id_user FROM user WHERE email = ?", [email]);
+        
+        if(existingUser.length > 0){
+            return res.status(400).json({
+                msg : "อีเมล์นี้ถูกใช้งานแล้ว",
+                error : "อีเมล์นี้ถูกใช้งานแล้ว"
+            })
+        }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -30,13 +39,13 @@ exports.register = async ( req , res ) =>{
 
         if(rows.affectedRows === 0){
             return res.status(400).json({
-                msg : "error register",
+                msg : "ไม่สามารถสมัครสมาชิกได้",
                 error : "ไม่สามารถสมัครสมาชิกได้"
             })
         }
         
         return res.status(201).json({
-            msg : "register success"
+            msg : "สมัครสมาชิกสำเร็จ"
         })  
         
     }catch(err){
@@ -200,9 +209,32 @@ exports.edit_user = async (req, res) =>{
         const {
             first_name,
             last_name,
-            Email
+            Email,
+            oldPassword,
+            newPassword
         } = req.body;
 
+        if (oldPassword && newPassword) {
+            
+            const [userRows] = await db.promise().query("SELECT * FROM user WHERE id_user = ?", [req.params.id]);
+            if (userRows.length === 0) {
+                return res.status(404).json({msg : "ไม่พบผู้ใช้งานนี้"});
+            }
+            const user = userRows[0];
+            const bcrypt = require("bcrypt");
+            const isMatch = await bcrypt.compare(oldPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({
+                    msg: "รหัสผ่านเก่าไม่ถูกต้อง",
+                    error: "รหัสผ่านเก่าไม่ถูกต้อง"
+                });
+            }
+            // อัปเดตรหัสผ่านใหม่
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await db.promise().query("UPDATE user SET password = ? WHERE id_user = ?", [hashedPassword, req.params.id]);
+        }
+
+        // อัปเดตข้อมูลโปรไฟล์
         const [result] = await db.promise().query("UPDATE user SET first_name = ?, last_name = ?, Email = ? WHERE id_user = ?",[
             first_name,
             last_name,
@@ -219,7 +251,6 @@ exports.edit_user = async (req, res) =>{
 
         const [rows] = await db.promise().query("SELECT * FROM user WHERE id_user = ?", [req.params.id]);
         if(rows.length === 0){
-            console.table(rows);
             return res.status(404).json({msg : "ไม่พบผู้ใช้งานนี้"})
         }
         const user = rows[0];
@@ -235,5 +266,28 @@ exports.edit_user = async (req, res) =>{
             msg : "error edit profile",
             error : err.message
         })
+    }
+}
+
+exports.delete_user = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await db.promise().query("SELECT * FROM user WHERE id_user = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({
+                msg: "ไม่พบผู้ใช้งานนี้",
+                error: "ไม่พบผู้ใช้งานนี้"
+            });
+        }
+        await db.promise().query("DELETE FROM user WHERE id_user = ?", [id]);
+        return res.status(200).json({
+            msg: "ลบสมาชิกสำเร็จ"
+        });
+    } catch (err) {
+        console.log("error delete user", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถลบสมาชิกได้",
+            error: err.message
+        });
     }
 }

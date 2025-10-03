@@ -12,16 +12,17 @@ import { Link } from "react-router-dom";
 
 // รายการเมนูทั้งหมด
 const menuItems = [
-  { label: "เพิ่มสถานที่ท่องเที่ยว", path: "/menu/menu_att" },
+  // { label: "เพิ่มสถานที่ท่องเที่ยว", path: "/menu/menu_att" },
   {
     label: "เพิ่มกิจกรรม",
     path: "/menu/menu_event",
   },
-  { label: "เพิ่มสินค้า", path: "/menu/menu_prodact" },
-  {
-    label: "โพสต์ของผู้ใช้",
-    path: "/menu/menu_profile",
-  },
+  // { label: "เพิ่มสินค้า", path: "/menu/menu_prodact" },
+  // {
+  //   label: "โพสต์ของผู้ใช้",
+  //   path: "/menu/menu_profile",
+  // }
+  ,
   {
     label: "กิจกรรมของผู้ใช้",
     path: "/menu/show_event",

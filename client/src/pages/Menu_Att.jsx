@@ -76,7 +76,6 @@ function Menu_Att() {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("id_user", localStorage.getItem("userId"));
       formDataToSend.append("name_location", formdata.name_location);
       formDataToSend.append("detail_location", formdata.detail_location);
       formDataToSend.append("phone", formdata.phone);

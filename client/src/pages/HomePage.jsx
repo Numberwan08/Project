@@ -2,38 +2,182 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { Mail, MessageCircle, ThumbsUp } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function HomePage() {
   const [places, setPlaces] = useState([]);
   const [events, setEvents] = useState([]);
-  const [products, setProducts] = useState([]);
+  // const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [likedPosts, setLikedPosts] = useState(new Set());
+  const [likedEvents, setLikedEvents] = useState(new Set());
+  const [userId, setUserId] = useState(localStorage.getItem("userId"));
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      axios
-        .get(import.meta.env.VITE_API + "post")
-        .then((res) => res.data.data || [])
-        .catch(() => []),
-      axios
-        .get(import.meta.env.VITE_API + "event")
-        .then((res) => res.data.data || [])
-        .catch(() => []),
-      axios
-        .get(import.meta.env.VITE_API + "product")
-        .then((res) => res.data.data || [])
-        .catch(() => []),
-    ]).then(([placesData, eventsData, productsData]) => {
-      setPlaces(placesData);
-      setEvents(eventsData);
-      setProducts(productsData);
-      setLoading(false);
-    });
+    fetchData();
   }, []);
 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [placesRes, eventsRes, productsRes] = await Promise.all([
+        axios.get(import.meta.env.VITE_API + "post").catch(() => ({ data: { data: [] } })),
+        axios.get(import.meta.env.VITE_API + "event").catch(() => ({ data: { data: [] } })),
+        // axios.get(import.meta.env.VITE_API + "product").catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const placesData = placesRes.data.data || [];
+      const eventsData = eventsRes.data.data || [];
+      // const productsData = productsRes.data.data || [];
+
+      setPlaces(placesData);
+      setEvents(eventsData);
+      // setProducts(productsData);
+
+      // เช็คสถานะไลค์สำหรับโพสต์และอีเวนต์
+      if (userId) {
+        await checkLikeStatus(placesData, eventsData);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkLikeStatus = async (placesData, eventsData) => {
+    const likedPostsSet = new Set();
+    const likedEventsSet = new Set();
+
+    // เช็คไลค์สำหรับโพสต์
+    for (const post of placesData) {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API}post/likes/check/${post.id_post}/${userId}`
+        );
+        if (res.data.liked) {
+          likedPostsSet.add(post.id_post);
+        }
+      } catch (error) {
+        console.log("Error checking post like status:", error);
+      }
+    }
+
+    // เช็คไลค์สำหรับอีเวนต์
+    for (const event of eventsData) {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API}event/likes/check/${event.id_event}/${userId}`
+        );
+        if (res.data.liked) {
+          likedEventsSet.add(event.id_event);
+        }
+      } catch (error) {
+        console.log("Error checking event like status:", error);
+      }
+    }
+
+    setLikedPosts(likedPostsSet);
+    setLikedEvents(likedEventsSet);
+  };
+
+  const handleLikePost = async (item) => {
+    if (!userId) {
+      toast.error("กรุณาเข้าสู่ระบบก่อนกดไลค์!", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+      return;
+    }
+
+    try {
+      const isLiked = likedPosts.has(item.id_post);
+      
+      if (isLiked) {
+        await axios.delete(
+          `${import.meta.env.VITE_API}post/likes/${item.id_post}/${userId}`
+        );
+        setLikedPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(item.id_post);
+          return newSet;
+        });
+        setPlaces(prev => prev.map(place => 
+          place.id_post === item.id_post 
+            ? { ...place, likes: place.likes - 1 }
+            : place
+        ));
+      } else {
+        await axios.post(
+          `${import.meta.env.VITE_API}post/likes/${item.id_post}`,
+          { userId }
+        );
+        setLikedPosts(prev => new Set([...prev, item.id_post]));
+        setPlaces(prev => prev.map(place => 
+          place.id_post === item.id_post 
+            ? { ...place, likes: place.likes + 1 }
+            : place
+        ));
+      }
+    } catch (error) {
+      console.log("Error toggling post like:", error);
+      toast.error("เกิดข้อผิดพลาดในการกดไลค์", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    }
+  };
+
+  const handleLikeEvent = async (item) => {
+    if (!userId) {
+      toast.error("กรุณาเข้าสู่ระบบก่อนกดไลค์!", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+      return;
+    }
+
+    try {
+      const isLiked = likedEvents.has(item.id_event);
+      
+      if (isLiked) {
+        await axios.delete(
+          `${import.meta.env.VITE_API}event/likes/${item.id_event}/${userId}`
+        );
+        setLikedEvents(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(item.id_event);
+          return newSet;
+        });
+        setEvents(prev => prev.map(event => 
+          event.id_event === item.id_event 
+            ? { ...event, likes: event.likes - 1 }
+            : event
+        ));
+      } else {
+        await axios.post(
+          `${import.meta.env.VITE_API}event/likes/${item.id_event}`,
+          { userId }
+        );
+        setLikedEvents(prev => new Set([...prev, item.id_event]));
+        setEvents(prev => prev.map(event => 
+          event.id_event === item.id_event 
+            ? { ...event, likes: event.likes + 1 }
+            : event
+        ));
+      }
+    } catch (error) {
+      console.log("Error toggling event like:", error);
+      toast.error("เกิดข้อผิดพลาดในการกดไลค์", {
+        position: "top-center",
+        autoClose: 1500,
+      });
+    }
+  };
+
   const topCulture = [...places.filter((i) => i.type == 1)]
-    .sort((a, b) => (b.star || 0) - (a.star || 0))
+    .sort((a, b) => (b.likes || 0) - (a.likes || 0))
     .slice(0, 4);
 
   const topEvents = shuffle(events.filter((i) => i.type == 2)).slice(0, 3);
@@ -43,7 +187,7 @@ function HomePage() {
     ...events.filter((i) => i.type == 2),
   ]).slice(0, 10);
 
-  const recommendRight = Array.isArray(products) ? products.slice(0, 10) : [];
+  // const recommendRight = Array.isArray(products) ? products.slice(0, 10) : [];
 
   function shuffle(arr) {
     let a = [...arr];
@@ -68,7 +212,7 @@ function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 mt-20">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 mt-15">
       <div className="container mx-auto px-4 py-8">
         <section className="mb-16">
           <div className="text-center mb-12">
@@ -97,10 +241,13 @@ function HomePage() {
                 <div className="p-6">
                   <div className="flex justify-between items-center w-full">
                     <div className="flex items-center gap-1">
-                      <ThumbsUp color="#9900FF" />
+                      <ThumbsUp 
+                        color={likedPosts.has(item.id_post) ? "#22c55e" : "#9900FF"} 
+                        className="cursor-pointer transition-transform hover:scale-110"
+                        onClick={() => handleLikePost(item)}
+                      />
                       <span>{item.likes}</span>
                     </div>
-                    <div>โพสต์โดย: {item.first_name}</div>
                     <div className="flex items-center gap-1">
                       <MessageCircle color="#9900FF" />
                       <span>{item.comments}</span>
@@ -108,12 +255,12 @@ function HomePage() {
                   </div>
 
                   <div className="flex justify-between items-start gap-4">
-                    <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors flex-1">
+                    <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors flex-1 truncate max-w-[300px]" title={item.name_location}>
                       {item.name_location}
                     </h3>
                     <div className="flex-shrink-0">
                       <h4 className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                        คะแนน {item.star && item.star !== 0 ? item.star : "0"}
+                        คะแนน {item.star > 0 ? item.star : "0"}
                       </h4>
                     </div>
                   </div>
@@ -156,12 +303,16 @@ function HomePage() {
                   <div className="p-6">
                     <div className="flex justify-between items-center w-full">
                       <div className="flex items-center gap-1">
-                        <ThumbsUp color="#4093ffff" />
+                        <ThumbsUp 
+                          color={likedEvents.has(item.id_event) ? "#22c55e" : "#4093ffff"} 
+                          className="cursor-pointer transition-transform hover:scale-110"
+                          onClick={() => handleLikeEvent(item)}
+                        />
                         <span>{item.likes}</span>
                       </div>
                       <div>โพสต์โดย: {item.first_name}</div>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors flex-1 truncate max-w-[300px]" title={item.name_event}>
                       {item.name_event}
                     </h3>
                     <Link to={`/detall_event/${item.id_event}`}>
@@ -241,7 +392,7 @@ function HomePage() {
                 </div>
               ))}
             </div>
-
+{/* 
             <div className="lg:w-[350px] flex-shrink-0">
               <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
                 <div className="text-center mb-6">
@@ -310,7 +461,7 @@ function HomePage() {
                   )}
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </section>
       </div>
@@ -353,6 +504,7 @@ function HomePage() {
           background: #d1d5db;
         }
       `}</style>
+      <ToastContainer />
     </div>
   );
 }

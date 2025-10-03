@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { User, Mail, Edit3, Save, X, Loader, Eye, EyeOff, Lock } from 'lucide-react';
 
 function Editprofile() {
   const { userId, setName } = useAuth();
@@ -15,6 +16,16 @@ function Editprofile() {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showPassword, setShowPassword] = useState({
+    old1: false,
+    old2: false,
+    newpass: false,
+  });
+  const [passwordFields, setPasswordFields] = useState({
+    oldPassword1: '',
+    oldPassword2: '',
+    newPassword: '',
+  });
 
   const getUser = async () => {
     try {
@@ -41,23 +52,71 @@ function Editprofile() {
     }));
   };
 
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordFields(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const toggleShowPassword = (field) => {
+    setShowPassword(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsUpdating(true);
+
+    // ถ้ามีการกรอกรหัสผ่านใหม่ ต้องตรวจสอบรหัสผ่านเก่า
+    if (
+      passwordFields.oldPassword1 ||
+      passwordFields.oldPassword2 ||
+      passwordFields.newPassword
+    ) {
+      if (
+        !passwordFields.oldPassword1 ||
+        !passwordFields.oldPassword2 ||
+        !passwordFields.newPassword
+      ) {
+        toast.error('กรุณากรอกรหัสผ่านให้ครบทุกช่อง', { position: 'top-center', autoClose: 1500 });
+        setIsUpdating(false);
+        return;
+      }
+      if (passwordFields.oldPassword1 !== passwordFields.oldPassword2) {
+        toast.error('รหัสผ่านเก่าไม่ตรงกัน', { position: 'top-center', autoClose: 1500 });
+        setIsUpdating(false);
+        return;
+      }
+    }
+
     try {
+      const payload = {
+        ...editData,
+      };
+      // ถ้ามีการเปลี่ยนรหัสผ่าน ให้ส่งข้อมูลรหัสผ่านไปด้วย
+      if (passwordFields.oldPassword1 && passwordFields.oldPassword2 && passwordFields.newPassword) {
+        payload.oldPassword = passwordFields.oldPassword1;
+        payload.newPassword = passwordFields.newPassword;
+      }
+
       const res = await axios.patch(
         import.meta.env.VITE_API + `editprofile/${userId}`,
-        editData
+        payload
       );
       setData(res.data.data || editData);
       setIsModalOpen(false);
       if (setName && res.data.data && res.data.data.first_name) {
         setName(res.data.data.first_name);
       }
-      toast.success('แก้ไขโปรไฟล์สำเร็จ', { position: 'top-right', autoClose: 500 });
+      toast.success('แก้ไขโปรไฟล์สำเร็จ', { position: 'top-center', autoClose: 1500 });
+      setPasswordFields({ oldPassword1: '', oldPassword2: '', newPassword: '' });
     } catch (err) {
       console.log("แก้ไขโปไฟล์ไม่สำเร็จ", err);
-      toast.error('ไม่สามารถอัปเดตได้ โปรดลองอีกครั้ง', { position: 'top-right', autoClose: 500 });
+      toast.error('ไม่สามารถอัปเดตได้ โปรดลองอีกครั้ง', { position: 'top-center', autoClose: 1500 });
     } finally {
       setIsUpdating(false);
     }
@@ -80,111 +139,155 @@ function Editprofile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <div className="loading loading-spinner loading-lg"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="w-12 h-12 text-purple-600 animate-spin" />
+          <p className="text-gray-600">กำลังโหลด...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-base-200 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-base-content mb-2">โปรไฟล์</h1>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mb-4 shadow-lg">
+            <User className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">โปรไฟล์</h1>
         </div>
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <div className="space-y-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">ชื่อ</span>
-                </label>
-                <div className="input input-bordered bg-base-200 flex items-center">
-                  {data.first_name || 'Not provided'}
-                </div>
-              </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">นายสกุล</span>
-                </label>
-                <div className="input input-bordered bg-base-200 flex items-center">
-                  {data.last_name || 'Not provided'}
-                </div>
+        {/* Profile Card */}
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+          {/* Card Header */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  {data.first_name} 
+                </h2>
+                <p className="text-purple-100 flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  {data.Email || 'ไม่ได้ระบุอีเมล'}
+                </p>
               </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Email</span>
-                </label>
-                <div className="input input-bordered bg-base-200 flex items-center">
-                  {data.Email || 'Not provided'}
-                </div>
-              </div>
-            </div>
-            <div className="card-actions justify-end mt-6">
               <button 
-                className="btn btn-primary"
+                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-full font-medium transition-all hover:scale-105 shadow-lg flex items-center gap-2"
                 onClick={openModal}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                แก้ไขโปรไฟล์
+                <Edit3 className="w-4 h-4" />
+                แก้ไข
               </button>
             </div>
           </div>
         </div>
+
         {/* Edit Modal */}
         {isModalOpen && (
-          <div className="modal modal-open">
-            <div className="modal-box">
-              <h3 className="font-bold text-lg mb-4">แก้ไข โปรไฟล์</h3>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">ชื่อ</span>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">แก้ไขโปรไฟล์</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-white hover:bg-white/20 rounded-full p-2 transition-all"
+                  disabled={isUpdating}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                {/* First Name */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User className="w-4 h-4 text-purple-600" />
+                    ชื่อ
                   </label>
                   <input
                     type="text"
                     name="first_name"
                     value={editData.first_name}
                     onChange={handleInputChange}
-                    className="input input-bordered w-full"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    placeholder="กรอกชื่อ"
                   />
                 </div>
 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">นามสกุล</span>
+                {/* Change Password Section */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-purple-600" />
+                    เปลี่ยนรหัสผ่าน
                   </label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={editData.last_name}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type={showPassword.old1 ? "text" : "password"}
+                      name="oldPassword1"
+                      value={passwordFields.oldPassword1}
+                      onChange={handlePasswordChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                      placeholder="รหัสผ่านเก่า"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="px-2"
+                      onClick={() => toggleShowPassword("old1")}
+                    >
+                      {showPassword.old1 ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type={showPassword.old2 ? "text" : "password"}
+                      name="oldPassword2"
+                      value={passwordFields.oldPassword2}
+                      onChange={handlePasswordChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                      placeholder="ยืนยันรหัสผ่านเก่า"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="px-2"
+                      onClick={() => toggleShowPassword("old2")}
+                    >
+                      {showPassword.old2 ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type={showPassword.newpass ? "text" : "password"}
+                      name="newPassword"
+                      value={passwordFields.newPassword}
+                      onChange={handlePasswordChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                      placeholder="รหัสผ่านใหม่"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="px-2"
+                      onClick={() => toggleShowPassword("newpass")}
+                    >
+                      {showPassword.newpass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Email</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="Email"
-                    value={editData.Email}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </div>
-
-                <div className="modal-action">
+                {/* Buttons */}
+                <div className="flex gap-3 pt-4">
                   <button
                     type="button"
-                    className="btn btn-ghost"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all"
                     onClick={() => setIsModalOpen(false)}
                     disabled={isUpdating}
                   >
@@ -192,27 +295,27 @@ function Editprofile() {
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     disabled={isUpdating}
                   >
                     {isUpdating ? (
                       <>
-                        <span className="loading loading-spinner loading-sm"></span>
-                        Updating...
+                        <Loader className="w-4 h-4 animate-spin" />
+                        กำลังบันทึก...
                       </>
                     ) : (
-                      'บันทึกการเปลี่ยนแปลง'
+                      <>
+                        <Save className="w-4 h-4" />
+                        บันทึก
+                      </>
                     )}
                   </button>
                 </div>
               </form>
             </div>
-            <div 
-              className="modal-backdrop"
-              onClick={() => setIsModalOpen(false)}
-            ></div>
           </div>
         )}
+
         <ToastContainer />
       </div>
     </div>

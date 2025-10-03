@@ -5,12 +5,15 @@ import Usermember from "./admin/pages/Usermembers";
 import PostController from "./admin/pages/PostControllers";
 import EventControllers from "./admin/pages/EventControllers";
 import ProductControllers from "./admin/pages/ProductControllers";
+import ManagePlaces from "./admin/pages/ManagePlaces";
 import Adminlayout from "./layout/Adminlayout";
 import HomePage from "./pages/HomePage";
 import Pageslayout from "./layout/Pageslayout";
 import EventPages from "./pages/EventPages";
 import AttractionPage from "./pages/AttractionPage";
-import ProductPage from "./pages/ProductPage";  
+import ProductPage from "./pages/ProductPage";
+import PlacesPage from "./pages/PlacesPage";
+import PlaceDetail from "./pages/PlaceDetail";  
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
@@ -27,6 +30,8 @@ import Show_Product from "./pages/show_product";
 import Adminlogin from "./admin/pages/Adminlogin";
 import { Edit } from "lucide-react";
 import Editprofile from "./pages/Editprofile";
+import PostControllers from "./admin/pages/ManagePlaces";
+import "./App.css";
 
 function App() {
   const router = createBrowserRouter([
@@ -47,8 +52,8 @@ function App() {
           element: <Usermember />,
         },
         {
-          path: "/admin/post",
-          element: <PostController />,
+          path: "/admin/places",
+          element: <PostControllers />,
         },
         {
           path: "/admin/event",
@@ -57,6 +62,10 @@ function App() {
         {
           path: "/admin/product",
           element: <ProductControllers />,
+        },
+        {
+          path: "/admin/addattraction",
+          element: <Menu_Att />,
         }
       ],
     },
@@ -75,6 +84,14 @@ function App() {
         {
           path:"/attraction",
           element: <AttractionPage />,
+        },
+        {
+          path:"/places",
+          element: <PlacesPage />,
+        },
+        {
+          path:"/place/:id",
+          element: <PlaceDetail />,
         },
         {
           path:"/product",
