@@ -32,6 +32,22 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate email contains '@' and ends with '.com'
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.com$/i.test(data.email)) {
+      toast.error("รูปแบบอีเมลไม่ถูกต้อง: ต้องมี '@' และลงท้ายด้วย .com", {
+        position: "top-right",
+        autoClose: 1500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        position: "top-center",
+      });
+      return;
+    }
+
     // Basic validation
     if (data.password !== data.confirmPassword) {
       toast.error("รหัสผ่านไม่ตรงกัน!", {

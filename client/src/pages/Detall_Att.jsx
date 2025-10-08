@@ -235,8 +235,6 @@ function Detail_Att() {
         detail_product: "",
         phone: "",
         price: "",
-        latitude: "",
-        longitude: "",
         type: "3",
       });
       setSelectedProductFile(null);
@@ -418,7 +416,15 @@ function Detail_Att() {
                     <h3 className="font-semibold text-purple-800 mb-1">
                       ผู้โพสต์
                     </h3>
-                    <p className="text-purple-700">{item.first_name}</p>
+                    <p className="text-purple-700">
+                      {String(item.id_user) === String(userId) ? (
+                        <span className="text-green-600 font-semibold">
+                          ของฉัน
+                        </span>
+                      ) : (
+                        item.first_name
+                      )}
+                    </p>
                   </div>
 
                   {/* วันที่โพสต์ */}
@@ -479,8 +485,17 @@ function Detail_Att() {
                             <span className="text-lg font-bold text-purple-600">
                               ฿{product.price}
                             </span>
-                            <span className="text-xs text-gray-500">
-                              โดย: {product.first_name}
+                            <span className="text-xs">
+                              โดย:{" "}
+                              {String(product.id_user) === String(userId) ? (
+                                <span className="text-green-600 font-semibold">
+                                  ของฉัน
+                                </span>
+                              ) : (
+                                <span className="text-gray-500">
+                                  {product.first_name}
+                                </span>
+                              )}
                             </span>
                           </div>
                           <div className="mt-2 flex justify-between items-center">
@@ -553,8 +568,17 @@ function Detail_Att() {
                               <span className="text-lg font-bold text-purple-600">
                                 ฿{product.price}
                               </span>
-                              <span className="text-xs text-gray-500">
-                                โดย: {product.first_name}
+                              <span className="text-xs">
+                                โดย:{" "}
+                                {String(product.id_user) === String(userId) ? (
+                                  <span className="text-green-600 font-semibold">
+                                    ของฉัน
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-500">
+                                    {product.first_name}
+                                  </span>
+                                )}
                               </span>
                             </div>
                             <div className="mt-2 flex justify-between items-center">
@@ -635,7 +659,7 @@ function Detail_Att() {
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="bg-purple-100 px-4 py-3 border-b">
                   <h3 className="font-semibold text-purple-800">
-                    แผนที่และตำแหน่ง
+                    ตำแหน่งสถานที่
                   </h3>
                 </div>
 
@@ -669,6 +693,17 @@ function Detail_Att() {
                               </h3>
                               <p className="text-sm text-gray-600">
                                 {item.detail_location}
+                              </p>
+                              <p
+                                onClick={() => {
+                                  window.open(
+                                    `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`,
+                                    "_blank"
+                                  );
+                                }}
+                                className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium cursor-pointer hover:underline"
+                              >
+                                เปิด Google Maps
                               </p>
                             </div>
                           </Popup>
@@ -1096,12 +1131,15 @@ function Detail_Att() {
                       type="tel"
                       className="input input-bordered input-primary"
                       value={productData.phone}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, ""); // ลบทุกอย่างที่ไม่ใช่ตัวเลข
                         setProductData({
                           ...productData,
-                          phone: e.target.value,
-                        })
-                      }
+                          phone: value,
+                        });
+                      }}
+                      maxLength={10} // จำกัดไม่เกิน 10 ตัว
+                      inputMode="numeric" // บอก browser ให้แสดงแป้นตัวเลขบนมือถือ
                       required
                     />
                   </div>

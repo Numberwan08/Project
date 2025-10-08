@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
-import { ThumbsUp, Search, Calendar, MapPin, Clock, User } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import { ThumbsUp, Search, Calendar, MapPin, Clock, User } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Pagination from "../components/Pagination";
@@ -23,7 +23,7 @@ function EventPages() {
       const res = await axios.get(import.meta.env.VITE_API + "event");
       const eventsData = res.data.data || [];
       setEvents(eventsData);
-      
+
       if (userId) {
         checkLikeStatus(eventsData);
       }
@@ -34,11 +34,13 @@ function EventPages() {
 
   const checkLikeStatus = async (eventsData) => {
     const likedSet = new Set();
-    
+
     for (const event of eventsData) {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API}event/likes/check/${event.id_event}/${userId}`
+          `${import.meta.env.VITE_API}event/likes/check/${
+            event.id_event
+          }/${userId}`
         );
         if (res.data.liked) {
           likedSet.add(event.id_event);
@@ -47,7 +49,7 @@ function EventPages() {
         console.log("Error checking event like status:", error);
       }
     }
-    
+
     setLikedEvents(likedSet);
   };
 
@@ -62,34 +64,38 @@ function EventPages() {
 
     try {
       const isLiked = likedEvents.has(item.id_event);
-      
+
       if (isLiked) {
         await axios.delete(
           `${import.meta.env.VITE_API}event/likes/${item.id_event}/${userId}`
         );
-        setLikedEvents(prev => {
+        setLikedEvents((prev) => {
           const newSet = new Set(prev);
           newSet.delete(item.id_event);
           return newSet;
         });
-        
-        setEvents(prev => prev.map(event => 
-          event.id_event === item.id_event 
-            ? { ...event, likes: event.likes - 1 }
-            : event
-        ));
+
+        setEvents((prev) =>
+          prev.map((event) =>
+            event.id_event === item.id_event
+              ? { ...event, likes: event.likes - 1 }
+              : event
+          )
+        );
       } else {
         await axios.post(
           `${import.meta.env.VITE_API}event/likes/${item.id_event}`,
           { userId }
         );
-        setLikedEvents(prev => new Set([...prev, item.id_event]));
-        
-        setEvents(prev => prev.map(event => 
-          event.id_event === item.id_event 
-            ? { ...event, likes: event.likes + 1 }
-            : event
-        ));
+        setLikedEvents((prev) => new Set([...prev, item.id_event]));
+
+        setEvents((prev) =>
+          prev.map((event) =>
+            event.id_event === item.id_event
+              ? { ...event, likes: event.likes + 1 }
+              : event
+          )
+        );
       }
     } catch (error) {
       console.log("Error toggling event like:", error);
@@ -103,19 +109,35 @@ function EventPages() {
   const today = new Date();
 
   const getEventStatus = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const end = new Date(startDate);
+    const start = new Date(endDate);
 
     if (today > end) {
-      return { text: "กิจกรรมสิ้นสุดแล้ว", color: "bg-gray-100 text-gray-600", icon: "ended" };
+      return {
+        text: "กิจกรรมสิ้นสุดแล้ว",
+        color: "bg-gray-100 text-gray-600",
+        icon: "ended",
+      };
     } else if (today < start) {
       const diffDays = Math.ceil((start - today) / (1000 * 60 * 60 * 24));
       if (diffDays <= 7) {
-        return { text: `เริ่มในอีก ${diffDays} วัน`, color: "bg-orange-100 text-orange-600", icon: "soon" };
+        return {
+          text: `เริ่มในอีก ${diffDays} วัน`,
+          color: "bg-orange-100 text-orange-600",
+          icon: "soon",
+        };
       }
-      return { text: `เริ่มในอีก ${diffDays} วัน`, color: "bg-blue-100 text-blue-600", icon: "upcoming" };
+      return {
+        text: `เริ่มในอีก ${diffDays} วัน`,
+        color: "bg-blue-100 text-blue-600",
+        icon: "upcoming",
+      };
     } else {
-      return { text: "กำลังจัดกิจกรรม", color: "bg-green-100 text-green-600", icon: "active" };
+      return {
+        text: "กำลังจัดกิจกรรม",
+        color: "bg-green-100 text-green-600",
+        icon: "active",
+      };
     }
   };
 
@@ -127,13 +149,31 @@ function EventPages() {
         : false
     )
     .sort((a, b) => {
-      const daysA = (new Date(a.date_start) - today) / (1000 * 60 * 60 * 24);
-      const daysB = (new Date(b.date_start) - today) / (1000 * 60 * 60 * 24);
+      const dateA = new Date(a.date_end);
+      const dateB = new Date(b.date_end);
+      const endDateA = new Date(a.date_start);
+      const endDateB = new Date(b.date_start);
 
-      if (daysA >= 0 && daysA <= 10 && !(daysB >= 0 && daysB <= 10)) return -1;
-      if (daysB >= 0 && daysB <= 10 && !(daysA >= 0 && daysA <= 10)) return 1;
+      const isActiveA = today >= dateA && today <= endDateA;
+      const isActiveB = today >= dateB && today <= endDateB;
+      const isUpcomingA = today < dateA;
+      const isUpcomingB = today < dateB;
+      const isEndedA = today > endDateA;
+      const isEndedB = today > endDateB;
 
-      return new Date(a.date_start) - new Date(b.date_start);
+      if (isActiveA && !isActiveB) return -1;
+      if (isActiveB && !isActiveA) return 1;
+
+      if (isUpcomingA && !isUpcomingB) return -1;
+      if (isUpcomingB && !isUpcomingA) return 1;
+      if (isUpcomingA && isUpcomingB) {
+        return dateA - dateB; // เรียงจากใกล้ไกล
+      }
+      if (isEndedA && isEndedB) {
+        return endDateB - endDateA; 
+      }
+
+      return dateA - dateB;
     });
 
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
@@ -144,14 +184,11 @@ function EventPages() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
-      
-      
-
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* ฟอร์มค้นหา */}
         <form
           className="max-w-md mx-auto mb-6"
-          onSubmit={e => {
+          onSubmit={(e) => {
             e.preventDefault();
             setPage(1); // รีเซ็ตหน้าเมื่อค้นหาใหม่
           }}
@@ -169,7 +206,7 @@ function EventPages() {
               className="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="ค้นหากิจกรรม"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
             />
             <button
               type="submit"
@@ -189,10 +226,10 @@ function EventPages() {
               <p className="text-gray-500 text-lg">ไม่พบข้อมูลกิจกรรม</p>
             </div>
           )}
-          
+
           {paginatedEvents.map((item) => {
             const status = getEventStatus(item.date_start, item.date_end);
-            
+
             return (
               <div
                 key={item.id_event}
@@ -205,7 +242,9 @@ function EventPages() {
                     alt={item.name_event}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
-                  <div className={`absolute top-3 right-3 ${status.color} backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1`}>
+                  <div
+                    className={`absolute top-3 right-3 ${status.color} backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1`}
+                  >
                     <Clock className="w-3 h-3" />
                     {status.text}
                   </div>
@@ -216,7 +255,7 @@ function EventPages() {
                   <h3 className="font-bold text-lg text-gray-800 mb-2 truncate">
                     {item.name_event}
                   </h3>
-                  
+
                   {/* Location */}
                   <div className="flex items-start gap-2 mb-3">
                     <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
@@ -229,13 +268,15 @@ function EventPages() {
                   <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
                     <Calendar className="w-4 h-4 text-purple-600" />
                     <span className="truncate">
-                      {new Date(item.date_start).toLocaleDateString('th-TH', { 
-                        day: 'numeric', 
-                        month: 'short' 
-                      })} - {new Date(item.date_end).toLocaleDateString('th-TH', { 
-                        day: 'numeric', 
-                        month: 'short',
-                        year: 'numeric'
+                      {new Date(item.date_end).toLocaleDateString("th-TH", {
+                        day: "numeric",
+                        month: "short",
+                      })}{" "}
+                      -{" "}
+                      {new Date(item.date_start).toLocaleDateString("th-TH", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
                       })}
                     </span>
                   </div>
@@ -257,7 +298,7 @@ function EventPages() {
                         {item.likes}
                       </span>
                     </button>
-                    
+
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <User className="w-3 h-3" />
                       <span
@@ -289,7 +330,11 @@ function EventPages() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

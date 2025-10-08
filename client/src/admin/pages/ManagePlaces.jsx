@@ -360,7 +360,7 @@ function ManagePlaces() {
 
       toast.success("แก้ไขโพสต์สำเร็จ!", {
         position: "top-center",
-        autoClose: 2000,
+        autoClose: 500,
       });
 
       // Reset edit form
@@ -527,585 +527,611 @@ function ManagePlaces() {
 
       {/* Add Post Form Modal */}
       {showAddForm && (
-        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="absolute inset-0" onClick={resetForm}></div>
-          <div
-            className="relative bg-white rounded-3xl shadow-2xl overflow-hidden border border-purple-100 w-full max-w-6xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 px-8 py-6 flex justify-between items-center sticky top-0 z-10">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <MapPin className="h-6 w-6" />
-                เพิ่มสถานที่ท่องเที่ยวใหม่
-              </h2>
-              <button
+        <dialog open className="modal modal-open">
+          <div className="modal-box w-full max-w-6xl max-h-[90vh] overflow-y-auto p-0 border-0 shadow-2xl">
+            <div className="">
+              <div
+                className="absolute inset-0 bg-black/30 z-0"
                 onClick={resetForm}
-                className="btn btn-ghost text-white hover:bg-white hover:bg-opacity-20"
-                type="button"
+              ></div>
+              <div
+                className="relative z-10 bg-white  shadow-2xl overflow-hidden border border-purple-100 w-full max-w-6xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
               >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-8">
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                {/* Left Column */}
-                <div className="space-y-6">
-                  {/* Image Upload */}
-                  <div className="space-y-4">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Upload className="h-5 w-5 text-purple-600" />
-                      รูปภาพสถานที่
-                    </label>
-                    <div className="relative">
-                      {preview ? (
-                        <div className="relative group">
-                          <img
-                            src={preview}
-                            alt="Preview"
-                            className="w-full h-64 object-cover rounded-2xl border-4 border-purple-200 shadow-lg"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-white font-medium">
-                              คลิกเพื่อเปลี่ยนรูป
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="w-full h-64 border-4 border-dashed border-purple-300 rounded-2xl flex items-center justify-center bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
-                          <div className="text-center">
-                            <Upload className="h-12 w-12 text-purple-400 mx-auto mb-3" />
-                            <p className="text-purple-600 font-medium">
-                              อัปโหลดรูปภาพ
-                            </p>
-                            <p className="text-purple-500 text-sm mt-1">
-                              คลิกเพื่อเลือกไฟล์
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      <input
-                        type="file"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={handleImageChange}
-                        accept="image/*"
-                        name="image"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <ChartArea className="h-5 w-5 text-purple-600" />
-                      ประเภทสถานที่
-                    </label>
-                    <input
-                      type="text"
-                      value={formdata.type_name}
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                      onChange={(e) =>
-                        setFormdata({
-                          ...formdata,
-                          type_name: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  {/* Location Name */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-purple-600" />
-                      ชื่อสถานที่
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                      placeholder="เช่น วัดร่องขุ่น, ดอยตุง, แม่สายโกลเด้นไตรแองเกิล"
-                      value={formdata.name_location}
-                      onChange={(e) =>
-                        setFormdata({
-                          ...formdata,
-                          name_location: e.target.value,
-                        })
-                      }
-                      name="name_location"
-                      required
-                    />
-                  </div>
-
-                  {/* Location Detail */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Navigation className="h-5 w-5 text-purple-600" />
-                      รายละเอียดที่ตั้ง
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                      placeholder="เช่น ตำบลป่าอ้อดอนชัย อำเภอเมืองเชียงราย"
-                      value={formdata.detail_location}
-                      onChange={(e) =>
-                        setFormdata({
-                          ...formdata,
-                          detail_location: e.target.value,
-                        })
-                      }
-                      name="detail_location"
-                      required
-                    />
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Phone className="h-5 w-5 text-purple-600" />
-                      เบอร์โทรศัพท์
-                    </label>
-                    <input
-                      type="tel"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
-                      placeholder="08X-XXX-XXXX"
-                      value={formdata.phone}
-                      onChange={(e) =>
-                        setFormdata({ ...formdata, phone: e.target.value })
-                      }
-                      name="phone"
-                    />
-                  </div>
-
-                  {/* Detail Description */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-purple-600" />
-                      รายละเอียดสถานที่
-                    </label>
-                    <textarea
-                      name="detail_att"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg h-32 resize-none"
-                      placeholder="อธิบายเกี่ยวกับสถานที่ท่องเที่ยวนี้ เช่น ความสวยงาม กิจกรรมที่น่าสนใจ เวลาเปิด-ปิด ค่าเข้าชม"
-                      value={formdata.detail_att}
-                      onChange={(e) =>
-                        setFormdata({ ...formdata, detail_att: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
+                <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 px-8 py-6 flex justify-between items-center sticky top-0 z-20">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <MapPin className="h-6 w-6" />
+                    เพิ่มสถานที่ท่องเที่ยวใหม่
+                  </h2>
+                  <button
+                    onClick={resetForm}
+                    className="btn btn-ghost text-white hover:bg-white hover:bg-opacity-20"
+                    type="button"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
 
-                {/* Right Column */}
-                <div className="space-y-6">
-                  {/* Map Section */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                        <Map className="h-5 w-5 text-purple-600" />
-                        เลือกตำแหน่งบนแผนที่
-                      </label>
-                      <button
-                        type="button"
-                        onClick={getCurrentLocation}
-                        className="px-4 py-2 bg-purple-500 text-white cursor-pointer rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
-                      >
-                        ตำแหน่งปัจจุบัน
-                      </button>
-                    </div>
-
-                    <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
-                      <button
-                        type="button"
-                        onClick={toggleMap}
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
-                      >
-                        <Map className="h-5 w-5" />
-                        {showMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
-                      </button>
-
-                      {showMap && (
-                        <div className="mt-4">
-                          <div
-                            id="admin-map"
-                            className="h-80 rounded-xl border-2 border-purple-200 shadow-inner"
-                          ></div>
-                          <p className="text-sm text-purple-600 mt-2 text-center">
-                            คลิกบนแผนที่เพื่อเลือกตำแหน่งที่ต้องการ
-                          </p>
+                <form onSubmit={handleSubmit} className="p-8">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    {/* Left Column */}
+                    <div className="space-y-6">
+                      {/* Image Upload */}
+                      <div className="space-y-4">
+                        <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                          <Upload className="h-5 w-5 text-purple-600" />
+                          รูปภาพสถานที่
+                        </label>
+                        <div className="relative">
+                          {preview ? (
+                            <div className="relative group">
+                              <img
+                                src={preview}
+                                alt="Preview"
+                                className="w-full h-64 object-cover rounded-2xl border-4 border-purple-200 shadow-lg"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-white font-medium">
+                                  คลิกเพื่อเปลี่ยนรูป
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full h-64 border-4 border-dashed border-purple-300 rounded-2xl flex items-center justify-center bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
+                              <div className="text-center">
+                                <Upload className="h-12 w-12 text-purple-400 mx-auto mb-3" />
+                                <p className="text-purple-600 font-medium">
+                                  อัปโหลดรูปภาพ
+                                </p>
+                                <p className="text-purple-500 text-sm mt-1">
+                                  คลิกเพื่อเลือกไฟล์
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={handleImageChange}
+                            accept="image/*"
+                            name="image"
+                          />
                         </div>
-                      )}
-                    </div>
-                  </div>
+                      </div>
+                      <div>
+                        <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                          <ChartArea className="h-5 w-5 text-purple-600" />
+                          ประเภทสถานที่
+                        </label>
+                        <input
+                          type="text"
+                          value={formdata.type_name}
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                          onChange={(e) =>
+                            setFormdata({
+                              ...formdata,
+                              type_name: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      {/* Location Name */}
+                      <div className="space-y-2">
+                        <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-purple-600" />
+                          ชื่อสถานที่
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                          placeholder="เช่น วัดร่องขุ่น, ดอยตุง, แม่สายโกลเด้นไตรแองเกิล"
+                          value={formdata.name_location}
+                          onChange={(e) =>
+                            setFormdata({
+                              ...formdata,
+                              name_location: e.target.value,
+                            })
+                          }
+                          name="name_location"
+                          required
+                        />
+                      </div>
 
-                  {/* Coordinates */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-lg font-semibold text-gray-700">
-                        ละติจูด (Latitude)
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
-                        placeholder="XX.XXXXXX"
-                        value={formdata.latitude}
-                        onChange={(e) =>
-                          setFormdata({ ...formdata, latitude: e.target.value })
-                        }
-                        name="latitude"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-lg font-semibold text-gray-700">
-                        ลองจิจูด (Longitude)
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
-                        placeholder="XX.XXXXXX"
-                        value={formdata.longitude}
-                        onChange={(e) =>
-                          setFormdata({
-                            ...formdata,
-                            longitude: e.target.value,
-                          })
-                        }
-                        name="longitude"
-                      />
-                    </div>
-                  </div>
+                      {/* Location Detail */}
+                      <div className="space-y-2">
+                        <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                          <Navigation className="h-5 w-5 text-purple-600" />
+                          รายละเอียดที่ตั้ง
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                          placeholder="เช่น ตำบลป่าอ้อดอนชัย อำเภอเมืองเชียงราย"
+                          value={formdata.detail_location}
+                          onChange={(e) =>
+                            setFormdata({
+                              ...formdata,
+                              detail_location: e.target.value,
+                            })
+                          }
+                          name="detail_location"
+                          required
+                        />
+                      </div>
 
-                  {/* Current Coordinates Display */}
-                  {formdata.latitude && formdata.longitude && (
-                    <div className="bg-gradient-to-r from-purple-100 to-purple-100 p-4 rounded-xl border border-purple-200">
-                      <h3 className="font-semibold text-purple-800 mb-2">
-                        📍 ตำแหน่งที่เลือก
-                      </h3>
-                      <div className="text-sm text-purple-700 space-y-1">
-                        <p>
-                          <span className="font-medium">ละติจูด:</span>{" "}
-                          {formdata.latitude}
-                        </p>
-                        <p>
-                          <span className="font-medium">ลองจิจูด:</span>{" "}
-                          {formdata.longitude}
-                        </p>
+                      {/* Phone */}
+                      <div className="space-y-2">
+                        <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                          <Phone className="h-5 w-5 text-purple-600" />
+                          เบอร์โทรศัพท์
+                        </label>
+                        <input
+                          type="tel"
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
+                          placeholder="08X-XXX-XXXX"
+                          value={formdata.phone}
+                          onChange={(e) => {
+                            const onlyNums = e.target.value.replace(
+                              /[^0-9]/g,
+                              ""
+                            ); // กรองให้เหลือเฉพาะตัวเลข
+                            setFormdata({ ...formdata, phone: onlyNums });
+                          }}
+                          name="phone"
+                          inputMode="numeric" // แสดงคีย์บอร์ดตัวเลขบนมือถือ
+                          maxLength={10} // จำกัดความยาวไม่เกิน 10 หลัก
+                        />
+                      </div>
+
+                      {/* Detail Description */}
+                      <div className="space-y-2">
+                        <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-purple-600" />
+                          รายละเอียดสถานที่
+                        </label>
+                        <textarea
+                          name="detail_att"
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg h-32 resize-none"
+                          placeholder="อธิบายเกี่ยวกับสถานที่ท่องเที่ยวนี้ เช่น ความสวยงาม กิจกรรมที่น่าสนใจ เวลาเปิด-ปิด ค่าเข้าชม"
+                          value={formdata.detail_att}
+                          onChange={(e) =>
+                            setFormdata({
+                              ...formdata,
+                              detail_att: e.target.value,
+                            })
+                          }
+                          required
+                        />
                       </div>
                     </div>
-                  )}
 
-                  {/* Submit Button */}
-                  <div className="pt-4">
-                    <button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      เพิ่มสถานที่
-                    </button>
+                    {/* Right Column */}
+                    <div className="space-y-6">
+                      {/* Map Section */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                            <Map className="h-5 w-5 text-purple-600" />
+                            เลือกตำแหน่งบนแผนที่
+                          </label>
+                          <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            className="px-4 py-2 bg-purple-500 text-white cursor-pointer rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                          >
+                            ตำแหน่งปัจจุบัน
+                          </button>
+                        </div>
+
+                        <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
+                          <button
+                            type="button"
+                            onClick={toggleMap}
+                            className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                          >
+                            <Map className="h-5 w-5" />
+                            {showMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
+                          </button>
+
+                          {showMap && (
+                            <div className="mt-4">
+                              <div
+                                id="admin-map"
+                                className="h-80 rounded-xl border-2 border-purple-200 shadow-inner relative z-0"
+                              ></div>
+                              <p className="text-sm text-purple-600 mt-2 text-center">
+                                คลิกบนแผนที่เพื่อเลือกตำแหน่งที่ต้องการ
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Coordinates */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="block text-lg font-semibold text-gray-700">
+                            ละติจูด (Latitude)
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
+                            placeholder="XX.XXXXXX"
+                            value={formdata.latitude}
+                            onChange={(e) =>
+                              setFormdata({
+                                ...formdata,
+                                latitude: e.target.value,
+                              })
+                            }
+                            name="latitude"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-lg font-semibold text-gray-700">
+                            ลองจิจูด (Longitude)
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
+                            placeholder="XX.XXXXXX"
+                            value={formdata.longitude}
+                            onChange={(e) =>
+                              setFormdata({
+                                ...formdata,
+                                longitude: e.target.value,
+                              })
+                            }
+                            name="longitude"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Current Coordinates Display */}
+                      {formdata.latitude && formdata.longitude && (
+                        <div className="bg-gradient-to-r from-purple-100 to-purple-100 p-4 rounded-xl border border-purple-200">
+                          <h3 className="font-semibold text-purple-800 mb-2">
+                            📍 ตำแหน่งที่เลือก
+                          </h3>
+                          <div className="text-sm text-purple-700 space-y-1">
+                            <p>
+                              <span className="font-medium">ละติจูด:</span>{" "}
+                              {formdata.latitude}
+                            </p>
+                            <p>
+                              <span className="font-medium">ลองจิจูด:</span>{" "}
+                              {formdata.longitude}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Submit Button */}
+                      <div className="pt-4">
+                        <button
+                          type="submit"
+                          className="w-full bg-gradient-to-r from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        >
+                          เพิ่มสถานที่
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </form>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
+        </dialog>
       )}
       {/* Edit Post Form Modal */}
       {showEditForm && editingPost && (
-        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
-          {/* Modal Backdrop - Click to close */}
-          <div className="absolute inset-0" onClick={resetEditForm}></div>
+        <dialog open className="modal modal-open">
+          <div className="modal-box w-full max-w-6xl max-h-[90vh] overflow-y-auto p-0 border-0 shadow-2xl relative">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/30 z-0"
+              onClick={resetEditForm}
+            ></div>
 
-          {/* Modal Content */}
-          <div
-            className="relative bg-white rounded-3xl shadow-2xl overflow-hidden border border-purple-100 w-full max-w-6xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Form Header */}
-            <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 px-8 py-6 flex justify-between items-center sticky top-0 z-10">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <Edit className="h-6 w-6" />
-                แก้ไขสถานที่ท่องเที่ยว
-              </h2>
-              <button
-                onClick={resetEditForm}
-                className="btn btn-ghost text-white hover:bg-white hover:bg-opacity-20"
-                type="button"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+            {/* Modal Content */}
+            <div
+              className="relative z-10 bg-white  shadow-2xl overflow-hidden border border-purple-100 w-full max-w-6xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Form Header */}
+              <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 px-8 py-6 flex justify-between items-center sticky top-0 z-20">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <Edit className="h-6 w-6" />
+                  แก้ไขสถานที่ท่องเที่ยว
+                </h2>
+                <button
+                  onClick={resetEditForm}
+                  className="btn btn-ghost text-white hover:bg-white hover:bg-opacity-20"
+                  type="button"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-            <form onSubmit={handleEditSubmit} className="p-8">
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                {/* Left Column */}
-                <div className="space-y-6">
-                  {/* Image Upload */}
-                  <div className="space-y-4">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Upload className="h-5 w-5 text-purple-600" />
-                      รูปภาพสถานที่
-                    </label>
-                    <div className="relative">
-                      {editPreview ? (
-                        <div className="relative group">
-                          <img
-                            src={editPreview}
-                            alt="Preview"
-                            className="w-full h-64 object-cover rounded-2xl border-4 border-purple-200 shadow-lg"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-white font-medium">
-                              คลิกเพื่อเปลี่ยนรูป
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="w-full h-64 border-4 border-dashed border-purple-300 rounded-2xl flex items-center justify-center bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
-                          <div className="text-center">
-                            <Upload className="h-12 w-12 text-purple-400 mx-auto mb-3" />
-                            <p className="text-purple-600 font-medium">
-                              อัปโหลดรูปภาพ
-                            </p>
-                            <p className="text-purple-500 text-sm mt-1">
-                              คลิกเพื่อเลือกไฟล์
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      <input
-                        type="file"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={handleEditImageChange}
-                        accept="image/*"
-                        name="image"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Location Name */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-purple-600" />
-                      ชื่อสถานที่
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                      placeholder="เช่น วัดร่องขุ่น, ดอยตุง, แม่สายโกลเด้นไตรแองเกิล"
-                      value={editFormdata.type_name}
-                      onChange={(e) =>
-                        setEditFormdata({
-                          ...editFormdata,
-                          type_name: e.target.value,
-                        })
-                      }
-                      name="type_name"
-                      required
-                    />
-                  </div>
-
-                  {/* Location Name */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-purple-600" />
-                      ชื่อสถานที่
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                      placeholder="เช่น วัดร่องขุ่น, ดอยตุง, แม่สายโกลเด้นไตรแองเกิล"
-                      value={editFormdata.name_location}
-                      onChange={(e) =>
-                        setEditFormdata({
-                          ...editFormdata,
-                          name_location: e.target.value,
-                        })
-                      }
-                      name="name_location"
-                      required
-                    />
-                  </div>
-
-                  {/* Location Detail */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Navigation className="h-5 w-5 text-purple-600" />
-                      รายละเอียดที่ตั้ง
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                      placeholder="เช่น ตำบลป่าอ้อดอนชัย อำเภอเมืองเชียงราย"
-                      value={editFormdata.detail_location}
-                      onChange={(e) =>
-                        setEditFormdata({
-                          ...editFormdata,
-                          detail_location: e.target.value,
-                        })
-                      }
-                      name="detail_location"
-                      required
-                    />
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <Phone className="h-5 w-5 text-purple-600" />
-                      เบอร์โทรศัพท์
-                    </label>
-                    <input
-                      type="tel"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
-                      placeholder="08X-XXX-XXXX"
-                      value={editFormdata.phone}
-                      onChange={(e) =>
-                        setEditFormdata({
-                          ...editFormdata,
-                          phone: e.target.value,
-                        })
-                      }
-                      name="phone"
-                    />
-                  </div>
-
-                  {/* Detail Description */}
-                  <div className="space-y-2">
-                    <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-purple-600" />
-                      รายละเอียดสถานที่
-                    </label>
-                    <textarea
-                      name="detail_att"
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg h-32 resize-none"
-                      placeholder="อธิบายเกี่ยวกับสถานที่ท่องเที่ยวนี้ เช่น ความสวยงาม กิจกรรมที่น่าสนใจ เวลาเปิด-ปิด ค่าเข้าชม"
-                      value={editFormdata.detail_att}
-                      onChange={(e) =>
-                        setEditFormdata({
-                          ...editFormdata,
-                          detail_att: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-6">
-                  {/* Map Section */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+              {/* Form Body */}
+              <form onSubmit={handleEditSubmit} className="p-8">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Image Upload */}
+                    <div className="space-y-4">
                       <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
-                        <Map className="h-5 w-5 text-purple-600" />
-                        เลือกตำแหน่งบนแผนที่
+                        <Upload className="h-5 w-5 text-purple-600" />
+                        รูปภาพสถานที่
                       </label>
-                      <button
-                        type="button"
-                        onClick={getEditCurrentLocation}
-                        className="px-4 py-2 bg-purple-500 text-white cursor-pointer rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
-                      >
-                        ตำแหน่งปัจจุบัน
-                      </button>
-                    </div>
-
-                    <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
-                      <button
-                        type="button"
-                        onClick={toggleEditMap}
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
-                      >
-                        <Map className="h-5 w-5" />
-                        {showEditMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
-                      </button>
-
-                      {showEditMap && (
-                        <div className="mt-4">
-                          <div
-                            id="admin-edit-map"
-                            className="h-80 rounded-xl border-2 border-purple-200 shadow-inner"
-                          ></div>
-                          <p className="text-sm text-purple-600 mt-2 text-center">
-                            คลิกบนแผนที่เพื่อเลือกตำแหน่งที่ต้องการ
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Coordinates */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-lg font-semibold text-gray-700">
-                        ละติจูด (Latitude)
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
-                        placeholder="XX.XXXXXX"
-                        value={editFormdata.latitude}
-                        onChange={(e) =>
-                          setEditFormdata({
-                            ...editFormdata,
-                            latitude: e.target.value,
-                          })
-                        }
-                        name="latitude"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-lg font-semibold text-gray-700">
-                        ลองจิจูด (Longitude)
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
-                        placeholder="XX.XXXXXX"
-                        value={editFormdata.longitude}
-                        onChange={(e) =>
-                          setEditFormdata({
-                            ...editFormdata,
-                            longitude: e.target.value,
-                          })
-                        }
-                        name="longitude"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Current Coordinates Display */}
-                  {editFormdata.latitude && editFormdata.longitude && (
-                    <div className="bg-gradient-to-r from-purple-100 to-purple-100 p-4 rounded-xl border border-purple-200">
-                      <h3 className="font-semibold text-purple-800 mb-2">
-                        📍 ตำแหน่งที่เลือก
-                      </h3>
-                      <div className="text-sm text-purple-700 space-y-1">
-                        <p>
-                          <span className="font-medium">ละติจูด:</span>{" "}
-                          {editFormdata.latitude}
-                        </p>
-                        <p>
-                          <span className="font-medium">ลองจิจูด:</span>{" "}
-                          {editFormdata.longitude}
-                        </p>
+                      <div className="relative">
+                        {editPreview ? (
+                          <div className="relative group">
+                            <img
+                              src={editPreview}
+                              alt="Preview"
+                              className="w-full h-64 object-cover rounded-2xl border-4 border-purple-200 shadow-lg"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-white font-medium">
+                                คลิกเพื่อเปลี่ยนรูป
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-64 border-4 border-dashed border-purple-300 rounded-2xl flex items-center justify-center bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
+                            <div className="text-center">
+                              <Upload className="h-12 w-12 text-purple-400 mx-auto mb-3" />
+                              <p className="text-purple-600 font-medium">
+                                อัปโหลดรูปภาพ
+                              </p>
+                              <p className="text-purple-500 text-sm mt-1">
+                                คลิกเพื่อเลือกไฟล์
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          onChange={handleEditImageChange}
+                          accept="image/*"
+                          name="image"
+                        />
                       </div>
                     </div>
-                  )}
 
-                  {/* Submit Button */}
-                  <div className="pt-4">
-                    <button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      บันทึกการแก้ไข
-                    </button>
+                    {/* Type Name */}
+                    <div className="space-y-2">
+                      <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-purple-600" />
+                        ประเภทสถานที่
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                        placeholder="เช่น วัด, ดอย, พิพิธภัณฑ์"
+                        value={editFormdata.type_name}
+                        onChange={(e) =>
+                          setEditFormdata({
+                            ...editFormdata,
+                            type_name: e.target.value,
+                          })
+                        }
+                        name="type_name"
+                        required
+                      />
+                    </div>
+
+                    {/* Location Name */}
+                    <div className="space-y-2">
+                      <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-purple-600" />
+                        ชื่อสถานที่
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                        placeholder="เช่น วัดร่องขุ่น, ดอยตุง, แม่สายโกลเด้นไตรแองเกิล"
+                        value={editFormdata.name_location}
+                        onChange={(e) =>
+                          setEditFormdata({
+                            ...editFormdata,
+                            name_location: e.target.value,
+                          })
+                        }
+                        name="name_location"
+                        required
+                      />
+                    </div>
+
+                    {/* Location Detail */}
+                    <div className="space-y-2">
+                      <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                        <Navigation className="h-5 w-5 text-purple-600" />
+                        รายละเอียดที่ตั้ง
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                        placeholder="เช่น ตำบลป่าอ้อดอนชัย อำเภอเมืองเชียงราย"
+                        value={editFormdata.detail_location}
+                        onChange={(e) =>
+                          setEditFormdata({
+                            ...editFormdata,
+                            detail_location: e.target.value,
+                          })
+                        }
+                        name="detail_location"
+                        required
+                      />
+                    </div>
+
+                    {/* Phone */}
+                    <div className="space-y-2">
+                      <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                        <Phone className="h-5 w-5 text-purple-600" />
+                        เบอร์โทรศัพท์
+                      </label>
+                      <input
+                        type="tel"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
+                        placeholder="08X-XXX-XXXX"
+                        value={editFormdata.phone}
+                        onChange={(e) =>
+                          setEditFormdata({
+                            ...editFormdata,
+                            phone: e.target.value,
+                          })
+                        }
+                        name="phone"
+                      />
+                    </div>
+
+                    {/* Detail Description */}
+                    <div className="space-y-2">
+                      <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-purple-600" />
+                        รายละเอียดสถานที่
+                      </label>
+                      <textarea
+                        name="detail_att"
+                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg h-32 resize-none"
+                        placeholder="อธิบายเกี่ยวกับสถานที่ท่องเที่ยวนี้ เช่น ความสวยงาม กิจกรรมที่น่าสนใจ เวลาเปิด-ปิด ค่าเข้าชม"
+                        value={editFormdata.detail_att}
+                        onChange={(e) =>
+                          setEditFormdata({
+                            ...editFormdata,
+                            detail_att: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Map Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                          <Map className="h-5 w-5 text-purple-600" />
+                          เลือกตำแหน่งบนแผนที่
+                        </label>
+                        <button
+                          type="button"
+                          onClick={getEditCurrentLocation}
+                          className="px-4 py-2 bg-purple-500 text-white cursor-pointer rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                        >
+                          ตำแหน่งปัจจุบัน
+                        </button>
+                      </div>
+
+                      <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
+                        <button
+                          type="button"
+                          onClick={toggleEditMap}
+                          className="w-full bg-gradient-to-r from-purple-500 to-purple-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                        >
+                          <Map className="h-5 w-5" />
+                          {showEditMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
+                        </button>
+
+                        {showEditMap && (
+                          <div className="mt-4">
+                            <div
+                              id="admin-edit-map"
+                              className="h-80 rounded-xl border-2 border-purple-200 shadow-inner relative z-0"
+                            ></div>
+                            <p className="text-sm text-purple-600 mt-2 text-center">
+                              คลิกบนแผนที่เพื่อเลือกตำแหน่งที่ต้องการ
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Coordinates */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="block text-lg font-semibold text-gray-700">
+                          ละติจูด (Latitude)
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
+                          placeholder="XX.XXXXXX"
+                          value={editFormdata.latitude}
+                          onChange={(e) =>
+                            setEditFormdata({
+                              ...editFormdata,
+                              latitude: e.target.value,
+                            })
+                          }
+                          name="latitude"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-lg font-semibold text-gray-700">
+                          ลองจิจูด (Longitude)
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
+                          placeholder="XX.XXXXXX"
+                          value={editFormdata.longitude}
+                          onChange={(e) =>
+                            setEditFormdata({
+                              ...editFormdata,
+                              longitude: e.target.value,
+                            })
+                          }
+                          name="longitude"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Current Coordinates Display */}
+                    {editFormdata.latitude && editFormdata.longitude && (
+                      <div className="bg-gradient-to-r from-purple-100 to-purple-100 p-4 rounded-xl border border-purple-200">
+                        <h3 className="font-semibold text-purple-800 mb-2">
+                          📍 ตำแหน่งที่เลือก
+                        </h3>
+                        <div className="text-sm text-purple-700 space-y-1">
+                          <p>
+                            <span className="font-medium">ละติจูด:</span>{" "}
+                            {editFormdata.latitude}
+                          </p>
+                          <p>
+                            <span className="font-medium">ลองจิจูด:</span>{" "}
+                            {editFormdata.longitude}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <div className="pt-4">
+                      <button
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                      >
+                        บันทึกการแก้ไข
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
+        </dialog>
       )}
+
       <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -1142,7 +1168,7 @@ function ManagePlaces() {
                 className="btn btn-primary mt-2 flex items-center gap-2"
               >
                 <Plus className="h-5 w-5" />
-                เพิ่มโพสต์
+                เพิ่มสถานที่
               </button>
             </div>
           </div>

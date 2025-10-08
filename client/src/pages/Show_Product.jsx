@@ -64,8 +64,6 @@ function Show_Product() {
       name_product: item.name_product || "",
       detail_product: item.detail_product || "",
       phone: item.phone || "",
-      latitude: item.latitude || "",
-      longitude: item.longitude || "",
       price: item.price || "",
     });
     setEditImage(null);
@@ -92,9 +90,8 @@ function Show_Product() {
     formData.append("name_product", editData.name_product);
     formData.append("detail_product", editData.detail_product);
     formData.append("phone", editData.phone);
-    formData.append("latitude", editData.latitude);
-    formData.append("longitude", editData.longitude);
     formData.append("price", editData.price);
+    formData.append("type", editData.type);
     if (editImage) {
       formData.append("image", editImage);
     }
@@ -126,8 +123,7 @@ function Show_Product() {
               <Package className="text-white" size={28} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">จัดการสินค้า</h1>
-              <p className="text-gray-500 mt-1">ระบบจัดการและแก้ไขข้อมูลสินค้าของคุณ</p>
+              <h1 className="text-3xl font-bold text-gray-800">สินค้า</h1>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-4 text-sm">
@@ -143,14 +139,14 @@ function Show_Product() {
         <dialog open className="modal modal-open backdrop-blur-sm">
           <div className="modal-box max-w-md bg-white rounded-2xl shadow-2xl border-0">
             <div className="flex items-center gap-3 mb-4">
-              <div className="bg-red-100 p-3 rounded-full">
-                <Trash2 className="text-red-600" size={24} />
+              <div className="bg-purple-100 p-3 rounded-full">
+                <Trash2 className="text-purple-600" size={24} />
               </div>
               <h3 className="font-bold text-xl text-gray-800">ยืนยันการลบ</h3>
             </div>
-            <div className="bg-red-50 p-4 rounded-xl border border-red-100 flex mb-6">
+            <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 flex mb-6">
               <p className="text-gray-700">คุณต้องการลบสินค้า:</p>
-              <p className="font-semibold text-red-600 ml-1">{selectedPost?.name_product}</p>
+              <p className="font-semibold text-purple-600 ml-1">{selectedPost?.name_product}</p>
             </div>
             <div className="flex gap-3 justify-end">
               <button
@@ -160,7 +156,7 @@ function Show_Product() {
                 ยกเลิก
               </button>
               <button
-                className="btn bg-red-600 hover:bg-red-700 text-white border-0 rounded-xl px-6"
+                className="btn bg-purple-600 hover:bg-purple-700 text-white border-0 rounded-xl px-6"
                 onClick={handleDelete}
               >
                 ลบสินค้า
@@ -191,11 +187,11 @@ function Show_Product() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="input input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   name="name_product"
                   value={editData.name_product}
                   onChange={handleEditChange}
-                  required
+                  requipurple
                 />
               </div>
 
@@ -205,11 +201,11 @@ function Show_Product() {
                   <span className="label-text font-semibold text-gray-700">รายละเอียดสินค้า</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered w-full rounded-xl h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="textarea textarea-bordepurple w-full rounded-xl h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   name="detail_product"
                   value={editData.detail_product}
                   onChange={handleEditChange}
-                  required
+                  requipurple
                 ></textarea>
               </div>
 
@@ -225,7 +221,7 @@ function Show_Product() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     name="phone"
                     value={editData.phone}
                     onChange={handleEditChange}
@@ -242,7 +238,7 @@ function Show_Product() {
                   </label>
                   <input
                     type="number"
-                    className="input input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     name="price"
                     value={editData.price}
                     onChange={handleEditChange}
@@ -253,11 +249,11 @@ function Show_Product() {
               {/* โพสต์สถานที่ */}
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-semibold text-gray-700">โพสต์สถานที่</span>
+                  <span className="label-text font-semibold text-gray-700">โพสต์</span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full rounded-xl bg-gray-50"
+                  className="input input-bordepurple w-full rounded-xl bg-gray-50"
                   name="name_location"
                   value={editData.name_location || ""}
                   readOnly
@@ -275,7 +271,7 @@ function Show_Product() {
                 <input
                   type="file"
                   accept="image/*"
-                  className="file-input file-input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="file-input file-input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={handleEditImageChange}
                 />
                 <div className="mt-4 flex justify-center">
@@ -286,7 +282,7 @@ function Show_Product() {
                         alt="รูปภาพสินค้า"
                         className="w-64 h-48 object-cover border-2 border-gray-200 rounded-xl shadow-md"
                       />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-xl"></div>
+                      <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-xl"></div>
                     </div>
                   )}
                   {editImage && (
@@ -337,7 +333,7 @@ function Show_Product() {
                   <th className="text-gray-700 font-semibold">ชื่อสินค้า</th>
                   <th className="text-gray-700 font-semibold">รายละเอียด</th>
                   <th className="text-gray-700 font-semibold">ราคา</th>
-                  <th className="text-gray-700 font-semibold">สถานที่</th>
+                  <th className="text-gray-700 font-semibold">โพสต์</th>
                   <th className="text-gray-700 font-semibold text-center">จัดการ</th>
                 </tr>
               </thead>
@@ -383,7 +379,7 @@ function Show_Product() {
                           <Pencil size={16} />
                         </button>
                         <button
-                          className="btn btn-sm bg-red-500 hover:bg-red-600 text-white border-0 rounded-lg"
+                          className="btn btn-sm bg-purple-500 hover:bg-purple-600 text-white border-0 rounded-lg"
                           onClick={() => {
                             setIsDelete(true);
                             setSelectedPost(item);

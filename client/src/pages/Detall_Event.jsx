@@ -64,9 +64,9 @@ function Detall_Event() {
   const handlelike = async (item) => {
     if (!userId) {
       toast.error("กรุณาเข้าสู่ระบบก่อนกดไลค์!", {
-              position: "top-center",
-              autoClose: 1500,
-            });
+        position: "top-center",
+        autoClose: 1500,
+      });
       return;
     }
 
@@ -147,7 +147,6 @@ function Detall_Event() {
         const isPast = daysUntil < 0;
 
         return (
-          
           <div key={index} className="max-w-7xl mx-auto px-4 py-8">
             <ToastContainer />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -445,6 +444,17 @@ function Detall_Event() {
                                 <p className="text-sm text-gray-500">
                                   {formatTime(item.date_start)}
                                 </p>
+                                 <p
+                                onClick={() => {
+                                  window.open(
+                                    `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`,
+                                    "_blank"
+                                  );
+                                }}
+                                className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium cursor-pointer hover:underline"
+                              >
+                                 เปิด Google Maps
+                              </p>
                               </div>
                             </Popup>
                           </Marker>

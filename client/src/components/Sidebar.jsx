@@ -22,19 +22,18 @@ const menuItems = [
   //   label: "โพสต์ของผู้ใช้",
   //   path: "/menu/menu_profile",
   // }
-  ,
   {
     label: "กิจกรรมของผู้ใช้",
     path: "/menu/show_event",
   },
   {
     label: "สินค้าผู้ใช้",
-    path :"/menu/show_product",
+    path: "/menu/show_product",
   },
   {
-    label:"แก้ไขโปรไฟล์",
-    path:"/menu/profile"
-  }
+    label: "แก้ไขโปรไฟล์",
+    path: "/menu/profile",
+  },
 ];
 
 const Sidebar = ({ isOpen = true }) => {
@@ -74,24 +73,23 @@ const Sidebar = ({ isOpen = true }) => {
           const isActive = activeItem === item.label;
           return (
             <div key={index} onClick={() => handleItemClick(item.label)}>
-             <Link
-                to={item.path}>
-                 <span
-                className={`flex items-center p-3 rounded-xl ml-1 mb-2 transition-all duration-200 cursor-pointer ${
-                  !isOpen && "justify-center"
-                } ${
-                  isActive
-                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold shadow-lg transform scale-105 border border-purple-400"
-                    : "text-purple-200 hover:bg-purple-700/50 hover:text-white hover:shadow-md hover:scale-102"
-                }`}
-              >
-                <span className={isActive ? "text-white" : "text-purple-300"}>
-                  {item.icon}
+              <Link to={item.path}>
+                <span
+                  className={`flex items-center p-3 rounded-xl ml-1 mb-2 transition-all duration-200 cursor-pointer ${
+                    !isOpen && "justify-center"
+                  } ${
+                    isActive
+                      ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold shadow-lg transform scale-105 border border-purple-400"
+                      : "text-purple-200 hover:bg-purple-700/50 hover:text-white hover:shadow-md hover:scale-102"
+                  }`}
+                >
+                  <span className={isActive ? "text-white" : "text-purple-300"}>
+                    {item.icon}
+                  </span>
+                  <span className={`ml-3 ${!isOpen && "hidden"} font-medium`}>
+                    {item.label}
+                  </span>
                 </span>
-                <span className={`ml-3 ${!isOpen && "hidden"} font-medium`}>
-                  {item.label}
-                </span>
-              </span>
               </Link>
             </div>
           );

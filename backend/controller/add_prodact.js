@@ -41,8 +41,16 @@ exports.get_product_id = async (req,res)=>{
 
 exports.get_prodact = async (req , res )=>{
     try{
-        const [rows] = await db.promise().query(`SELECT * FROM user_prodact t1 JOIN user t2 ON t1.id_user = t2.id_user`);
-        if(rows.length===0){
+        const [rows] = await db.promise().query(`SELECT 
+            t1.*, 
+            t2.first_name, 
+            t2.last_name, 
+            t3.name_location
+        FROM user_prodact AS t1
+        JOIN user AS t2 ON t1.id_user = t2.id_user
+        LEFT JOIN user_post AS t3 ON t1.id_post = t3.id_post
+        ORDER BY t3.name_location ASC, t1.id_product ASC;`);
+if(rows.length===0){
             return res.status(404).json({ msg:"ไม่พบสินค้า"})
         }
         const formatData = rows.map((row)=>({
@@ -64,13 +72,16 @@ exports.get_product_me = async (req , res )=>{
     const {id} = req.params;
     try{
         const [rows] =await db.promise().query(`SELECT 
-                        t1.*,          
-                        t2.*, 
-                        t3.* 
-                    FROM user_prodact t1
-                    JOIN user t2 ON t1.id_user = t2.id_user
-                    JOIN user_post t3 ON t1.id_post = t3.id_post
-                    WHERE t1.id_user = ?`,[id]);
+        t1.*,          
+        t2.first_name, 
+        t2.last_name, 
+        t3.name_location
+    FROM user_prodact AS t1
+    JOIN user AS t2 ON t1.id_user = t2.id_user
+    LEFT JOIN user_post AS t3 ON t1.id_post = t3.id_post
+    WHERE t1.id_user = ?
+    ORDER BY t3.name_location ASC, t1.id_product ASC;
+    `,[id]);
         if(rows.length === 0){
             return res.status(404).json({msg:"ไม่พบสินค้า"});
         }
@@ -97,8 +108,6 @@ exports.add_prodact = async (req , res )=>{
         name_product,
         detail_product,
         phone,
-        latitude,
-        longitude,
         price,
         type
     } = req.body;
@@ -106,15 +115,13 @@ exports.add_prodact = async (req , res )=>{
     const image = req.file;
     try{
 
-        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,id_post,name_product,detail_product,phone,latitude,longitude,price,images,type)VALUES (?,?,?,?,?,?,?,?,?,?,?)",[
+        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,id_post,name_product,detail_product,phone,price,images,type)VALUES (?,?,?,?,?,?,?,?,?)",[
             max_id+1,
             id_user,
             id_post,
             name_product,
             detail_product,
             phone,
-            latitude,
-            longitude,
             price,
             image.path,
             type
@@ -146,40 +153,31 @@ exports.edit_prodact = async (req, res) => {
         name_product,
         detail_product,
         phone,
-        latitude,
-        longitude,
         price,
         type
     } = req.body;
 
     try {
-        // ตรวจสอบว่ามีการอัปโหลดไฟล์ใหม่หรือไม่
         let imagePath = null;
         if (req.file) {
-            // ดึง path รูปใหม่
             imagePath = req.file.path;
-
-            // ลบรูปเดิม (ถ้ามี)
             const [oldRows] = await db.promise().query("SELECT images FROM user_prodact WHERE id_product = ?", [id]);
             if (oldRows.length > 0 && oldRows[0].images && fs.existsSync(oldRows[0].images)) {
                 deleteImage(oldRows[0].images);
             }
         }
 
-        // ถ้าไม่ได้อัปโหลดรูปใหม่ ให้ใช้ path เดิม
         if (!imagePath) {
             const [oldRows] = await db.promise().query("SELECT images FROM user_prodact WHERE id_product = ?", [id]);
             imagePath = oldRows.length > 0 ? oldRows[0].images : null;
         }
 
         const [rows] = await db.promise().query(
-            "UPDATE user_prodact SET name_product = ?, detail_product = ?, phone = ?, latitude = ?, longitude = ?, price = ?, images = ?, type = ? WHERE id_product = ?",
+            "UPDATE user_prodact SET name_product = ?, detail_product = ?, phone = ?, price = ?, images = ?, type = ? WHERE id_product = ?",
             [
                 name_product,
                 detail_product,
                 phone,
-                latitude,
-                longitude,
                 price,
                 imagePath,
                 type,
@@ -251,9 +249,7 @@ exports.nearby_product = async (req, res) => {
         if (!current || !current.latitude || !current.longitude) {
             return res.status(404).json({ msg: "ไม่พบข้อมูลสถานที่หลัก" });
         }
-        // ดึงข้อมูลสถานที่อื่น ๆ ทั้งหมด (ยกเว้นตัวเอง)
         const [places] = await db.promise().query("SELECT id_product, name_product, detail_product, latitude, longitude, images FROM user_prodact WHERE id_product != ? AND latitude IS NOT NULL AND longitude IS NOT NULL", [id]);
-        // คำนวณระยะทาง
         function toRad(Value) { return (Value * Math.PI) / 180; }
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371;

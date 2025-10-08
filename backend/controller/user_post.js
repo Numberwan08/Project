@@ -52,11 +52,12 @@ exports.delete_comment = async (req, res) => {
 exports.get_post = async (req ,res ) => {
     try{
         const sql = `
-            SELECT 
+                        SELECT 
                 p.*,
                 COALESCE(l.likes, 0) AS likes,
                 COALESCE(c.comments, 0) AS comments,
-                COALESCE(c.avg_star, 0) AS star
+                COALESCE(c.avg_star, 0) AS star,
+                COALESCE(pr.products, 0) AS products
             FROM user_post p
             LEFT JOIN (
                 SELECT id_post, COUNT(*) AS likes
@@ -68,8 +69,13 @@ exports.get_post = async (req ,res ) => {
                 FROM comment_post
                 GROUP BY id_post
             ) c ON p.id_post = c.id_post
-            ORDER BY likes DESC 
-        `;
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS products
+                FROM user_prodact
+                GROUP BY id_post
+            ) pr ON p.id_post = pr.id_post
+            ORDER BY likes DESC; 
+                    `;
 
         const [rows] = await db.promise().query(sql);
         

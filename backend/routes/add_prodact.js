@@ -13,7 +13,7 @@ router.get('/products_by_post/:id_post',get_products_by_post);
 router.get('/random_products_by_post/:id_post',get_random_products_by_post);
 router.post('/product',uploadToPostImg.single("image"),add_prodact);
 router.patch('/product/:id',uploadToPostImg.single("image"),edit_prodact);
-router.delete('/product/:id',delete_prodact);
+router.delete('/product/:id',uploadToPostImg.single("image"),delete_prodact);
 router.get('/nearby_product/:id',nearby_product);
 
 module.exports = router;

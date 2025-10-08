@@ -70,6 +70,9 @@ const Navbar = () => {
                     <a href="/menu/Show_Event">ข้อมูลกิจกรรม</a>
                   </li>
                   <li>
+                    <a href="/menu/show_product">ข้อมูลสินค้า</a>
+                  </li>
+                  <li>
                     <a href="/menu/profile">แก้ไขโปรไฟล์</a>
                   </li>
                   <Link to="/">

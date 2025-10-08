@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Trash2, ChevronLeft, ChevronRight, Search, Package } from 'lucide-react'
+import { Trash2, ChevronLeft, ChevronRight, Search, Package, MapPin } from 'lucide-react'
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -32,11 +32,15 @@ function ProductControllers() {
     }
   };
 
-  const filteredProducts = products.filter(item =>
-    item.name_product
-      ? item.name_product.toLowerCase().includes(search.toLowerCase())
-      : false
+  const filteredProducts = products.filter(item => {
+  const searchText = search.toLowerCase();
+  return (
+    (item.name_product && item.name_product.toLowerCase().includes(searchText)) ||
+    (item.detail_product && item.detail_product.toLowerCase().includes(searchText)) ||
+    (item.name_location && item.name_location.toLowerCase().includes(searchText))
   );
+});
+
 
   // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -83,9 +87,10 @@ function ProductControllers() {
                 <tr className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
                   <th className="w-[8%] px-4 py-3 text-center font-medium text-sm">ลำดับ</th>
                   <th className="w-[15%] px-4 py-3 text-left font-medium text-sm">โปรไฟล์</th>
-                  <th className="w-[30%] px-4 py-3 text-left font-medium text-sm">ชื่อสินค้า</th>
-                  <th className="w-[20%] px-4 py-3 text-left font-medium text-sm">รายละเอียด</th>
-                  <th className="w-[12%] px-4 py-3 text-left font-medium text-sm">ราคา</th>
+                  <th className="w-[15%] px-4 py-3 text-left font-medium text-sm">ชื่อสินค้า</th>
+                  <th className="w-[28%] px-4 py-3 text-left font-medium text-sm">รายละเอียด</th>
+                  <th className="w-[15%] px-4 py-3 text-left font-medium text-sm">ราคา</th>
+                  <th className="w-[20%] px-4 py-3 text-left font-medium text-sm">สถานที่</th>
                   <th className="w-[15%] px-4 py-3 text-center font-medium text-sm">จัดการ</th>
                 </tr>
               </thead>
@@ -125,6 +130,10 @@ function ProductControllers() {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                           {item.price} บาท
                         </span>
+                      </td>
+                      <td>
+                       
+                        <div className="flex font-medium text-gray-900 text-sm"> <MapPin size={14} className="text-purple-500 mt-1 mr-1" />{item.name_location || "ไม่มีสถานที่"}</div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-center">

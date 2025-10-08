@@ -281,10 +281,13 @@ function Menu_Event() {
                     className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg tabular-nums"
                     placeholder="08X-XXX-XXXX"
                     value={formdata.phone}
-                    onChange={(e) =>
-                      setFormdata({ ...formdata, phone: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, ""); // กรองให้เหลือแค่ตัวเลข
+                      setFormdata({ ...formdata, phone: value });
+                    }}
                     name="phone"
+                    inputMode="numeric" // แสดงคีย์บอร์ดตัวเลขบนมือถือ
+                    maxLength={10} // จำกัดความยาวสูงสุด 10 หลัก
                   />
                 </div>
 

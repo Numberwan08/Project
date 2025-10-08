@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { MessageCircle, ThumbsUp, Search, MapPin, Filter } from "lucide-react";
+import { MessageCircle, ThumbsUp, Search, MapPin, Filter, Package } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Pagination from "../components/Pagination";
@@ -46,7 +46,9 @@ function AttractionPage() {
     for (const post of posts) {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API}post/likes/check/${post.id_post}/${userId}`
+          `${import.meta.env.VITE_API}post/likes/check/${
+            post.id_post
+          }/${userId}`
         );
         if (res.data.liked) {
           likedSet.add(post.id_post);
@@ -120,9 +122,7 @@ function AttractionPage() {
         : false
     )
     .filter((item) =>
-      selectedTypes.length === 0
-        ? true
-        : selectedTypes.includes(item.type_name)
+      selectedTypes.length === 0 ? true : selectedTypes.includes(item.type_name)
     )
     .sort((a, b) => b.likes - a.likes); // เรียง likes มากไปน้อย
 
@@ -134,48 +134,47 @@ function AttractionPage() {
 
   const handleTypeChange = (type) => {
     setSelectedTypes((prev) =>
-      prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type]
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="mt-5">
-      {/* ฟอร์มค้นหา */}
-        <form
-          className="max-w-md mx-auto mb-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setPage(1); // รีเซ็ตหน้าเมื่อค้นหาใหม่
-          }}
-        >
-          <label
-            htmlFor="default-search"
-            className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
+        <div className="mt-5">
+          {/* ฟอร์มค้นหา */}
+          <form
+            className="max-w-md mx-auto mb-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setPage(1); // รีเซ็ตหน้าเมื่อค้นหาใหม่
+            }}
           >
-            Search
-          </label>
-          <div className="relative flex">
-            <input
-              type="search"
-              id="default-search"
-              className="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="ค้นหาสถานที่"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-2 bottom-2 px-4 py-2 bg-purple-600 text-white rounded-lg flex items-center gap-2 hover:bg-purple-700 transition"
+            <label
+              htmlFor="default-search"
+              className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
             >
-              <Search className="w-4 h-4" />
-              ค้นหา
-            </button>
-          </div>
-        </form></div>
+              Search
+            </label>
+            <div className="relative flex">
+              <input
+                type="search"
+                id="default-search"
+                className="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="ค้นหาสถานที่"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-2 bottom-2 px-4 py-2 bg-purple-600 text-white rounded-lg flex items-center gap-2 hover:bg-purple-700 transition"
+              >
+                <Search className="w-4 h-4" />
+                ค้นหา
+              </button>
+            </div>
+          </form>
+        </div>
         {/* Filter Section */}
         <div className="mb-8">
           <button
@@ -190,7 +189,9 @@ function AttractionPage() {
 
           {showFilters && (
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6 animate-fadeIn">
-              <h3 className="font-semibold text-gray-700 mb-4">ประเภทสถานที่</h3>
+              <h3 className="font-semibold text-gray-700 mb-4">
+                ประเภทสถานที่
+              </h3>
               <div className="flex flex-wrap gap-3">
                 {typeNames.map((type) => (
                   <label
@@ -222,7 +223,7 @@ function AttractionPage() {
               <p className="text-gray-500 text-lg">ไม่พบข้อมูลสถานที่</p>
             </div>
           )}
-          
+
           {paginatedPlaces.map((item) => (
             <div
               key={item.id_post}
@@ -272,6 +273,12 @@ function AttractionPage() {
                       {item.comments}
                     </span>
                   </div>
+                  <div className="flex items-center gap-1.5">
+                    <Package className="w-5 h-5 text-purple-600" />
+                    <span className="text-sm font-medium text-gray-700">
+                      {item.products}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Button */}
@@ -287,7 +294,11 @@ function AttractionPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         )}
       </div>
 
