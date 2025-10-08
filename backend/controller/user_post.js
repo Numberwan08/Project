@@ -51,30 +51,32 @@ exports.delete_comment = async (req, res) => {
 
 exports.get_post = async (req ,res ) => {
     try{
-        const sql = `
-                        SELECT 
-                p.*,
-                COALESCE(l.likes, 0) AS likes,
-                COALESCE(c.comments, 0) AS comments,
-                COALESCE(c.avg_star, 0) AS star,
-                COALESCE(pr.products, 0) AS products
-            FROM user_post p
-            LEFT JOIN (
-                SELECT id_post, COUNT(*) AS likes
-                FROM like_post
-                GROUP BY id_post
-            ) l ON p.id_post = l.id_post
-            LEFT JOIN (
-                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
-                FROM comment_post
-                GROUP BY id_post
-            ) c ON p.id_post = c.id_post
-            LEFT JOIN (
-                SELECT id_post, COUNT(*) AS products
-                FROM user_prodact
-                GROUP BY id_post
-            ) pr ON p.id_post = pr.id_post
-            ORDER BY likes DESC; 
+        const sql = `SELECT 
+        p.*,
+        pt.id_type,
+        pt.name_type,
+        COALESCE(l.likes, 0) AS likes,
+        COALESCE(c.comments, 0) AS comments,
+        COALESCE(c.avg_star, 0) AS star,
+        COALESCE(pr.products, 0) AS products
+    FROM user_post p
+    LEFT JOIN (
+        SELECT id_post, COUNT(*) AS likes
+        FROM like_post
+        GROUP BY id_post
+    ) l ON p.id_post = l.id_post
+    LEFT JOIN (
+        SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
+        FROM comment_post
+        GROUP BY id_post
+    ) c ON p.id_post = c.id_post
+    LEFT JOIN (
+        SELECT id_post, COUNT(*) AS products
+        FROM user_prodact
+        GROUP BY id_post
+    ) pr ON p.id_post = pr.id_post
+    LEFT JOIN post_type pt ON p.id_type = pt.id_type
+    ORDER BY likes DESC;
                     `;
 
         const [rows] = await db.promise().query(sql);
@@ -99,7 +101,8 @@ exports.count_comment = async (req ,res ) => {
     
     try{
         const {id_post} = req.params;
-        const [rows] = await db.promise().query(`SELECT COUNT(t2.id_post)comment  FROM user_post t1 JOIN comment_post t2 ON t1.id_post=t2.id_post WHERE t1.id_post = ?`,[id_post]);
+        const [rows] = await db.promise().query(`SELECT COUNT(t2.id_post)comment  FROM user_post t1 JOIN comment_post t2 ON 
+            t1.id_post=t2.id_post WHERE t1.id_post = ?`,[id_post]);
         if(rows.length === 0){
             return res.status(404).json({ mag: "ไม่พบคอมเมนต์"});
         }
@@ -143,6 +146,7 @@ exports.get_comment = async (req ,res ) => {
         });
     }
 }
+
 
 exports.post_att = async (req ,res ) => {
     try{
@@ -298,7 +302,7 @@ exports.add_post = async (req, res) => {
     longitude,
     date,
     type,
-    type_name
+    id_type
   } = req.body;
 
   const image = req.file;
@@ -315,7 +319,7 @@ exports.add_post = async (req, res) => {
     const [rows] = await db
       .promise()
       .query(
-        "INSERT INTO user_post (name_location, detail_location, phone, detail_att, images, latitude, longitude, date, type, type_name) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO user_post (name_location, detail_location, phone, detail_att, images, latitude, longitude, date, type, id_type) VALUES (?,?,?,?,?,?,?,?,?,?)",
         [
           name_location,
           detail_location,
@@ -326,7 +330,7 @@ exports.add_post = async (req, res) => {
           longitude,
           postDate,
           type || 1,
-          type_name,
+          id_type,
         ]
       );
 
@@ -363,7 +367,7 @@ exports.edit_post = async (req, res) => {
         detail_att,
         latitude,
         longitude,
-        type_name
+        id_type
     } = req.body;
 
     try {
@@ -391,7 +395,7 @@ exports.edit_post = async (req, res) => {
                  images = ?, 
                  latitude = ?, 
                  longitude = ?, 
-                 type_name = ?
+                 id_type = ?
              WHERE id_post = ?`,
             [
               name_location,
@@ -401,7 +405,7 @@ exports.edit_post = async (req, res) => {
               imagePath,
               latitude,
               longitude,
-              type_name,
+              id_type,
               id
             ]
           );
@@ -602,4 +606,96 @@ exports.comment_post = async (req, res) => {
         });
     }
 
+}
+
+// Add: get list of post types
+exports.get_post_types = async (req, res) => {
+    try {
+        const [rows] = await db.promise().query(`SELECT id_type, name_type FROM post_type ORDER BY id_type`);
+        return res.status(200).json({ msg: "ดึงประเภทโพสต์สำเร็จ", data: rows });
+    } catch (err) {
+        console.log("error get post types", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงประเภทโพสต์ได้",
+            error: err.message
+        });
+    }
+};
+
+// Add: create a new post type
+exports.create_post_type = async (req, res) => {
+    try {
+        const { name_type } = req.body;
+        if (!name_type || name_type.toString().trim() === "") {
+            return res.status(400).json({ msg: "กรุณาระบุชื่อประเภท", error: "name_type required" });
+        }
+        const [result] = await db.promise().query("INSERT INTO post_type (name_type) VALUES (?)", [name_type]);
+        if (result.affectedRows === 0) {
+            return res.status(400).json({ msg: "ไม่สามารถสร้างประเภทได้", error: "insert failed" });
+        }
+        return res.status(201).json({ msg: "สร้างประเภทสำเร็จ", data: { id_type: result.insertId, name_type } });
+    } catch (err) {
+        console.log("error create post type", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถสร้างประเภทได้",
+            error: err.message
+        });
+    }
+};
+
+// Update a post type
+exports.update_post_type = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name_type } = req.body;
+        if (!name_type || name_type.toString().trim() === "") {
+            return res.status(400).json({ msg: "กรุณาระบุชื่อประเภท", error: "name_type required" });
+        }
+        const [result] = await db.promise().query(
+            "UPDATE post_type SET name_type = ? WHERE id_type = ?",
+            [name_type, id]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ msg: "ไม่พบประเภทที่ต้องการแก้ไข" });
+        }
+        return res.status(200).json({ msg: "แก้ไขประเภทสำเร็จ", data: { id_type: Number(id), name_type } });
+    } catch (err) {
+        console.log("error update post type", err);
+        return res.status(500).json({ msg: "ไม่สามารถแก้ไขประเภทได้", error: err.message });
+    }
+};
+
+// Delete a post type
+exports.delete_post_type = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await db.promise().query(
+            "DELETE FROM post_type WHERE id_type = ?",
+            [id]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ msg: "ไม่พบประเภทที่ต้องการลบ" });
+        }
+        return res.status(200).json({ msg: "ลบประเภทสำเร็จ" });
+    } catch (err) {
+        // Handle MySQL foreign key constraint
+        if (err && (err.code === 'ER_ROW_IS_REFERENCED_2' || err.errno === 1451)) {
+            return res.status(409).json({ msg: "ไม่สามารถลบประเภทได้ เนื่องจากถูกใช้งานอยู่", error: err.message });
+        }
+        console.log("error delete post type", err);
+        return res.status(500).json({ msg: "ไม่สามารถลบประเภทได้", error: err.message });
+    }
+};
+
+exports.get_type_name = async (req, res) => {
+    try{
+        const [rows] = await db.promise().query("SELECT name_type FROM post_type");
+        return res.status(200).json({ msg: "ดึงชื่อประเภทสำเร็จ", data: rows });
+    }catch(err){
+        console.log("error get type name", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงชื่อประเภทได้",
+            error: err.message
+        });
+    }
 }

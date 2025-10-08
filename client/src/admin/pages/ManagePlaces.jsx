@@ -36,7 +36,7 @@ function ManagePlaces() {
     detail_att: "",
     latitude: "",
     longitude: "",
-    type_name: "",
+    id_type: "",
     type: "1",
   });
 
@@ -48,7 +48,7 @@ function ManagePlaces() {
     detail_att: "",
     latitude: "",
     longitude: "",
-    type_name: "",
+    id_type: "",
     type: "1",
   });
 
@@ -65,9 +65,13 @@ function ManagePlaces() {
   const markerRef = useRef(null);
   const editMarkerRef = useRef(null);
 
+  // New state for types and type modal
+  const [types, setTypes] = useState([]);
+
   // โหลดข้อมูลโพสต์ทั้งหมด
   useEffect(() => {
     fetchPosts();
+    fetchTypes(); // fetch types on mount
   }, []);
 
   // Map functionality for add form
@@ -227,7 +231,7 @@ function ManagePlaces() {
         detail_att: postData.detail_att || "",
         latitude: postData.latitude || "",
         longitude: postData.longitude || "",
-        type_name: postData.type_name || "",
+        id_type: postData.id_type || "",
         type: postData.type || "1",
       });
       setEditPreview(postData.images);
@@ -237,6 +241,16 @@ function ManagePlaces() {
         position: "top-center",
         autoClose: 2000,
       });
+    }
+  };
+
+  // Fetch types
+  const fetchTypes = async () => {
+    try {
+      const res = await axios.get(import.meta.env.VITE_API + "post/types");
+      setTypes(res.data.data || []);
+    } catch (err) {
+      setTypes([]);
     }
   };
 
@@ -272,7 +286,7 @@ function ManagePlaces() {
       formDataToSend.append("latitude", formdata.latitude);
       formDataToSend.append("longitude", formdata.longitude);
       formDataToSend.append("type", formdata.type);
-      formDataToSend.append("type_name", formdata.type_name);
+      formDataToSend.append("id_type", formdata.id_type);
       const userData = localStorage.getItem("userData");
       const userId = userData ? JSON.parse(userData).id_user : 1;
       formDataToSend.append("id_user", userId);
@@ -313,7 +327,7 @@ function ManagePlaces() {
         detail_att: "",
         latitude: "",
         longitude: "",
-        type_name: "",
+        id_type: "",
         type: "1",
       });
       setSelectedFile(null);
@@ -342,7 +356,7 @@ function ManagePlaces() {
       formDataToSend.append("detail_att", editFormdata.detail_att);
       formDataToSend.append("latitude", editFormdata.latitude);
       formDataToSend.append("longitude", editFormdata.longitude);
-      formDataToSend.append("type_name", editFormdata.type_name);
+      formDataToSend.append("id_type", editFormdata.id_type);
 
       if (editSelectedFile) {
         formDataToSend.append("image", editSelectedFile);
@@ -449,7 +463,7 @@ function ManagePlaces() {
       detail_att: "",
       latitude: "",
       longitude: "",
-      type_name: "",
+      id_type: "",
       type: "1",
     });
     setSelectedFile(null);
@@ -470,7 +484,7 @@ function ManagePlaces() {
       detail_att: "",
       latitude: "",
       longitude: "",
-      type_name: "",
+      id_type: "",
       type: "1",
     });
     setEditSelectedFile(null);
@@ -524,7 +538,6 @@ function ManagePlaces() {
   return (
     <div className="min-h-screen overflow-y-auto flex flex-col items-center text-center min-h-screen p-4 text-4xl overflow-y-auto">
       <ToastContainer />
-
       {/* Add Post Form Modal */}
       {showAddForm && (
         <dialog open className="modal modal-open">
@@ -603,17 +616,27 @@ function ManagePlaces() {
                           <ChartArea className="h-5 w-5 text-purple-600" />
                           ประเภทสถานที่
                         </label>
-                        <input
-                          type="text"
-                          value={formdata.type_name}
-                          className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                          onChange={(e) =>
-                            setFormdata({
-                              ...formdata,
-                              type_name: e.target.value,
-                            })
-                          }
-                        />
+
+                        {/* REPLACED: text input -> select + add button */}
+                        <div className="flex gap-2">
+                          <select
+                            value={formdata.id_type || ""}
+                            onChange={(e) =>
+                              setFormdata({
+                                ...formdata,
+                                id_type: e.target.value,
+                              })
+                            }
+                            className="flex-1 px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                          >
+                            <option value="">เลือกประเภท</option>
+                            {types.map((t) => (
+                              <option key={t.id_type} value={t.id_type}>
+                                {t.name_type}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                       {/* Location Name */}
                       <div className="space-y-2">
@@ -903,26 +926,32 @@ function ManagePlaces() {
                       </div>
                     </div>
 
-                    {/* Type Name */}
+                    {/* Type Name (REPLACED similarly) */}
                     <div className="space-y-2">
                       <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
                         <MapPin className="h-5 w-5 text-purple-600" />
                         ประเภทสถานที่
                       </label>
-                      <input
-                        type="text"
-                        className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
-                        placeholder="เช่น วัด, ดอย, พิพิธภัณฑ์"
-                        value={editFormdata.type_name}
-                        onChange={(e) =>
-                          setEditFormdata({
-                            ...editFormdata,
-                            type_name: e.target.value,
-                          })
-                        }
-                        name="type_name"
-                        required
-                      />
+
+                      <div className="flex gap-2">
+                        <select
+                          value={editFormdata.id_type || ""}
+                          onChange={(e) =>
+                            setEditFormdata({
+                              ...editFormdata,
+                              id_type: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-lg"
+                        >
+                          <option value="">เลือกประเภท</option>
+                          {types.map((t) => (
+                            <option key={t.id_type} value={t.id_type}>
+                              {t.name_type}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     {/* Location Name */}
@@ -1138,12 +1167,12 @@ function ManagePlaces() {
           <div className="mb-6">
             <div className="mb-6 flex justify-start items-start ">
               <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                จัดการกิจกรรม
+                จัดการสถานที่ท่องเที่ยว
               </h1>
             </div>
             <div className="flex justify-start items-start">
               <h2 className="text-sm text-gray-600">
-                รายการกิจกรรมทั้งหมดของคุณ
+                รายการสถานที่ทั้งหมดของคุณ
               </h2>
             </div>
             <div className="mt-5 flex gap-4 ">
@@ -1244,7 +1273,7 @@ function ManagePlaces() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            {item.type_name || "-"}
+                            {item.name_type || "-"}
                           </span>
                         </td>
                         <td className="px-4 py-3">

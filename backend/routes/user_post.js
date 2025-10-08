@@ -3,7 +3,8 @@
 const express = require('express');
 const { get_post, add_post, edit_post, delete_post, get_post_me, get_single_post,
 likes, likes_check,nearby, comment_post,get_comment,
-count_comment,delete_comment} = require('../controller/user_post');
+count_comment,delete_comment, get_post_types, create_post_type, update_post_type, delete_post_type,
+get_type_name} = require('../controller/user_post');
 const router = express.Router();
 
 
@@ -11,6 +12,10 @@ const uploadTo = require('../middleware/upload');
 const uploadToPostImg = uploadTo('post_image');
 
 router.get('/post',get_post);
+router.get('/post/types', get_post_types); 
+router.post('/post/type', create_post_type);
+router.patch('/post/type/:id', update_post_type);
+router.delete('/post/type/:id', delete_post_type);
 router.get('/post_att/:id',require('../controller/user_post').post_att);
 router.get('/post/user/:id',get_post_me); 
 router.get('/post/single/:id',get_single_post); 
@@ -25,5 +30,6 @@ router.post("/post/comment/:id_post",uploadToPostImg.single("image"),comment_pos
 router.get("/post/comment_id/:id_post",get_comment);
 router.get("/post/count_comment/:id_post",count_comment);
 router.delete("/delete_comment/:id",delete_comment);
+router.get("/type_name",get_type_name);
 
 module.exports = router;

@@ -37,6 +37,11 @@ const menuItems = [
     label: "จัดการสินค้า",
     icon: <Package size={20} />,
     path: "product",
+  },
+  {
+    label: "เพิ่มประเภทสถานที่",
+    icon: <Package size={20} />,
+    path: "addtype",
   }
 ];
 

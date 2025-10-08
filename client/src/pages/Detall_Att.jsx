@@ -35,7 +35,7 @@ function Detail_Att() {
   const [commentError, setCommentError] = useState("");
   const [comments, setComments] = useState([]);
   const [commentPage, setCommentPage] = useState(1);
-  const COMMENTS_PER_PAGE = 3;
+  const COMMENTS_PER_PAGE = 100;
 
   // Product Modal States
   const [showProductModal, setShowProductModal] = useState(false);
@@ -613,7 +613,115 @@ function Detail_Att() {
                   </div>
                 )}
               </div>
-
+              {/* Recommendation Badge */}
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-4">
+                <h3 className="font-bold text-xl mb-4 text-white">
+                  ความคิดเห็น
+                </h3>
+                {comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments
+                      .slice(
+                        (commentPage - 1) * COMMENTS_PER_PAGE,
+                        commentPage * COMMENTS_PER_PAGE
+                      )
+                      .map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow"
+                        >
+                          {/* ปุ่มลบคอมเมนต์ เฉพาะเจ้าของ */}
+                          {userId === String(item.id_user) && (
+                            <button
+                              className="text-red-500 cursor-pointer hover:text-red-700 float-right mb-2"
+                              onClick={() =>
+                                handleDeleteComment(item.id_comment)
+                              }
+                            >
+                              ลบ
+                            </button>
+                          )}
+                          <div className="flex items-center mb-2">
+                            <span className="font-semibold mr-2">
+                              {item.first_name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {item.date_comment &&
+                                new Date(item.date_comment).toLocaleDateString(
+                                  "th-TH",
+                                  {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  }
+                                )}
+                            </span>
+                            <div className="flex items-center space-x-1 ml-4">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                                className="w-4 h-4 text-yellow-400"
+                              >
+                                <path d="M12 .587l3.668 7.568L24 9.75l-6 5.85 1.416 8.4L12 19.771l-7.416 4.229L6 15.6 0 9.75l8.332-1.595z" />
+                              </svg>
+                              <span className="text-sm font-medium text-gray-700">
+                                {item.star}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mb-2">
+                            <span className="ml-2 text-gray-600">
+                              {item.comment}
+                            </span>
+                          </div>
+                          {item.images && (
+                            <img
+                              src={item.images}
+                              alt="comment"
+                              className="mt-2 rounded-lg max-h-32"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    {/* Pagination */}
+                    <div className="flex justify-center mt-4 space-x-2">
+                      <button
+                        className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                        onClick={() =>
+                          setCommentPage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={commentPage === 1}
+                      >
+                        ก่อนหน้า
+                      </button>
+                      <span className="px-2 text-white">
+                        หน้า {commentPage} /{" "}
+                        {Math.ceil(comments.length / COMMENTS_PER_PAGE)}
+                      </span>
+                      <button
+                        className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                        onClick={() =>
+                          setCommentPage((p) =>
+                            Math.min(
+                              Math.ceil(comments.length / COMMENTS_PER_PAGE),
+                              p + 1
+                            )
+                          )
+                        }
+                        disabled={
+                          commentPage ===
+                          Math.ceil(comments.length / COMMENTS_PER_PAGE)
+                        }
+                      >
+                        ถัดไป
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-purple-100 text-sm">ยังไม่มีความคิดเห็น</p>
+                )}
+              </div>
               {/* Related Places Section */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">
@@ -764,116 +872,6 @@ function Detail_Att() {
                     <span>เพิ่มสินค้า</span>
                   </button>
                 </div>
-              </div>
-
-              {/* Recommendation Badge */}
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-4">
-                <h3 className="font-bold text-xl mb-4 text-white">
-                  ความคิดเห็น
-                </h3>
-                {comments.length > 0 ? (
-                  <div className="space-y-4">
-                    {comments
-                      .slice(
-                        (commentPage - 1) * COMMENTS_PER_PAGE,
-                        commentPage * COMMENTS_PER_PAGE
-                      )
-                      .map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow"
-                        >
-                          {/* ปุ่มลบคอมเมนต์ เฉพาะเจ้าของ */}
-                          {userId === String(item.id_user) && (
-                            <button
-                              className="text-red-500 cursor-pointer hover:text-red-700 float-right mb-2"
-                              onClick={() =>
-                                handleDeleteComment(item.id_comment)
-                              }
-                            >
-                              ลบ
-                            </button>
-                          )}
-                          <div className="flex items-center mb-2">
-                            <span className="font-semibold mr-2">
-                              {item.first_name}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {item.date_comment &&
-                                new Date(item.date_comment).toLocaleDateString(
-                                  "th-TH",
-                                  {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  }
-                                )}
-                            </span>
-                            <div className="flex items-center space-x-1 ml-4">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                                className="w-4 h-4 text-yellow-400"
-                              >
-                                <path d="M12 .587l3.668 7.568L24 9.75l-6 5.85 1.416 8.4L12 19.771l-7.416 4.229L6 15.6 0 9.75l8.332-1.595z" />
-                              </svg>
-                              <span className="text-sm font-medium text-gray-700">
-                                {item.star}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mb-2">
-                            <span className="ml-2 text-gray-600">
-                              {item.comment}
-                            </span>
-                          </div>
-                          {item.images && (
-                            <img
-                              src={item.images}
-                              alt="comment"
-                              className="mt-2 rounded-lg max-h-32"
-                            />
-                          )}
-                        </div>
-                      ))}
-                    {/* Pagination */}
-                    <div className="flex justify-center mt-4 space-x-2">
-                      <button
-                        className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
-                        onClick={() =>
-                          setCommentPage((p) => Math.max(1, p - 1))
-                        }
-                        disabled={commentPage === 1}
-                      >
-                        ก่อนหน้า
-                      </button>
-                      <span className="px-2 text-white">
-                        หน้า {commentPage} /{" "}
-                        {Math.ceil(comments.length / COMMENTS_PER_PAGE)}
-                      </span>
-                      <button
-                        className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
-                        onClick={() =>
-                          setCommentPage((p) =>
-                            Math.min(
-                              Math.ceil(comments.length / COMMENTS_PER_PAGE),
-                              p + 1
-                            )
-                          )
-                        }
-                        disabled={
-                          commentPage ===
-                          Math.ceil(comments.length / COMMENTS_PER_PAGE)
-                        }
-                      >
-                        ถัดไป
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-purple-100 text-sm">ยังไม่มีความคิดเห็น</p>
-                )}
               </div>
             </div>
           </div>

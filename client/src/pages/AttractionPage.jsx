@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { MessageCircle, ThumbsUp, Search, MapPin, Filter, Package } from "lucide-react";
+import {
+  MessageCircle,
+  ThumbsUp,
+  Search,
+  MapPin,
+  Filter,
+  Package,
+} from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Pagination from "../components/Pagination";
@@ -19,6 +26,7 @@ function AttractionPage() {
 
   useEffect(() => {
     fetchPosts();
+    fetchnTypeNames();
   }, []);
 
   const fetchPosts = async () => {
@@ -27,16 +35,20 @@ function AttractionPage() {
       const postsData = res.data.data || [];
       setPlaces(postsData);
 
-      const types = Array.from(
-        new Set(postsData.filter((p) => p.type_name).map((p) => p.type_name))
-      );
-      setTypeNames(types);
-
       if (userId) {
         checkLikeStatus(postsData);
       }
     } catch (error) {
       setPlaces([]);
+    }
+  };
+
+  const fetchnTypeNames = async () => {
+    try {
+      const res = await axios.get(import.meta.env.VITE_API + "type_name");
+      setTypeNames(res.data.data || []);
+    } catch (error) {
+      console.log("Error fetching type names:", error);
     }
   };
 
@@ -122,9 +134,9 @@ function AttractionPage() {
         : false
     )
     .filter((item) =>
-      selectedTypes.length === 0 ? true : selectedTypes.includes(item.type_name)
+      selectedTypes.length === 0 ? true : selectedTypes.includes(item.name_type)
     )
-    .sort((a, b) => b.likes - a.likes); // เรียง likes มากไปน้อย
+    .sort((a, b) => b.likes - a.likes);
 
   const totalPages = Math.ceil(filteredPlaces.length / itemsPerPage);
   const paginatedPlaces = filteredPlaces.slice(
@@ -141,6 +153,8 @@ function AttractionPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* {JSON.stringify(filteredPlaces)}
+        {JSON.stringify(selectedTypes)} */}
         <div className="mt-5">
           {/* ฟอร์มค้นหา */}
           <form
@@ -195,20 +209,22 @@ function AttractionPage() {
               <div className="flex flex-wrap gap-3">
                 {typeNames.map((type) => (
                   <label
-                    key={type}
+                    key={type.name_type}
                     className={`px-4 py-2 rounded-full cursor-pointer transition-all ${
-                      selectedTypes.includes(type)
+                      selectedTypes.includes(type.name_type)
                         ? "bg-purple-600 text-white shadow-md"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     <input
                       type="checkbox"
-                      checked={selectedTypes.includes(type)}
-                      onChange={() => handleTypeChange(type)}
+                      checked={selectedTypes.includes(type.name_type)}
+                      onChange={() => handleTypeChange(type.name_type)}
                       className="hidden"
                     />
-                    <span className="text-sm font-medium">{type}</span>
+                    <span className="text-sm font-medium">
+                      {type.name_type}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -237,7 +253,7 @@ function AttractionPage() {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-purple-600">
-                  {item.type_name}
+                  {item.name_type}
                 </div>
               </div>
 

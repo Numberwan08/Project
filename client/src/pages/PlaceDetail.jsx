@@ -20,6 +20,9 @@ function PlaceDetail() {
   const { id } = useParams();
   const [place, setPlace] = useState(null);
   const [comments, setComments] = useState([]);
+  const [expanded, setExpanded] = useState({});
+  const [repliesMap, setRepliesMap] = useState({});
+  const [replyInputs, setReplyInputs] = useState({});
   const [loading, setLoading] = useState(true);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -45,10 +48,19 @@ function PlaceDetail() {
 
   const fetchComments = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API}post/comment_id/${id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API}post/${id}/comments/tree`);
       setComments(response.data.data || []);
     } catch (error) {
       console.error('Error fetching comments:', error);
+    }
+  };
+
+  const fetchReplies = async (id_comment) => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API}comment/${id_comment}/replies`);
+      setRepliesMap((prev) => ({ ...prev, [id_comment]: res.data.data || [] }));
+    } catch (err) {
+      console.error('Error fetching replies:', err);
     }
   };
 
@@ -97,6 +109,29 @@ function PlaceDetail() {
       fetchPlaceDetails();
     } catch (error) {
       console.error('Error adding comment:', error);
+    }
+  };
+
+  const handleAddReply = async (e, id_comment) => {
+    e.preventDefault();
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        alert('กรุณาเข้าสู่ระบบก่อน');
+        return;
+      }
+      const text = (replyInputs[id_comment] || '').trim();
+      if (!text) return;
+      await axios.post(`${import.meta.env.VITE_API}comment/${id_comment}/replies`, {
+        id_user: userId,
+        reply: text,
+      });
+      setReplyInputs((prev) => ({ ...prev, [id_comment]: '' }));
+      await fetchComments();
+      await fetchReplies(id_comment);
+      setExpanded((prev) => ({ ...prev, [id_comment]: true }));
+    } catch (err) {
+      console.error('Error adding reply:', err);
     }
   };
 
@@ -275,10 +310,10 @@ function PlaceDetail() {
               
               {comments.length > 0 ? (
                 <div className="space-y-4">
-                  {comments.map((comment, index) => (
-                    <div key={index} className="border-b border-gray-100 pb-4 last:border-b-0">
+                  {comments.map((comment) => (
+                    <div key={comment.id_comment} className="border-b border-purple-100 pb-4 last:border-b-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-medium">
                           {comment.first_name ? comment.first_name.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div>
@@ -286,7 +321,7 @@ function PlaceDetail() {
                           <div className="flex items-center">
                             {[...Array(5)].map((_, i) => (
                               <Star
-                                key={i}
+                                key={`${comment.id_comment}-star-${i}`}
                                 className={`w-4 h-4 ${
                                   i < (comment.star || 0)
                                     ? 'text-yellow-400 fill-current'
@@ -300,6 +335,62 @@ function PlaceDetail() {
                       <p className="text-gray-700">{comment.comment}</p>
                       <div className="text-sm text-gray-500 mt-2">
                         {new Date(comment.date_comment).toLocaleDateString('th-TH')}
+                      </div>
+
+                      {/* Replies thread */}
+                      <div className="mt-3 pl-4 border-l-2 border-purple-200 space-y-2">
+                        {!expanded[comment.id_comment] && comment.replies_count > 0 && comment.sample_reply && (
+                          <div className="bg-purple-50 rounded-lg p-3">
+                            <div className="text-sm text-purple-800 font-medium">
+                              {comment.sample_reply.first_name || 'ผู้ใช้'}
+                            </div>
+                            <div className="text-sm text-gray-700">{comment.sample_reply.reply}</div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              {new Date(comment.sample_reply.reply_date).toLocaleDateString('th-TH')}
+                            </div>
+                          </div>
+                        )}
+
+                        {comment.replies_count > 1 && !expanded[comment.id_comment] && (
+                          <button
+                            onClick={async () => {
+                              await fetchReplies(comment.id_comment);
+                              setExpanded((prev) => ({ ...prev, [comment.id_comment]: true }));
+                            }}
+                            className="text-purple-700 text-sm hover:underline"
+                          >
+                            ดูทั้งหมด {comment.replies_count} การตอบกลับ
+                          </button>
+                        )}
+
+                        {expanded[comment.id_comment] && (
+                          <div className="space-y-2">
+                            {(repliesMap[comment.id_comment] || []).map((r) => (
+                              <div key={r.id_reply} className="bg-purple-50 rounded-lg p-3">
+                                <div className="text-sm text-purple-800 font-medium">
+                                  {r.first_name || 'ผู้ใช้'}
+                                </div>
+                                <div className="text-sm text-gray-700">{r.reply}</div>
+                                <div className="text-xs text-gray-400 mt-1">
+                                  {new Date(r.reply_date).toLocaleDateString('th-TH')}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <form onSubmit={(e) => handleAddReply(e, comment.id_comment)} className="flex gap-2 mt-2">
+                          <input
+                            type="text"
+                            className="flex-1 input input-bordered input-sm"
+                            placeholder="ตอบกลับ..."
+                            value={replyInputs[comment.id_comment] || ''}
+                            onChange={(e) =>
+                              setReplyInputs((prev) => ({ ...prev, [comment.id_comment]: e.target.value }))
+                            }
+                          />
+                          <button type="submit" className="btn btn-sm btn-primary">ตอบกลับ</button>
+                        </form>
                       </div>
                     </div>
                   ))}

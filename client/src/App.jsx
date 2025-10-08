@@ -32,6 +32,7 @@ import { Edit } from "lucide-react";
 import Editprofile from "./pages/Editprofile";
 import PostControllers from "./admin/pages/ManagePlaces";
 import "./App.css";
+import Add_type_name from "./admin/pages/Add_type_name";
 
 function App() {
   const router = createBrowserRouter([
@@ -66,6 +67,10 @@ function App() {
         {
           path: "/admin/addattraction",
           element: <Menu_Att />,
+        },
+        {
+          path: "/admin/addtype",
+          element: <Add_type_name />,
         }
       ],
     },

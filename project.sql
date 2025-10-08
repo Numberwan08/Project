@@ -11,7 +11,7 @@
  Target Server Version : 50744 (5.7.44)
  File Encoding         : 65001
 
- Date: 02/10/2025 21:06:35
+ Date: 08/10/2025 15:18:29
 */
 
 SET NAMES utf8mb4;
@@ -40,7 +40,7 @@ CREATE TABLE `comment_post`  (
   `star` char(5) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `id_comment` int(11) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (`id_comment`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for like_event
@@ -61,6 +61,16 @@ CREATE TABLE `like_post`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Table structure for post_type
+-- ----------------------------
+DROP TABLE IF EXISTS `post_type`;
+CREATE TABLE `post_type`  (
+  `id_type` int(11) NOT NULL AUTO_INCREMENT,
+  `name_type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  PRIMARY KEY (`id_type`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for user
 -- ----------------------------
 DROP TABLE IF EXISTS `user`;
@@ -72,9 +82,8 @@ CREATE TABLE `user`  (
   `last_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'นามสกุล',
   `dob` datetime NULL DEFAULT NULL COMMENT 'วันเกิด',
   `sex` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'เพศ',
-  `description_name` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT 'รายระเอียด',
   PRIMARY KEY (`id_user`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 123479 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 123486 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user_event
@@ -85,8 +94,8 @@ CREATE TABLE `user_event`  (
   `id_user` int(11) NOT NULL,
   `name_event` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `location_event` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `phone` int(15) NULL DEFAULT NULL,
-  `detail_event` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `phone` varchar(13) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `detail_event` varchar(10000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `date_start` datetime NULL DEFAULT NULL,
   `images` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `latitude` decimal(10, 7) NULL DEFAULT NULL,
@@ -94,7 +103,7 @@ CREATE TABLE `user_event`  (
   `date_end` datetime NULL DEFAULT NULL,
   `type` int(1) NULL DEFAULT NULL,
   PRIMARY KEY (`id_event`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user_post
@@ -111,9 +120,9 @@ CREATE TABLE `user_post`  (
   `longitude` decimal(11, 8) NULL DEFAULT NULL,
   `type` int(1) NULL DEFAULT NULL,
   `date` datetime NULL DEFAULT NULL,
-  `type_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `id_type` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_post`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for user_prodact
@@ -126,9 +135,7 @@ CREATE TABLE `user_prodact`  (
   `name_product` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `detail_product` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `phone` varchar(13) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `latitude` decimal(10, 8) NULL DEFAULT NULL,
-  `longitude` decimal(10, 8) NULL DEFAULT NULL,
-  `price` decimal(7, 2) NULL DEFAULT NULL,
+  `price` decimal(9, 2) NULL DEFAULT NULL,
   `images` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `type` int(1) NULL DEFAULT NULL,
   PRIMARY KEY (`id_product`) USING BTREE,
