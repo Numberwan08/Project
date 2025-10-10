@@ -33,5 +33,8 @@ router.get("/post/comment_status/:id_comment", require('../controller/user_post'
 router.get("/post/count_comment/:id_post",count_comment);
 router.delete("/delete_comment/:id",delete_comment);
 router.get("/type_name",get_type_name);
+// Status endpoints for comment/reply visibility
+router.patch('/post/comment_status/:id_comment', require('../controller/user_post').set_comment_status);
+router.patch('/post/reply_status/:id_reply', require('../controller/comment').set_reply_status);
 
 module.exports = router;

@@ -52,27 +52,44 @@ exports.delete_comment = async (req, res) => {
 
 exports.get_post = async (req ,res ) => {
     try{
-        const sql = `SELECT 
-        p.*,
-        pt.id_type,
-        pt.name_type,
-        COALESCE(l.likes, 0) AS likes,
-        COALESCE(c.comments, 0) AS comments,
-        COALESCE(c.avg_star, 0) AS star,
-        COALESCE(pr.products, 0) AS products
-    FROM user_post p
-    LEFT JOIN (
-        SELECT id_post, COUNT(*) AS likes
-        FROM like_post
-        GROUP BY id_post
-    ) l ON p.id_post = l.id_post
-    LEFT JOIN (
-        SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
-        FROM comment_post
-        WHERE status IS NULL OR status <> '0'
-        GROUP BY id_post
-    ) c ON p.id_post = c.id_post
-                    `;
+        const sql = `
+            SELECT 
+                p.*,
+                pt.id_type,
+                pt.name_type,
+                COALESCE(l.likes, 0) AS likes,
+                COALESCE(c.comments, 0) AS comments,
+                COALESCE(c.avg_star, 0) AS star,
+                COALESCE(pr.products, 0) AS products
+            FROM user_post p
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS likes
+                FROM like_post
+                GROUP BY id_post
+            ) l ON p.id_post = l.id_post
+            LEFT JOIN (
+                SELECT cp.id_post,
+                       (COUNT(cp.id_comment)) + COALESCE(MAX(rp.replies), 0) AS comments,
+                       ROUND(LEAST(AVG(cp.star), 5), 2) AS avg_star
+                FROM comment_post cp
+                LEFT JOIN (
+                    SELECT t2.id_post, COUNT(*) AS replies
+                    FROM comment_reply r
+                    JOIN comment_post t2 ON t2.id_comment = r.id_comment
+                    WHERE r.status IS NULL OR r.status <> '0'
+                    GROUP BY t2.id_post
+                ) rp ON rp.id_post = cp.id_post
+                WHERE cp.status IS NULL OR cp.status <> '0'
+                GROUP BY cp.id_post
+            ) c ON p.id_post = c.id_post
+            LEFT JOIN (
+                SELECT id_post, COUNT(*) AS products
+                FROM user_prodact
+                GROUP BY id_post
+            ) pr ON p.id_post = pr.id_post
+            LEFT JOIN post_type pt ON p.id_type = pt.id_type
+            ORDER BY likes DESC;
+        `;
 
         const [rows] = await db.promise().query(sql);
         
@@ -233,20 +250,11 @@ exports.get_single_post = async (req, res) => {
                 FROM like_post
                 GROUP BY id_post
             ) l ON p.id_post = l.id_post
-            LEFT JOIN (
-                SELECT cp.id_post,
-                       (COUNT(cp.id_comment)) + COALESCE(rp.replies, 0) AS comments,
-                       ROUND(LEAST(AVG(cp.star), 5), 2) AS avg_star
-                FROM comment_post cp
-                LEFT JOIN (
-                    SELECT t2.id_post, COUNT(*) AS replies
-                    FROM comment_reply r
-                    JOIN comment_post t2 ON t2.id_comment = r.id_comment
-                    WHERE r.status IS NULL OR r.status <> '0'
-                    GROUP BY t2.id_post
-                ) rp ON rp.id_post = cp.id_post
-                WHERE cp.status IS NULL OR cp.status <> '0'
-                GROUP BY cp.id_post
+           LEFT JOIN (
+                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
+                FROM comment_post
+                WHERE status IS NULL OR status <> '0'
+                GROUP BY id_post
             ) c ON p.id_post = c.id_post
             WHERE p.id_post = ?
         `;
@@ -287,20 +295,11 @@ exports.get_post_me = async (req ,res ) => {
                 FROM like_post
                 GROUP BY id_post
             ) l ON p.id_post = l.id_post
-            LEFT JOIN (
-                SELECT cp.id_post,
-                       (COUNT(cp.id_comment)) + COALESCE(rp.replies, 0) AS comments,
-                       ROUND(LEAST(AVG(cp.star), 5), 2) AS avg_star
-                FROM comment_post cp
-                LEFT JOIN (
-                    SELECT t2.id_post, COUNT(*) AS replies
-                    FROM comment_reply r
-                    JOIN comment_post t2 ON t2.id_comment = r.id_comment
-                    WHERE r.status IS NULL OR r.status <> '0'
-                    GROUP BY t2.id_post
-                ) rp ON rp.id_post = cp.id_post
-                WHERE cp.status IS NULL OR cp.status <> '0'
-                GROUP BY cp.id_post
+                       LEFT JOIN (
+                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
+                FROM comment_post
+                WHERE status IS NULL OR status <> '0'
+                GROUP BY id_post
             ) c ON p.id_post = c.id_post
             WHERE p.id_user = ?
             ORDER BY p.date DESC
@@ -602,7 +601,13 @@ exports.nearby = async (req, res) => {
                 parseFloat(place.latitude),
                 parseFloat(place.longitude)
             )
-        })).sort((a, b) => a.distance - b.distance).slice(0, 3);
+        }))
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 3)
+        .map(p => ({
+            ...p,
+            images: p.images ? `${req.protocol}://${req.headers.host}/${p.images}` : null,
+        }));
         return res.status(200).json({ data: nearby });
     } catch (err) {
         console.log("error nearby", err);

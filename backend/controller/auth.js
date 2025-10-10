@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const e = require("express");
 const jwt = require("jsonwebtoken");
 const { use } = require("react");
+const fs = require('fs');
 
 
 exports.register = async ( req , res ) =>{
@@ -15,6 +16,7 @@ exports.register = async ( req , res ) =>{
         dob,
         sex,
         } = req.body;
+        const image = req.file;
         
         const [existingUser] = await db.promise().query("SELECT id_user FROM user WHERE email = ?", [email]);
         
@@ -27,14 +29,15 @@ exports.register = async ( req , res ) =>{
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const [rows] = await db.promise().query("INSERT INTO  user (email, password, first_name, last_name, dob,sex) VALUES (?,?,?,?,?,?)",[
+        const [rows] = await db.promise().query("INSERT INTO  user (email, password, first_name, last_name, dob, sex, image_profile) VALUES (?,?,?,?,?,?,?)",[
             email,
             hashedPassword,
             first_name,
             last_name,
             dob,
-            sex, 
-    
+            sex,
+            image ? image.path : null,
+
         ])
 
         if(rows.affectedRows === 0){
@@ -193,6 +196,9 @@ exports.get_user = async (req, res) =>{
         }
         // console.log(rows);
         const user = rows[0];
+        if (user.image_profile) {
+            user.image_profile = `${req.protocol}://${req.headers.host}/${user.image_profile}`;
+        }
         console.log(user);
         return res.status(200).json({data : user})
     }catch(err){
@@ -213,6 +219,7 @@ exports.edit_user = async (req, res) =>{
             oldPassword,
             newPassword
         } = req.body;
+        const image = req.file;
 
         if (oldPassword && newPassword) {
             
@@ -234,13 +241,30 @@ exports.edit_user = async (req, res) =>{
             await db.promise().query("UPDATE user SET password = ? WHERE id_user = ?", [hashedPassword, req.params.id]);
         }
 
-        // อัปเดตข้อมูลโปรไฟล์
-        const [result] = await db.promise().query("UPDATE user SET first_name = ?, last_name = ?, Email = ? WHERE id_user = ?",[
-            first_name,
-            last_name,
-            Email,
-            req.params.id
-        ]);
+        // อัปเดตข้อมูลโปรไฟล์ และรูปถ้ามีการอัปโหลดใหม่
+        let result;
+        if (image) {
+            try {
+                const [oldRows] = await db.promise().query("SELECT image_profile FROM user WHERE id_user = ?", [req.params.id]);
+                const oldPath = oldRows.length > 0 ? oldRows[0].image_profile : null;
+                if (oldPath && fs.existsSync(oldPath)) {
+                    fs.unlink(oldPath, () => {});
+                }
+            } catch (e) {
+                // ignore
+            }
+            const [resUpd] = await db.promise().query(
+                "UPDATE user SET first_name = ?, last_name = ?, Email = ?, image_profile = ? WHERE id_user = ?",
+                [first_name, last_name, Email, image.path, req.params.id]
+            );
+            result = resUpd;
+        } else {
+            const [resUpd] = await db.promise().query(
+                "UPDATE user SET first_name = ?, last_name = ?, Email = ? WHERE id_user = ?",
+                [first_name, last_name, Email, req.params.id]
+            );
+            result = resUpd;
+        }
 
         if(result.affectedRows === 0){
             return res.status(400).json({
@@ -254,6 +278,9 @@ exports.edit_user = async (req, res) =>{
             return res.status(404).json({msg : "ไม่พบผู้ใช้งานนี้"})
         }
         const user = rows[0];
+        if (user.image_profile) {
+            user.image_profile = `${req.protocol}://${req.headers.host}/${user.image_profile}`;
+        }
 
         return res.status(200).json({
             msg : "edit profile success",
@@ -262,6 +289,9 @@ exports.edit_user = async (req, res) =>{
         
     }catch(err){
         console.log("error edit profile", err);
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+            fs.unlink(req.file.path, () => {});
+        }
         return res.status(500).json({
             msg : "error edit profile",
             error : err.message

@@ -8,7 +8,8 @@ const path = require("path");
 dotenv.config();
 
 const app = express();
-const port = 3000 || process.env.PORT;
+// Prefer PORT from environment, default to 3000
+const port = process.env.PORT || 3000;
 
 app.use(morgan("dev"));
 app.use(cors());
@@ -19,10 +20,15 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "Connected Api sucessfully" });
 });
 
-readdirSync("./routes").map((name) => {
+// Load all route modules from the routes directory regardless of CWD
+const routesDir = path.join(__dirname, "routes");
+readdirSync(routesDir).forEach((name) => {
   try {
-    // console.log("./routes/" + name)
-    app.use("/api", require("./routes/" + name));
+    const routePath = path.join(routesDir, name);
+    app.use("/api", require(routePath));
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`Loaded route: ${name}`);
+    }
   } catch (err) {
     console.error("Error loading route file:", name, err.message);
   }

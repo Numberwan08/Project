@@ -172,6 +172,7 @@ exports.get_replies = async (req, res) => {
          LEFT JOIN comment_reply pr ON pr.id_reply = r.parent_reply_id
          LEFT JOIN user pu ON pu.id_user = pr.id_user
          WHERE r.id_comment = ?
+           AND (r.status IS NULL OR r.status <> '0')
          ORDER BY r.reply_date ASC`,
         [id_comment]
       );
@@ -329,5 +330,27 @@ exports.delete_reply = async (req, res) => {
   } catch (err) {
     console.log("error delete reply", err);
     return res.status(500).json({ msg: "ไม่สามารถลบการตอบกลับได้", error: err.message });
+  }
+};
+
+// PATCH /api/post/reply_status/:id_reply { status: 0|1 }
+exports.set_reply_status = async (req, res) => {
+  try {
+    const { id_reply } = req.params;
+    let { status } = req.body || {};
+    if (!id_reply) {
+      return res.status(400).json({ msg: 'ต้องระบุ id_reply' });
+    }
+    status = Number(status);
+    if (status !== 0 && status !== 1) {
+      return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง ต้องเป็น 0 หรือ 1' });
+    }
+    const [chk] = await db.promise().query('SELECT id_reply FROM comment_reply WHERE id_reply = ?', [id_reply]);
+    if (chk.length === 0) return res.status(404).json({ msg: 'ไม่พบการตอบกลับ' });
+    await db.promise().query('UPDATE comment_reply SET status = ? WHERE id_reply = ?', [String(status), id_reply]);
+    return res.status(200).json({ msg: 'อัปเดตสถานะการตอบกลับสำเร็จ' });
+  } catch (err) {
+    console.log('set_reply_status error', err);
+    return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะการตอบกลับได้', error: err.message });
   }
 };

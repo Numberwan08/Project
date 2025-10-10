@@ -1,6 +1,44 @@
 
 const db = require("../config/db");
 const fs = require('fs');
+
+// Normalize various date-time inputs to MySQL DATETIME 'YYYY-MM-DD HH:mm:ss'
+const toMysqlDatetime = (val) => {
+  try {
+    if (!val) return null;
+    // Handle strings like '2025-05-29T10:00' or ISO '...Z'
+    let d = new Date(val);
+    if (isNaN(d.getTime())) {
+      // Fallback: simple replacements
+      let s = String(val).replace('T', ' ').replace('Z', '');
+      // Append seconds if missing
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) s += ':00';
+      // Remove milliseconds and timezone offset if any
+      s = s.replace(/\.\d+$/, '');
+      // If still invalid, return null
+      d = new Date(s);
+      if (isNaN(d.getTime())) return null;
+    }
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const MM = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
+  } catch (_) {
+    return null;
+  }
+};
+
+// Ensure user_event has expected columns used by code (e.g., id_user)
+const ensureUserEventTable = async () => {
+  const addCol = async (sql) => {
+    try { await db.promise().query(sql); } catch (_) {}
+  };
+  await addCol("ALTER TABLE user_event ADD COLUMN id_user INT NULL");
+};
 const deleteImage =(path)=>{
     fs.unlink(path,(err)=>{
         if(err){
@@ -14,6 +52,7 @@ const deleteImage =(path)=>{
 
 exports.get_event = async (req , res )=> {
     try{
+        await ensureUserEventTable();
         const [rows] = await db.promise().query(`SELECT COUNT(t2.id_event) likes,t1.*,t3.first_name FROM user_event t1
 LEFT JOIN like_event t2 on t1.id_event=t2.id_event
 LEFT JOIN user t3 on t1.id_user=t3.id_user
@@ -39,14 +78,25 @@ GROUP BY t1.id_event`);
 exports.get_events = async (req, res) =>{
     const {id} =req.params;
     try{
-
+        await ensureUserEventTable();
         const [rows] = await db.promise().query(`SELECT 
-            t1.id_event,t1.name_event,t1.location_event,t1.phone,t1.detail_event,t1.date_start,t1.images,t1.latitude,t1.longitude,t1.date_end,t2.first_name,
-            COUNT(t3.id_event) likes
-            FROM user_event t1
-            JOIN user t2 ON t1.id_user = t2.id_user 
-            JOIN like_event t3 ON t1.id_event = t3.id_event
-            WHERE t1.id_event = ?`,[id]);
+            t1.id_event,
+            t1.name_event,
+            t1.location_event,
+            t1.phone,
+            t1.detail_event,
+            t1.date_start,
+            t1.images,
+            t1.latitude,
+            t1.longitude,
+            t1.date_end,
+            t2.first_name,
+            COUNT(t3.id_event) AS likes
+          FROM user_event t1
+          LEFT JOIN user t2 ON t1.id_user = t2.id_user 
+          LEFT JOIN like_event t3 ON t1.id_event = t3.id_event
+          WHERE t1.id_event = ?
+          GROUP BY t1.id_event`,[id]);
     
         if(rows.length === 0){
             return res.status(404).json({mag:"ไม่พบกิจกรรม"});
@@ -72,6 +122,7 @@ exports.get_events = async (req, res) =>{
 exports.get_event_me = async (req , res )=> {
     const {id} = req.params;
     try{
+        await ensureUserEventTable();
 
         const [rows] = await db.promise().query("SELECT * FROM user_event WHERE id_user = ?",[id]);
         if(rows.length === 0){
@@ -93,11 +144,11 @@ exports.get_event_me = async (req , res )=> {
 }
 
 exports.add_event = async (req , res )=> {
+    await ensureUserEventTable();
     const [[{max_id}]] = await db.promise().query("SELECT MAX(id_event) as max_id FROM user_event ")
 
     // console.log("req.bady",req.bady);
         const {
-            id_user,
             name_event,
             location_event,
             phone,
@@ -112,15 +163,18 @@ exports.add_event = async (req , res )=> {
         const image = req.file;
 
     try{
-        const [rows]=await db.promise().query("INSERT INTO user_event (id_event,id_user, name_event, location_event, phone, detail_event, date_start,date_end, images, latitude, longitude,type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",[
+        const id_user_insert = (req.body && req.body.id_user) ? req.body.id_user : null;
+        const startAt = toMysqlDatetime(date_start);
+        const endAt = toMysqlDatetime(date_end);
+        const [rows]=await db.promise().query("INSERT INTO user_event (id_event,id_user, name_event, location_event, phone, detail_event, date_start, date_end, images, latitude, longitude, type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",[
             max_id+1,
-            id_user,
+            id_user_insert,
             name_event,
             location_event,
             phone,
             detail_event,
-            date_end,
-            date_start,
+            startAt,
+            endAt,
             image.path,
             latitude,
             longitude,
@@ -148,6 +202,7 @@ exports.add_event = async (req , res )=> {
 }
 
 exports.edit_event = async (req, res) => {
+    await ensureUserEventTable();
     const { id } = req.params;
     let {
         name_event,
@@ -179,6 +234,8 @@ exports.edit_event = async (req, res) => {
             imagePath = oldRows.length > 0 ? oldRows[0].images : null;
         }
 
+        const startAt = toMysqlDatetime(date_start);
+        const endAt = toMysqlDatetime(date_end);
         const [rows] = await db.promise().query(
             "UPDATE user_event SET name_event = ?, location_event = ?, phone = ?, detail_event = ?, date_start = ?, date_end = ?, images = ?, latitude = ?, longitude = ?, type = ? WHERE id_event = ?",
             [
@@ -186,8 +243,8 @@ exports.edit_event = async (req, res) => {
                 location_event,
                 phone,
                 detail_event,
-                date_start,
-                date_end,
+                startAt,
+                endAt,
                 imagePath,
                 latitude,
                 longitude,
@@ -218,6 +275,7 @@ exports.edit_event = async (req, res) => {
 
 exports.delete_event = async (req , res )=> {
     try{
+       await ensureUserEventTable();
        
         const {id} = req.params;
 
