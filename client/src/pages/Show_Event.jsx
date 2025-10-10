@@ -42,6 +42,8 @@ function Show_Event() {
   const [editMap, setEditMap] = useState(null);
   const editMarkerRef = useRef(null);
   const id_user = localStorage.getItem("userId");
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const getPostMe = async () => {
     try {
@@ -57,6 +59,13 @@ function Show_Event() {
   useEffect(() => {
     getPostMe();
   }, []);
+
+  // Reset/clamp page when data changes
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil((postData?.length || 0) / ITEMS_PER_PAGE));
+    if (page > totalPages) setPage(totalPages);
+    if (page < 1) setPage(1);
+  }, [postData]);
 
   const handleViewDetail = (post) => {
     setSelectedPost(post);
@@ -471,7 +480,7 @@ function Show_Event() {
                       <button
                         type="button"
                         onClick={getCurrentLocation}
-                        className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition"
+                        className="px-4 py-2 bg-purple-500 cursor-pointer text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition"
                       >
                         ตำแหน่งปัจจุบัน
                       </button>
@@ -481,7 +490,7 @@ function Show_Event() {
                       <button
                         type="button"
                         onClick={toggleMap}
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-fuchsia-600 transition transform hover:scale-105 flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r cursor-pointer from-purple-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-fuchsia-600 transition transform hover:scale-105 flex items-center justify-center gap-2"
                       >
                         <Map className="h-5 w-5" />
                         {showMap ? "ซ่อนแผนที่" : "แสดงแผนที่"}
@@ -535,14 +544,14 @@ function Show_Event() {
                   <div className="pt-4 grid grid-cols-2 gap-4">
                     <button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl text-xl font-bold hover:from-green-600 hover:to-emerald-700 transition transform hover:scale-105 shadow-lg"
+                      className="w-full bg-gradient-to-r cursor-pointer from-green-500 to-emerald-600 text-white py-4 rounded-xl text-xl font-bold hover:from-green-600 hover:to-emerald-700 transition transform hover:scale-105 shadow-lg"
                     >
                        บันทึก
                     </button>
                     <button
                       type="button"
                       onClick={handleClose}
-                      className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white py-4 rounded-xl text-xl font-bold hover:from-gray-500 hover:to-gray-600 transition transform hover:scale-105 shadow-lg"
+                      className="w-full bg-gradient-to-r cursor-pointer from-gray-400 to-gray-500 text-white py-4 rounded-xl text-xl font-bold hover:from-gray-500 hover:to-gray-600 transition transform hover:scale-105 shadow-lg"
                     >
                        ยกเลิก
                     </button>
@@ -731,9 +740,12 @@ function Show_Event() {
                   </td>
                 </tr>
               ) : (
-                postData.map((item, index) => (
+                // slice for pagination
+                postData
+                  .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+                  .map((item, index) => (
                   <tr key={index} className="hover">
-                    <td className="text-center font-semibold">{index + 1}</td>
+                    <td className="text-center font-semibold">{(page - 1) * ITEMS_PER_PAGE + index + 1}</td>
                     <td className="font-medium">{item.name_event}</td>
                     <td className="text-gray-600">{item.location_event}</td>
                     <td className="text-center">
@@ -779,6 +791,32 @@ function Show_Event() {
             </tbody>
           </table>
         </div>
+        {/* Pagination controls */}
+        {postData.length > 0 && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              className="px-3 py-1 rounded cursor-pointer bg-base-200 hover:bg-base-300 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              ก่อนหน้า
+            </button>
+            <span className="px-2">
+              หน้า {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
+            </span>
+            <button
+              className="px-3  py-1 rounded cursor-pointer bg-primary text-white disabled:opacity-50"
+              onClick={() =>
+                setPage((p) =>
+                  Math.min(Math.ceil(postData.length / ITEMS_PER_PAGE) || 1, p + 1)
+                )
+              }
+              disabled={page === Math.ceil(postData.length / ITEMS_PER_PAGE) || postData.length === 0}
+            >
+              ถัดไป
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

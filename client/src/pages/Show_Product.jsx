@@ -1,26 +1,38 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Eye, Pencil, Trash2, Package, MapPin, Phone, DollarSign, Image as ImageIcon } from "lucide-react";
+import { Pencil, Trash2, Package, MapPin, Phone, DollarSign, Image as ImageIcon } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 
 function Show_Product() {
   const [selectedPost, setSelectedPost] = useState({});
   const [postData, setPostData] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDelete, setIsDelete] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editData, setEditData] = useState({});
   const [editImage, setEditImage] = useState(null);
+
   const id_user = localStorage.getItem("userId");
+
+  // ======================
+  // Pagination (สไตล์เดียวกับ Show_Event)
+  // ======================
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // รีเซ็ต/หนีบหน้าปัจจุบันเมื่อจำนวนข้อมูลเปลี่ยน
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil((postData?.length || 0) / ITEMS_PER_PAGE));
+    if (page > totalPages) setPage(totalPages);
+    if (page < 1) setPage(1);
+  }, [postData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getPostMe = async () => {
     try {
-      const res = await axios.get(
-        import.meta.env.VITE_API + `product/${id_user}`
-      );
-      setPostData(res.data.data);
+      const res = await axios.get(import.meta.env.VITE_API + `product/${id_user}`);
+      setPostData(res.data?.data || []);
     } catch (err) {
       console.log("error get post me", err);
+      setPostData([]);
     }
   };
 
@@ -28,22 +40,15 @@ function Show_Product() {
     getPostMe();
   }, []);
 
-  const handleViewDetail = (post) => {
-    setSelectedPost(post);
-    setIsModalOpen(true);
-  };
-
   const handleDelete = async () => {
     try {
       const res = await axios.delete(
         import.meta.env.VITE_API + `product/${selectedPost.id_product}`
       );
-      toast.success(res.data.msg, {
-        autoClose: 1000,
-      });
-      getPostMe();
+      toast.success(res.data.msg, { autoClose: 1000 });
       setIsDelete(false);
       setSelectedPost({});
+      await getPostMe();
     } catch (err) {
       console.log("error delete post", err);
       toast.error("ไม่สามารถลบโพสต์ได้");
@@ -65,6 +70,9 @@ function Show_Product() {
       detail_product: item.detail_product || "",
       phone: item.phone || "",
       price: item.price || "",
+      type: item.type || "",
+      name_location: item.name_location || "",
+      images: item.images || "",
     });
     setEditImage(null);
     setIsEdit(true);
@@ -72,16 +80,11 @@ function Show_Product() {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setEditData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleEditImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setEditImage(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setEditImage(e.target.files[0]);
   };
 
   const handleEditSubmit = async (e) => {
@@ -92,9 +95,8 @@ function Show_Product() {
     formData.append("phone", editData.phone);
     formData.append("price", editData.price);
     formData.append("type", editData.type);
-    if (editImage) {
-      formData.append("image", editImage);
-    }
+    if (editImage) formData.append("image", editImage);
+
     try {
       await axios.patch(
         import.meta.env.VITE_API + `product/${editData.id_product}`,
@@ -105,7 +107,7 @@ function Show_Product() {
       setIsEdit(false);
       setEditData({});
       setEditImage(null);
-      getPostMe();
+      await getPostMe();
     } catch (err) {
       toast.error("ไม่สามารถแก้ไขข้อมูลได้");
     }
@@ -114,7 +116,7 @@ function Show_Product() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
       <ToastContainer />
-      
+
       {/* Header Section */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -128,7 +130,14 @@ function Show_Product() {
           </div>
           <div className="mt-4 flex items-center gap-4 text-sm">
             <div className="bg-blue-50 px-4 py-2 rounded-lg">
-              <span className="text-blue-600 font-semibold">สินค้าทั้งหมด: {postData.length} รายการ</span>
+              <span className="text-blue-600 font-semibold">
+                สินค้าทั้งหมด: {postData.length} รายการ
+              </span>
+            </div>
+            <div className="bg-purple-50 px-4 py-2 rounded-lg">
+              <span className="text-purple-600 font-semibold">
+                หน้า {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
+              </span>
             </div>
           </div>
         </div>
@@ -149,16 +158,10 @@ function Show_Product() {
               <p className="font-semibold text-purple-600 ml-1">{selectedPost?.name_product}</p>
             </div>
             <div className="flex gap-3 justify-end">
-              <button
-                className="btn btn-ghost hover:bg-gray-100 rounded-xl"
-                onClick={handleClose}
-              >
+              <button className="btn btn-ghost hover:bg-gray-100 rounded-xl" onClick={handleClose}>
                 ยกเลิก
               </button>
-              <button
-                className="btn bg-purple-600 hover:bg-purple-700 text-white border-0 rounded-xl px-6"
-                onClick={handleDelete}
-              >
+              <button className="btn bg-purple-600 hover:bg-purple-700 text-white border-0 rounded-xl px-6" onClick={handleDelete}>
                 ลบสินค้า
               </button>
             </div>
@@ -170,12 +173,13 @@ function Show_Product() {
       {isEdit && (
         <dialog open className="modal modal-open backdrop-blur-sm">
           <div className="modal-box w-full max-w-3xl bg-white rounded-2xl shadow-2xl border-0 max-h-[90vh] overflow-y-auto">
-            
             <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl mb-2">
-                <div className="flex"><Pencil className="text-white" size={24} />
-                <h3 className="font-bold text-white text-2xl text-gray-800">แก้ไขข้อมูลสินค้า</h3></div>
+              <div className="flex">
+                <Pencil className="text-white" size={24} />
+                <h3 className="font-bold text-white text-2xl text-gray-800">แก้ไขข้อมูลสินค้า</h3>
               </div>
-              
+            </div>
+
             <form className="space-y-5" onSubmit={handleEditSubmit}>
               {/* ชื่อสินค้า */}
               <div className="form-control">
@@ -187,11 +191,11 @@ function Show_Product() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="input input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   name="name_product"
                   value={editData.name_product}
                   onChange={handleEditChange}
-                  requipurple
+                  required
                 />
               </div>
 
@@ -201,11 +205,11 @@ function Show_Product() {
                   <span className="label-text font-semibold text-gray-700">รายละเอียดสินค้า</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordepurple w-full rounded-xl h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="textarea textarea-bordered w-full rounded-xl h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   name="detail_product"
                   value={editData.detail_product}
                   onChange={handleEditChange}
-                  requipurple
+                  required
                 ></textarea>
               </div>
 
@@ -221,7 +225,7 @@ function Show_Product() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     name="phone"
                     value={editData.phone}
                     onChange={handleEditChange}
@@ -238,7 +242,7 @@ function Show_Product() {
                   </label>
                   <input
                     type="number"
-                    className="input input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     name="price"
                     value={editData.price}
                     onChange={handleEditChange}
@@ -253,7 +257,7 @@ function Show_Product() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordepurple w-full rounded-xl bg-gray-50"
+                  className="input input-bordered w-full rounded-xl bg-gray-50"
                   name="name_location"
                   value={editData.name_location || ""}
                   readOnly
@@ -271,7 +275,7 @@ function Show_Product() {
                 <input
                   type="file"
                   accept="image/*"
-                  className="file-input file-input-bordepurple w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="file-input file-input-bordered w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   onChange={handleEditImageChange}
                 />
                 <div className="mt-4 flex justify-center">
@@ -282,7 +286,6 @@ function Show_Product() {
                         alt="รูปภาพสินค้า"
                         className="w-64 h-48 object-cover border-2 border-gray-200 rounded-xl shadow-md"
                       />
-                      <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-xl"></div>
                     </div>
                   )}
                   {editImage && (
@@ -292,9 +295,6 @@ function Show_Product() {
                         alt="preview"
                         className="w-64 h-48 object-cover border-2 border-blue-500 rounded-xl shadow-lg"
                       />
-                      <div className="absolute top-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg text-xs font-semibold">
-                        รูปใหม่
-                      </div>
                     </div>
                   )}
                 </div>
@@ -302,15 +302,11 @@ function Show_Product() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 justify-end pt-4 border-t">
-                <button
-                  type="button"
-                  className="btn btn-ghost hover:bg-gray-100 rounded-xl px-6"
-                  onClick={handleClose}
-                >
+                <button type="button" className="btn btn-ghost hover:bg-gray-100 rounded-xl px-6" onClick={handleClose}>
                   ยกเลิก
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="btn bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 rounded-xl px-8"
                 >
                   บันทึกการแก้ไข
@@ -335,70 +331,115 @@ function Show_Product() {
                   <th className="text-gray-700 font-semibold">ราคา</th>
                   <th className="text-gray-700 font-semibold">โพสต์</th>
                   <th className="text-gray-700 font-semibold text-center">จัดการ</th>
+                  <th className="text-gray-700 font-semibold text-center">ต้นโพสต์</th>
                 </tr>
               </thead>
               <tbody>
-                {postData.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50 transition-colors">
-                    <td className="font-medium text-gray-600">{index + 1}</td>
-                    <td>
-                      <div className="avatar">
-                        <div className="w-16 h-16 rounded-xl ring ring-gray-200 ring-offset-2">
-                          <img src={item.images}  className="object-cover" />
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="font-semibold text-gray-800">{item.name_product}</div>
-                    </td>
-                    <td>
-                      <div className="text-sm text-gray-600 max-w-xs truncate">
-                        {item.detail_product}
-                      </div>
-                    </td>
-                    <td>
-                      {item.price && (
-                        <div className="badge badge-success text-white gap-1">
-                          <DollarSign size={14} />
-                          {Number(item.price).toLocaleString()}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <MapPin size={14} className="text-purple-500" />
-                        {item.name_location}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          className="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-lg"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          className="btn btn-sm bg-purple-500 hover:bg-purple-600 text-white border-0 rounded-lg"
-                          onClick={() => {
-                            setIsDelete(true);
-                            setSelectedPost(item);
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                {postData.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-10 text-gray-500">
+                      ยังไม่มีสินค้าในระบบ
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  postData
+                    .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+                    .map((item, index) => (
+                      <tr key={item.id_product ?? index} className="hover:bg-gray-50 transition-colors">
+                        <td className="font-medium text-gray-600">
+                          {(page - 1) * ITEMS_PER_PAGE + index + 1}
+                        </td>
+                        <td>
+                          <div className="avatar">
+                            <div className="w-16 h-16 rounded-xl ring ring-gray-200 ring-offset-2">
+                              <img src={item.images} className="object-cover" />
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="font-semibold text-gray-800">{item.name_product}</div>
+                        </td>
+                        <td>
+                          <div className="text-sm text-gray-600 max-w-xs truncate">
+                            {item.detail_product}
+                          </div>
+                        </td>
+                        <td>
+                          {item.price && (
+                            <div className="badge badge-success text-white gap-1">
+                              <DollarSign size={14} />
+                              {Number(item.price).toLocaleString()}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <MapPin size={14} className="text-purple-500" />
+                            {item.name_location}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex gap-2 justify-center">
+                            <button
+                              className="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white border-0 rounded-lg"
+                              onClick={() => handleEdit(item)}
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              className="btn btn-sm bg-purple-500 hover:bg-purple-600 text-white border-0 rounded-lg"
+                              onClick={() => {
+                                setIsDelete(true);
+                                setSelectedPost(item);
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex justify-center">
+                            <a
+                              href={`/detall_att/${item.id_post}?highlightProduct=${item.id_product}&suppressHiddenToast=1`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline"
+                            >
+                              ไปยังโพสต์
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                )}
               </tbody>
             </table>
           </div>
-          
-          {postData.length === 0 && (
-            <div className="text-center py-16">
-              <Package size={64} className="mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500 text-lg">ยังไม่มีสินค้าในระบบ</p>
+
+          {/* Pagination Controls (เหมือน Show_Event) */}
+          {postData.length > 0 && (
+            <div className="flex items-center justify-center gap-3 px-4 py-4 border-t bg-gray-50">
+              <button
+                className="px-3 py-1 rounded cursor-pointer bg-base-200 hover:bg-base-300 disabled:opacity-50"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                ก่อนหน้า
+              </button>
+              <span className="px-2">
+                หน้า {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
+              </span>
+              <button
+                className="px-3 py-1 rounded cursor-pointer bg-primary text-white disabled:opacity-50"
+                onClick={() =>
+                  setPage((p) =>
+                    Math.min(Math.ceil(postData.length / ITEMS_PER_PAGE) || 1, p + 1)
+                  )
+                }
+                disabled={page === Math.ceil(postData.length / ITEMS_PER_PAGE) || postData.length === 0}
+              >
+                ถัดไป
+              </button>
             </div>
           )}
         </div>

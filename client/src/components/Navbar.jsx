@@ -60,17 +60,21 @@ const Navbar = () => {
                   {/* <li>
                     <a href="/menu/menu_att">เพิ่มสถานที่</a>
                   </li> */}
-                  <li>
-                    <a href="/menu/menu_event">เพิ่มกิจกรรม</a>
-                  </li>
+                  {/* ซ่อนการเพิ่มกิจกรรมจากผู้ใช้ทั่วไป */}
                   {/* <li>
                     <a href="/menu/menu_prodact">เพิ่มสินค้า</a>
                   </li> */}
-                  <li>
+                  {/* <li>
                     <a href="/menu/Show_Event">ข้อมูลกิจกรรม</a>
-                  </li>
+                  </li> */}
                   <li>
                     <a href="/menu/show_product">ข้อมูลสินค้า</a>
+                  </li>
+                  <li>
+                    <a href="/menu/show_product">ประวัติการถูกรายงาน</a>
+                  </li>
+                  <li>
+                    <a href="/menu/historyreport">ประวัติการรายงาน</a>
                   </li>
                   <li>
                     <a href="/menu/profile">แก้ไขโปรไฟล์</a>

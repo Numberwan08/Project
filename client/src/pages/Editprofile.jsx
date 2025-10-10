@@ -14,8 +14,11 @@ function Editprofile() {
     last_name: '',
     Email: ''
   });
+  const [imageFile, setImageFile] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState({
     old1: false,
     old2: false,
@@ -26,6 +29,16 @@ function Editprofile() {
     oldPassword2: '',
     newPassword: '',
   });
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (imageFile) {
+      const url = URL.createObjectURL(imageFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPreviewUrl(null);
+  }, [imageFile]);
 
   const getUser = async () => {
     try {
@@ -41,6 +54,54 @@ function Editprofile() {
       console.log("error get user", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setIsChangingPassword(true);
+
+    if (
+      !passwordFields.oldPassword1 ||
+      !passwordFields.oldPassword2 ||
+      !passwordFields.newPassword
+    ) {
+      toast.error('กรุณากรอกรหัสผ่านให้ครบทุกช่อง', { position: 'top-center', autoClose: 1500 });
+      setIsChangingPassword(false);
+      return;
+    }
+    if (passwordFields.oldPassword1 !== passwordFields.oldPassword2) {
+      toast.error('รหัสผ่านเก่าไม่ตรงกัน', { position: 'top-center', autoClose: 1500 });
+      setIsChangingPassword(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('first_name', editData.first_name || '');
+      formData.append('last_name', editData.last_name || '');
+      formData.append('Email', editData.Email || '');
+      formData.append('oldPassword', passwordFields.oldPassword1);
+      formData.append('newPassword', passwordFields.newPassword);
+
+      const res = await axios.patch(
+        import.meta.env.VITE_API + `editprofile/${userId}`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      setData(res.data.data || data);
+      if (setName && res.data.data && res.data.data.first_name) {
+        setName(res.data.data.first_name);
+      }
+      toast.success('เปลี่ยนรหัสผ่านสำเร็จ', { position: 'top-center', autoClose: 1500 });
+      setPasswordFields({ oldPassword1: '', oldPassword2: '', newPassword: '' });
+      setIsPasswordModalOpen(false);
+    } catch (err) {
+      console.log('เปลี่ยนรหัสผ่านไม่สำเร็จ', err);
+      toast.error('ไม่สามารถเปลี่ยนรหัสผ่านได้', { position: 'top-center', autoClose: 1500 });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -71,41 +132,19 @@ function Editprofile() {
     e.preventDefault();
     setIsUpdating(true);
 
-    // ถ้ามีการกรอกรหัสผ่านใหม่ ต้องตรวจสอบรหัสผ่านเก่า
-    if (
-      passwordFields.oldPassword1 ||
-      passwordFields.oldPassword2 ||
-      passwordFields.newPassword
-    ) {
-      if (
-        !passwordFields.oldPassword1 ||
-        !passwordFields.oldPassword2 ||
-        !passwordFields.newPassword
-      ) {
-        toast.error('กรุณากรอกรหัสผ่านให้ครบทุกช่อง', { position: 'top-center', autoClose: 1500 });
-        setIsUpdating(false);
-        return;
-      }
-      if (passwordFields.oldPassword1 !== passwordFields.oldPassword2) {
-        toast.error('รหัสผ่านเก่าไม่ตรงกัน', { position: 'top-center', autoClose: 1500 });
-        setIsUpdating(false);
-        return;
-      }
-    }
-
     try {
-      const payload = {
-        ...editData,
-      };
-      // ถ้ามีการเปลี่ยนรหัสผ่าน ให้ส่งข้อมูลรหัสผ่านไปด้วย
-      if (passwordFields.oldPassword1 && passwordFields.oldPassword2 && passwordFields.newPassword) {
-        payload.oldPassword = passwordFields.oldPassword1;
-        payload.newPassword = passwordFields.newPassword;
+      const formData = new FormData();
+      formData.append('first_name', editData.first_name || '');
+      formData.append('last_name', editData.last_name || '');
+      formData.append('Email', editData.Email || '');
+      if (imageFile) {
+        formData.append('image_profile', imageFile);
       }
 
       const res = await axios.patch(
         import.meta.env.VITE_API + `editprofile/${userId}`,
-        payload
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       );
       setData(res.data.data || editData);
       setIsModalOpen(false);
@@ -113,7 +152,7 @@ function Editprofile() {
         setName(res.data.data.first_name);
       }
       toast.success('แก้ไขโปรไฟล์สำเร็จ', { position: 'top-center', autoClose: 1500 });
-      setPasswordFields({ oldPassword1: '', oldPassword2: '', newPassword: '' });
+      setImageFile(null);
     } catch (err) {
       console.log("แก้ไขโปไฟล์ไม่สำเร็จ", err);
       toast.error('ไม่สามารถอัปเดตได้ โปรดลองอีกครั้ง', { position: 'top-center', autoClose: 1500 });
@@ -153,8 +192,17 @@ function Editprofile() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mb-4 shadow-lg">
-            <User className="w-10 h-10 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 shadow-lg overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600">
+            {data?.image_profile ? (
+              <img
+                src={data.image_profile}
+                alt="รูปโปรไฟล์"
+                className="w-20 h-20 object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <User className="w-10 h-10 text-white" />
+            )}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">โปรไฟล์</h1>
         </div>
@@ -162,26 +210,35 @@ function Editprofile() {
         {/* Profile Card */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
           {/* Card Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">
-                  {data.first_name} 
-                </h2>
-                <p className="text-purple-100 flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  {data.Email || 'ไม่ได้ระบุอีเมล'}
-                </p>
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-1">
+                      {data.first_name} 
+                    </h2>
+                    <p className="text-purple-100 flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      {data.Email || 'ไม่ได้ระบุอีเมล'}
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button 
+                      className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-full font-medium transition-all hover:scale-105 shadow-lg flex items-center gap-2"
+                      onClick={openModal}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      แก้ไขโปรไฟล์
+                    </button>
+                    <button
+                      className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-full font-medium transition-all hover:scale-105 shadow-lg flex items-center gap-2"
+                      onClick={() => setIsPasswordModalOpen(true)}
+                    >
+                      <Lock className="w-4 h-4" />
+                      เปลี่ยนรหัสผ่าน
+                    </button>
+                  </div>
+                </div>
               </div>
-              <button 
-                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-full font-medium transition-all hover:scale-105 shadow-lg flex items-center gap-2"
-                onClick={openModal}
-              >
-                <Edit3 className="w-4 h-4" />
-                แก้ไข
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Edit Modal */}
@@ -202,6 +259,30 @@ function Editprofile() {
 
               {/* Modal Body */}
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                {/* Profile Image */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">รูปโปรไฟล์</label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {(previewUrl || data?.image_profile) ? (
+                        <img
+                          src={previewUrl || data.image_profile}
+                          alt="รูปโปรไฟล์"
+                          className="w-20 h-20 object-cover"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <User className="w-10 h-10 text-gray-400" />
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      className="flex-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-gray-300 rounded-xl bg-white/50 p-2"
+                    />
+                  </div>
+                </div>
                 {/* First Name */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -218,70 +299,7 @@ function Editprofile() {
                   />
                 </div>
 
-                {/* Change Password Section */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-purple-600" />
-                    เปลี่ยนรหัสผ่าน
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type={showPassword.old1 ? "text" : "password"}
-                      name="oldPassword1"
-                      value={passwordFields.oldPassword1}
-                      onChange={handlePasswordChange}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                      placeholder="รหัสผ่านเก่า"
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      className="px-2"
-                      onClick={() => toggleShowPassword("old1")}
-                    >
-                      {showPassword.old1 ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <input
-                      type={showPassword.old2 ? "text" : "password"}
-                      name="oldPassword2"
-                      value={passwordFields.oldPassword2}
-                      onChange={handlePasswordChange}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                      placeholder="ยืนยันรหัสผ่านเก่า"
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      className="px-2"
-                      onClick={() => toggleShowPassword("old2")}
-                    >
-                      {showPassword.old2 ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <input
-                      type={showPassword.newpass ? "text" : "password"}
-                      name="newPassword"
-                      value={passwordFields.newPassword}
-                      onChange={handlePasswordChange}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                      placeholder="รหัสผ่านใหม่"
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      className="px-2"
-                      onClick={() => toggleShowPassword("newpass")}
-                    >
-                      {showPassword.newpass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
+                {/* ย้ายส่วนเปลี่ยนรหัสผ่านไปยังโมดอลเฉพาะ */}
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
@@ -316,6 +334,103 @@ function Editprofile() {
           </div>
         )}
 
+        {/* Password Modal */}
+        {isPasswordModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">เปลี่ยนรหัสผ่าน</h3>
+                <button
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className="text-white hover:bg-white/20 rounded-full p-2 transition-all"
+                  disabled={isChangingPassword}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">รหัสผ่านเก่า</label>
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      type={showPassword.old1 ? 'text' : 'password'}
+                      name="oldPassword1"
+                      value={passwordFields.oldPassword1}
+                      onChange={handlePasswordChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                      placeholder="รหัสผ่านเก่า"
+                      autoComplete="current-password"
+                    />
+                    <button type="button" className="px-2" onClick={() => toggleShowPassword('old1')}>
+                      {showPassword.old1 ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">ยืนยันรหัสผ่านเก่า</label>
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      type={showPassword.old2 ? 'text' : 'password'}
+                      name="oldPassword2"
+                      value={passwordFields.oldPassword2}
+                      onChange={handlePasswordChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                      placeholder="ยืนยันรหัสผ่านเก่า"
+                      autoComplete="current-password"
+                    />
+                    <button type="button" className="px-2" onClick={() => toggleShowPassword('old2')}>
+                      {showPassword.old2 ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">รหัสผ่านใหม่</label>
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      type={showPassword.newpass ? 'text' : 'password'}
+                      name="newPassword"
+                      value={passwordFields.newPassword}
+                      onChange={handlePasswordChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                      placeholder="รหัสผ่านใหม่"
+                      autoComplete="new-password"
+                    />
+                    <button type="button" className="px-2" onClick={() => toggleShowPassword('newpass')}>
+                      {showPassword.newpass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all"
+                    onClick={() => setIsPasswordModalOpen(false)}
+                    disabled={isChangingPassword}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled={isChangingPassword}
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        กำลังบันทึก...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        บันทึก
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
         <ToastContainer />
       </div>
     </div>

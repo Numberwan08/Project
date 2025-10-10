@@ -5,6 +5,7 @@ const getFormattedNow = () => dayjs().format("YYYY-MM-DD HH:mm:ss");
 const db = require('../config/db');
 const fs = require('fs');
 const { log } = require("console");
+const commentController = require('./comment');
 const deleteImage =(path)=>{
     fs.unlink(path,(err)=>{
         if(err){
@@ -68,15 +69,9 @@ exports.get_post = async (req ,res ) => {
     LEFT JOIN (
         SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
         FROM comment_post
+        WHERE status IS NULL OR status <> '0'
         GROUP BY id_post
     ) c ON p.id_post = c.id_post
-    LEFT JOIN (
-        SELECT id_post, COUNT(*) AS products
-        FROM user_prodact
-        GROUP BY id_post
-    ) pr ON p.id_post = pr.id_post
-    LEFT JOIN post_type pt ON p.id_type = pt.id_type
-    ORDER BY likes DESC;
                     `;
 
         const [rows] = await db.promise().query(sql);
@@ -122,18 +117,38 @@ exports.get_comment = async (req ,res ) => {
 
     try{
         const {id_post} = req.params;
-        const [rows] = await db.promise().query(`SELECT t3.*,t1.*,t2.* FROM user_post t1 
-            JOIN comment_post t2 on t1.id_post=t2.id_post 
-            JOIN user t3 on t3.id_user=t2.id_user 
-            WHERE t1.id_post = ?`,[id_post]);
+
+
+        const [rows] = await db.promise().query(`
+            SELECT 
+                t3.*,
+                t1.*,
+                t2.*,
+                COALESCE(cr.replies_count, 0) AS replies_count
+            FROM user_post t1
+            JOIN comment_post t2 ON t1.id_post = t2.id_post
+            JOIN user t3 ON t3.id_user = t2.id_user
+            LEFT JOIN (
+                SELECT id_comment, COUNT(*) AS replies_count
+                FROM comment_reply
+                WHERE status IS NULL OR status <> '0'
+                GROUP BY id_comment
+            ) cr ON cr.id_comment = t2.id_comment
+            WHERE t1.id_post = ?
+              AND (t2.status IS NULL OR t2.status <> '0')
+            ORDER BY t2.date_comment DESC
+        `,[id_post]);
+
         if(rows.length === 0){
-            return res.status(404).json({ msg: "ไม่พบคอมเมนต์"});
+            return res.status(200).json({ msg: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: []});
         }
 
         const formatData = rows.map((row)=>({
             ...row,
+            replies_count: row.replies_count || 0,
             images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
-            user_image: row.user_image ? `${req.protocol}://${req.headers.host}/${row.user_image}`: null,
+            // ใช้รูปโปรไฟล์จากตาราง user (image_profile) เป็น avatar ของผู้คอมเมนต์
+            user_image: row.image_profile ? `${req.protocol}://${req.headers.host}/${row.image_profile}`: null,
         }));
 
         return res.status(200).json({msg: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: formatData});
@@ -176,13 +191,14 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT id_post, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
     FROM comment_post
+    WHERE status IS NULL OR status <> '0'
     GROUP BY id_post
 ) c ON t1.id_post = c.id_post
 
 WHERE t1.id_post = ?`,[id]);
 
         if(rows.length === 0){
-            return res.status(404).json({ msg: "ไม่พบโพสต์"});
+            return res.status(200).json({ msg: "ไม่พบโพสต์", data: []});
         }
 
         const formatData = rows.map((row)=>({
@@ -218,9 +234,19 @@ exports.get_single_post = async (req, res) => {
                 GROUP BY id_post
             ) l ON p.id_post = l.id_post
             LEFT JOIN (
-                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
-                FROM comment_post
-                GROUP BY id_post
+                SELECT cp.id_post,
+                       (COUNT(cp.id_comment)) + COALESCE(rp.replies, 0) AS comments,
+                       ROUND(LEAST(AVG(cp.star), 5), 2) AS avg_star
+                FROM comment_post cp
+                LEFT JOIN (
+                    SELECT t2.id_post, COUNT(*) AS replies
+                    FROM comment_reply r
+                    JOIN comment_post t2 ON t2.id_comment = r.id_comment
+                    WHERE r.status IS NULL OR r.status <> '0'
+                    GROUP BY t2.id_post
+                ) rp ON rp.id_post = cp.id_post
+                WHERE cp.status IS NULL OR cp.status <> '0'
+                GROUP BY cp.id_post
             ) c ON p.id_post = c.id_post
             WHERE p.id_post = ?
         `;
@@ -262,9 +288,19 @@ exports.get_post_me = async (req ,res ) => {
                 GROUP BY id_post
             ) l ON p.id_post = l.id_post
             LEFT JOIN (
-                SELECT id_post, COUNT(*) AS comments, ROUND(LEAST(AVG(star), 5), 2) AS avg_star
-                FROM comment_post
-                GROUP BY id_post
+                SELECT cp.id_post,
+                       (COUNT(cp.id_comment)) + COALESCE(rp.replies, 0) AS comments,
+                       ROUND(LEAST(AVG(cp.star), 5), 2) AS avg_star
+                FROM comment_post cp
+                LEFT JOIN (
+                    SELECT t2.id_post, COUNT(*) AS replies
+                    FROM comment_reply r
+                    JOIN comment_post t2 ON t2.id_comment = r.id_comment
+                    WHERE r.status IS NULL OR r.status <> '0'
+                    GROUP BY t2.id_post
+                ) rp ON rp.id_post = cp.id_post
+                WHERE cp.status IS NULL OR cp.status <> '0'
+                GROUP BY cp.id_post
             ) c ON p.id_post = c.id_post
             WHERE p.id_user = ?
             ORDER BY p.date DESC
@@ -545,7 +581,7 @@ exports.nearby = async (req, res) => {
 
         const [[current]] = await db.promise().query("SELECT latitude, longitude FROM user_post WHERE id_post = ?", [id]);
         if (!current || !current.latitude || !current.longitude) {
-            return res.status(404).json({ msg: "ไม่พบข้อมูลสถานที่หลัก" });
+            return res.status(200).json({ msg: "ไม่พบข้อมูลสถานที่หลัก", data: [] });
         }
         const [places] = await db.promise().query("SELECT id_post, name_location, detail_location, latitude, longitude, images FROM user_post WHERE id_post != ? AND latitude IS NOT NULL AND longitude IS NOT NULL", [id]);
 
@@ -606,6 +642,115 @@ exports.comment_post = async (req, res) => {
         });
     }
 
+}
+
+// PATCH /api/post/comment_status/:id_comment { status: 0|1 }
+exports.set_comment_status = async (req, res) => {
+    try {
+        const { id_comment } = req.params;
+        let { status } = req.body || {};
+        if (!id_comment) {
+            return res.status(400).json({ msg: 'ต้องระบุ id_comment' });
+        }
+        status = Number(status);
+        if (status !== 0 && status !== 1) {
+            return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง ต้องเป็น 0 หรือ 1' });
+        }
+        const [chk] = await db.promise().query('SELECT id_comment FROM comment_post WHERE id_comment = ?', [id_comment]);
+        if (chk.length === 0) return res.status(404).json({ msg: 'ไม่พบความคิดเห็น' });
+        await db.promise().query('UPDATE comment_post SET status = ? WHERE id_comment = ?', [String(status), id_comment]);
+        return res.status(200).json({ msg: 'อัปเดตสถานะความคิดเห็นสำเร็จ' });
+    } catch (err) {
+        console.log('set_comment_status error', err);
+        return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะความคิดเห็นได้', error: err.message });
+    }
+};
+
+// Get single comment status by id_comment
+exports.get_comment_status = async (req, res) => {
+    try {
+        const { id_comment } = req.params;
+        if (!id_comment) {
+            return res.status(400).json({ msg: "ต้องระบุ id_comment", error: "id_comment required" });
+        }
+        const [rows] = await db.promise().query(
+            "SELECT id_comment, id_post, status FROM comment_post WHERE id_comment = ?",
+            [id_comment]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: "ไม่พบความคิดเห็น" });
+        }
+        return res.status(200).json({ msg: "ดึงสถานะความคิดเห็นสำเร็จ", data: rows[0] });
+    } catch (err) {
+        console.log("error get comment status", err);
+        return res.status(500).json({ msg: "ไม่สามารถดึงสถานะความคิดเห็นได้", error: err.message });
+    }
+};
+
+// แก้ไขคอมเมนต์ของตนเอง
+exports.edit_comment = async (req, res) => {
+    try {
+        const { id } = req.params; // id_comment
+        const { id_user, comment, star, remove_image } = req.body;
+
+        if (!id || !id_user) {
+            return res.status(400).json({ msg: "ข้อมูลไม่ครบถ้วน", error: "ต้องระบุ id และ id_user" });
+        }
+
+        const [rows] = await db.promise().query("SELECT * FROM comment_post WHERE id_comment = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: "ไม่พบความคิดเห็น", error: "ไม่พบความคิดเห็น" });
+        }
+
+        const cm = rows[0];
+        if (String(cm.id_user) !== String(id_user)) {
+            return res.status(403).json({ msg: "ไม่มีสิทธิ์แก้ไขความคิดเห็นนี้", error: "forbidden" });
+        }
+
+        let imagePath = cm.images || null;
+        // หากอัปโหลดรูปใหม่ ให้ลบรูปเดิม
+        if (req.file && req.file.path) {
+            if (imagePath && fs.existsSync(imagePath)) {
+                deleteImage(imagePath);
+            }
+            imagePath = req.file.path;
+        } else if (remove_image === '1' || remove_image === 'true') {
+            if (imagePath && fs.existsSync(imagePath)) {
+                deleteImage(imagePath);
+            }
+            imagePath = null;
+        }
+
+        const newComment = typeof comment === 'string' ? comment : cm.comment;
+        const newStar = (star !== undefined && star !== null && star !== '') ? star : cm.star;
+
+        const [result] = await db.promise().query(
+            "UPDATE comment_post SET comment = ?, star = ?, images = ? WHERE id_comment = ?",
+            [newComment, newStar, imagePath, id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(400).json({ msg: "ไม่สามารถแก้ไขความคิดเห็นได้", error: "update failed" });
+        }
+
+        const [updatedRows] = await db.promise().query("SELECT * FROM comment_post WHERE id_comment = ?", [id]);
+        const updated = updatedRows[0];
+
+        return res.status(200).json({
+            msg: "แก้ไขความคิดเห็นสำเร็จ",
+            data: {
+                ...updated,
+                images: updated.images ? `${req.protocol}://${req.headers.host}/${updated.images}` : null
+            }
+        });
+    } catch (err) {
+        console.log("error edit comment", err);
+        // ลบไฟล์ใหม่ที่อัปโหลดแล้วหากเกิดข้อผิดพลาด
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+            fs.unlink(req.file.path, () => {});
+        }
+        return res.status(500).json({ msg: "ไม่สามารถแก้ไขความคิดเห็นได้", error: err.message });
+    }
 }
 
 // Add: get list of post types
@@ -699,3 +844,6 @@ exports.get_type_name = async (req, res) => {
         });
     }
 }
+
+exports.add_reply = commentController.add_reply;
+exports.get_replies = commentController.get_replies;

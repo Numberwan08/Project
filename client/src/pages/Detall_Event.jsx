@@ -1,11 +1,12 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { ThumbsUp } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
+import { useReport } from "../context/ReportContext";
 
 // Fix for default markers in React Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -25,8 +26,22 @@ function Detall_Event() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [liked, setLiked] = useState(false);
   const [nearbyEvent, setNerabyEvent] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [commentModal, setCommentModal] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [commentStar, setCommentStar] = useState(0);
+  const [commentFile, setCommentFile] = useState(null);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [expandedReplies, setExpandedReplies] = useState({}); // id_comment -> boolean
+  const [repliesMap, setRepliesMap] = useState({}); // id_comment -> replies[]
+  const [replyInputs, setReplyInputs] = useState({}); // id_comment -> text
+  const [replyFiles, setReplyFiles] = useState({}); // id_comment -> File
+  const location = useLocation();
+  const [highlightCommentId, setHighlightCommentId] = useState(null);
+  const [highlightReplyId, setHighlightReplyId] = useState(null);
 
   const userId = localStorage.getItem("userId");
+  const { isReportedEventComment, isReportedEventReply, refreshMySubmitted } = useReport();
 
   const getNearbyEvent = async () => {
     try {
@@ -93,6 +108,29 @@ function Detall_Event() {
   useEffect(() => {
     getEvent();
     getNearbyEvent();
+    // Fetch comments
+    const fetchComments = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API}event/comment_id/${id}`);
+        setComments(res.data?.data || []);
+        // parse highlight from query
+        const params = new URLSearchParams(location.search);
+        const hC = params.get('highlightComment');
+        const hR = params.get('highlightReply');
+        if (hC) {
+          setHighlightCommentId(hC);
+          setExpandedReplies((prev) => ({ ...prev, [hC]: true }));
+          if (hR) await fetchReplies(hC);
+          setTimeout(() => {
+            const el = document.getElementById(hR ? `reply-${hR}` : `comment-${hC}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        }
+      } catch (e) {
+        setComments([]);
+      }
+    };
+    fetchComments();
     // eslint-disable-next-line
   }, [id]);
 
@@ -123,6 +161,104 @@ function Detall_Event() {
     const diffTime = eventDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
+  };
+
+  const fetchReplies = async (id_comment) => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API}event/comment/${id_comment}/replies`);
+      setRepliesMap((prev) => ({ ...prev, [id_comment]: res.data?.data || [] }));
+    } catch (e) {
+      setRepliesMap((prev) => ({ ...prev, [id_comment]: [] }));
+    }
+  };
+
+  const submitComment = async (e) => {
+    e.preventDefault();
+    if (!userId) {
+      toast.error("กรุณาเข้าสู่ระบบก่อนคอมเมนต์", { position: "top-center", autoClose: 1200 });
+      return;
+    }
+    try {
+      setCommentSubmitting(true);
+      const fd = new FormData();
+      fd.append('userId', userId);
+      fd.append('star', commentStar || 0);
+      fd.append('comment', commentText || '');
+      if (commentFile) fd.append('image', commentFile);
+      await axios.post(`${import.meta.env.VITE_API}event/comment/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('คอมเมนต์สำเร็จ', { position: 'top-center', autoClose: 1000 });
+      setCommentModal(false);
+      setCommentText(''); setCommentStar(0); setCommentFile(null);
+      const res = await axios.get(`${import.meta.env.VITE_API}event/comment_id/${id}`);
+      setComments(res.data?.data || []);
+    } catch (err) {
+      toast.error('ไม่สามารถคอมเมนต์ได้', { position: 'top-center', autoClose: 1200 });
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const submitReply = async (id_comment) => {
+    if (!userId) {
+      toast.error("กรุณาเข้าสู่ระบบก่อนตอบกลับ", { position: "top-center", autoClose: 1200 });
+      return;
+    }
+    const text = replyInputs[id_comment]?.trim();
+    if (!text) return;
+    try {
+      const fd = new FormData();
+      fd.append('id_user', userId);
+      fd.append('reply', text);
+      const f = replyFiles[id_comment];
+      if (f) fd.append('image', f);
+      await axios.post(`${import.meta.env.VITE_API}event/comment/${id_comment}/replies`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setReplyInputs((p) => ({ ...p, [id_comment]: '' }));
+      setReplyFiles((p) => ({ ...p, [id_comment]: null }));
+      await fetchReplies(id_comment);
+    } catch (e) {
+      toast.error('ไม่สามารถตอบกลับได้', { position: 'top-center', autoClose: 1200 });
+    }
+  };
+
+  // Report
+  const [showReport, setShowReport] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null); // { type: 'comment'|'reply', id_comment, id_reply }
+  const [reportReason, setReportReason] = useState('');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+
+  const openReport = (payload) => { setReportTarget(payload); setReportReason(''); setReportDetails(''); setShowReport(true); };
+  const submitReport = async (e) => {
+    e.preventDefault();
+    if (!userId || !reportTarget) return;
+    try {
+      setReportSubmitting(true);
+      if (reportTarget.type === 'comment') {
+        await axios.post(`${import.meta.env.VITE_API}report/event-comment`, {
+          id_event_comment: reportTarget.id_comment,
+          id_event: id,
+          id_user: userId,
+          reason: reportReason,
+          details: reportDetails,
+        });
+      } else {
+        await axios.post(`${import.meta.env.VITE_API}report/event-reply`, {
+          id_event_reply: reportTarget.id_reply,
+          id_event_comment: reportTarget.id_comment,
+          id_event: id,
+          id_user: userId,
+          reason: reportReason,
+          details: reportDetails,
+        });
+      }
+      toast.success('ส่งรายงานสำเร็จ', { position: 'top-center', autoClose: 1000 });
+      setShowReport(false);
+      await refreshMySubmitted();
+    } catch (err) {
+      toast.error('ส่งรายงานไม่สำเร็จ', { position: 'top-center', autoClose: 1200 });
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -337,12 +473,92 @@ function Detall_Event() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Comments Section */}
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xl font-semibold text-gray-800">ความคิดเห็น</h3>
+                      <button
+                        onClick={() => setCommentModal(true)}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm"
+                      >เพิ่มความคิดเห็น</button>
+                    </div>
+                    <div className="space-y-4">
+                      {(comments || []).map((c) => (
+                        <div key={c.id_comment} id={`comment-${c.id_comment}`} className={`border rounded-lg p-4 ${String(c.id_comment)===String(highlightCommentId)?'ring-2 ring-blue-400':''}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              {c.user_image && <img src={c.user_image} alt="user" className="w-8 h-8 rounded-full" />}
+                              <div>
+                                <div className="font-medium">{c.first_name || 'ผู้ใช้'}</div>
+                                <div className="text-xs text-gray-500">{new Date(c.date_comment).toLocaleString('th-TH')}</div>
+                              </div>
+                            </div>
+                            <div className="text-xs flex gap-3">
+                              {String(c.id_user)!==String(userId) && !isReportedEventComment?.(c.id_comment) && (
+                                <button className="text-red-600" onClick={() => openReport({ type:'comment', id_comment: c.id_comment })}>รายงาน</button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-2 text-gray-800">{c.comment}</div>
+                          {c.images && <img src={c.images} alt="comment" className="mt-2 rounded-md max-h-40" />}
+                          <div className="mt-3">
+                            <button
+                              className="text-sm text-blue-700"
+                              onClick={async () => { const next = !expandedReplies[c.id_comment]; setExpandedReplies((p)=>({ ...p, [c.id_comment]: next })); if (next) await fetchReplies(c.id_comment); }}
+                            >{expandedReplies[c.id_comment] ? 'ซ่อนการตอบกลับ' : 'ดูการตอบกลับ'}</button>
+                          </div>
+                          {expandedReplies[c.id_comment] && (
+                            <div className="mt-3 space-y-3">
+                              <div className="space-y-2">
+                                {(repliesMap[c.id_comment] || []).map((r) => (
+                                  <div key={r.id_reply} id={`reply-${r.id_reply}`} className={`pl-4 border-l ${String(r.id_reply)===String(highlightReplyId)?'ring-1 ring-blue-400':''}`}>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex items-center gap-2">
+                                        {r.reply_user_image && <img src={r.reply_user_image} className="w-7 h-7 rounded-full" />}
+                                        <div>
+                                          <div className="text-sm font-medium">{r.reply_user_name || 'ผู้ใช้'}</div>
+                                          <div className="text-xs text-gray-500">{new Date(r.reply_date).toLocaleString('th-TH')}</div>
+                                        </div>
+                                      </div>
+                                      <div className="text-xs">
+                                        {String(r.id_user)!==String(userId) && !isReportedEventReply?.(r.id_reply) && (
+                                          <button className="text-red-600" onClick={() => openReport({ type:'reply', id_comment: c.id_comment, id_reply: r.id_reply })}>รายงาน</button>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-sm mt-1">{r.reply}</div>
+                                    {r.user_image && <img src={r.user_image} className="mt-2 rounded-md max-h-32" />}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  className="flex-1 px-3 py-1.5 border rounded-lg text-sm"
+                                  placeholder="ตอบกลับ..."
+                                  value={replyInputs[c.id_comment] || ''}
+                                  onChange={(e)=> setReplyInputs((p)=>({ ...p, [c.id_comment]: e.target.value }))}
+                                />
+                                <input type="file" accept="image/*" onChange={(e)=> setReplyFiles((p)=>({ ...p, [c.id_comment]: e.target.files?.[0] || null }))} />
+                                <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm" onClick={()=> submitReply(c.id_comment)}>ส่ง</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {comments.length === 0 && (
+                        <div className="text-sm text-gray-500">ยังไม่มีความคิดเห็น</div>
+                      )}
+                    </div>
+                  </div>
+                  {/* End Comments */}
                 </div>
 
                 {/* Related Events */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
                   <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                    กิจกรรมที่เกี่ยวข้อง
+                    กิจกรรมใกล้เคียง
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {nearbyEvent.length > 0 ? (
@@ -351,7 +567,7 @@ function Detall_Event() {
                           <div className="relative group cursor-pointer">
                             <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
                               <img
-                                src={"http://localhost:3000/" + place.images}
+                                src={place.images}
                                 alt={place.name_event}
                                 className="h-28 object-cover rounded-lg"
                                 style={{ maxWidth: "100%" }}
@@ -518,6 +734,63 @@ function Detall_Event() {
                 />
               </svg>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Comment Modal */}
+      {commentModal && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-xl">
+            <div className="px-5 py-4 border-b font-semibold">เพิ่มความคิดเห็น</div>
+            <form onSubmit={submitComment} className="p-5 space-y-3">
+              <div>
+                <label className="block text-sm mb-1">ข้อความ</label>
+                <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} value={commentText} onChange={(e)=> setCommentText(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">ให้คะแนน (0-5)</label>
+                <input type="number" min={0} max={5} className="w-full border rounded-lg px-3 py-2 text-sm" value={commentStar} onChange={(e)=> setCommentStar(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">รูปภาพ (ถ้ามี)</label>
+                <input type="file" accept="image/*" onChange={(e)=> setCommentFile(e.target.files?.[0] || null)} />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" className="px-4 py-2 rounded-lg border text-sm" onClick={()=> setCommentModal(false)}>ยกเลิก</button>
+                <button type="submit" disabled={commentSubmitting} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-50">{commentSubmitting ? 'กำลังบันทึก...' : 'บันทึก'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {showReport && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-xl shadow-xl">
+            <div className="px-5 py-4 border-b font-semibold">รายงาน{reportTarget?.type==='reply'?'การตอบกลับ':'ความคิดเห็น'}</div>
+            <form onSubmit={submitReport} className="p-5 space-y-3">
+              <div>
+                <label className="block text-sm mb-1">เหตุผล</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={reportReason} onChange={(e)=> setReportReason(e.target.value)} required>
+                  <option value="">-- เลือกเหตุผล --</option>
+                  <option value="spam">สแปม / โฆษณา</option>
+                  <option value="harassment">กลั่นแกล้ง / คุกคาม</option>
+                  <option value="hate">เฮทสปีช / ความรุนแรง</option>
+                  <option value="nudity">รูป/ข้อความไม่เหมาะสม</option>
+                  <option value="other">อื่น ๆ</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm mb-1">รายละเอียดเพิ่มเติม</label>
+                <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} value={reportDetails} onChange={(e)=> setReportDetails(e.target.value)} />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" className="px-4 py-2 rounded-lg border text-sm" onClick={()=> setShowReport(false)}>ยกเลิก</button>
+                <button type="submit" disabled={reportSubmitting} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm disabled:opacity-50">{reportSubmitting ? 'กำลังส่ง...' : 'ส่งรายงาน'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

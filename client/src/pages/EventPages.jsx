@@ -141,40 +141,44 @@ function EventPages() {
     }
   };
 
-  const filteredEvents = events
-    .filter(item => item.type == 2)
-    .filter(item =>
-      item.name_event
-        ? item.name_event.toLowerCase().includes(search.toLowerCase())
-        : false
-    )
-    .sort((a, b) => {
-      const dateA = new Date(a.date_end);
-      const dateB = new Date(b.date_end);
-      const endDateA = new Date(a.date_start);
-      const endDateB = new Date(b.date_start);
+  const q = (search || "").toLowerCase();
 
-      const isActiveA = today >= dateA && today <= endDateA;
-      const isActiveB = today >= dateB && today <= endDateB;
-      const isUpcomingA = today < dateA;
-      const isUpcomingB = today < dateB;
-      const isEndedA = today > endDateA;
-      const isEndedB = today > endDateB;
+const filteredEvents = events
+  .filter(item => item.type == 2)
+  .filter(item => {
+    if (!q) return true; 
+    const name = (item.name_event || "").toLowerCase();
+    const detailLoc = (item.location_event || "").toLowerCase();
+    return name.includes(q) || detailLoc.includes(q);
+  })
+  .sort((a, b) => {
+    const dateA = new Date(a.date_end);
+    const dateB = new Date(b.date_end);
+    const endDateA = new Date(a.date_start);
+    const endDateB = new Date(b.date_start);
 
-      if (isActiveA && !isActiveB) return -1;
-      if (isActiveB && !isActiveA) return 1;
+    const isActiveA = today >= dateA && today <= endDateA;
+    const isActiveB = today >= dateB && today <= endDateB;
+    const isUpcomingA = today < dateA;
+    const isUpcomingB = today < dateB;
+    const isEndedA = today > endDateA;
+    const isEndedB = today > endDateB;
 
-      if (isUpcomingA && !isUpcomingB) return -1;
-      if (isUpcomingB && !isUpcomingA) return 1;
-      if (isUpcomingA && isUpcomingB) {
-        return dateA - dateB; // เรียงจากใกล้ไกล
-      }
-      if (isEndedA && isEndedB) {
-        return endDateB - endDateA; 
-      }
+    if (isActiveA && !isActiveB) return -1;
+    if (isActiveB && !isActiveA) return 1;
 
-      return dateA - dateB;
-    });
+    if (isUpcomingA && !isUpcomingB) return -1;
+    if (isUpcomingB && !isUpcomingA) return 1;
+    if (isUpcomingA && isUpcomingB) {
+      return dateA - dateB; // เรียงจากใกล้ไกล
+    }
+    if (isEndedA && isEndedB) {
+      return endDateB - endDateA; 
+    }
+
+    return dateA - dateB;
+  });
+
 
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
   const paginatedEvents = filteredEvents.slice(

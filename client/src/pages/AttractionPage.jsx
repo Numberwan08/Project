@@ -126,15 +126,18 @@ function AttractionPage() {
     }
   };
 
+  const s = (search || "").toLowerCase();
+
   const filteredPlaces = places
-    .filter((item) => item.type == 1)
-    .filter((item) =>
-      item.name_location
-        ? item.name_location.toLowerCase().includes(search.toLowerCase())
-        : false
-    )
-    .filter((item) =>
-      selectedTypes.length === 0 ? true : selectedTypes.includes(item.name_type)
+    .filter((item) => item.type === 1)
+    .filter((item) => {
+      const name = item.name_location?.toLowerCase() || "";
+      const detail = item.detail_location?.toLowerCase() || "";
+      return name.includes(s) || detail.includes(s);
+    })
+    .filter(
+      (item) =>
+        selectedTypes.length === 0 || selectedTypes.includes(item.name_type)
     )
     .sort((a, b) => b.likes - a.likes);
 

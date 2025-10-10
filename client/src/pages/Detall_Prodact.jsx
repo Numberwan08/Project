@@ -181,7 +181,7 @@ function Detall_Prodact() {
                       <div className="relative group cursor-pointer">
                         <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
                           <img
-                            src={"http://localhost:3000/" + place.images}
+                            src={place.images}
                             alt={place.name_product}
                             className="h-28 object-cover rounded-lg"
                             style={{ maxWidth: "100%" }}

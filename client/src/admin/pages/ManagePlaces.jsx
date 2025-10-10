@@ -843,7 +843,7 @@ function ManagePlaces() {
                     </div>
                   </div>
                 </form>
-              </div>
+              </div> 
             </div>
           </div>
         </dialog>
@@ -1165,17 +1165,17 @@ function ManagePlaces() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <div className="mb-6 flex justify-start items-start ">
+            <div className=" flex justify-start items-start ">
               <h1 className="text-2xl font-bold text-gray-800 mb-2">
                 จัดการสถานที่ท่องเที่ยว
               </h1>
             </div>
-            <div className="flex justify-start items-start">
+            <div className="flex justify-start items-start mb-5">
               <h2 className="text-sm text-gray-600">
                 รายการสถานที่ทั้งหมดของคุณ
               </h2>
             </div>
-            <div className="mt-5 flex gap-4 ">
+            <div className=" flex gap-4 ">
               {/* Search Bar */}
               <div className="mb-6">
                 <div className="relative max-w-md">

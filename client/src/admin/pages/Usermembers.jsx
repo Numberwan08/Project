@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { Trash, Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash, Users, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -135,11 +135,11 @@ function Usermember() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button
-                          className="inline-flex items-center justify-center p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
                           title="ลบสมาชิก"
                           onClick={() => handleDeleteUser(item.id_user)}
                         >
-                          <Trash className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>

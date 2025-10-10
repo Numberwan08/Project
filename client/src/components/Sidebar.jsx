@@ -9,26 +9,32 @@ import {
   Settings,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useReport } from "../context/ReportContext";
 
 // รายการเมนูทั้งหมด
 const menuItems = [
   // { label: "เพิ่มสถานที่ท่องเที่ยว", path: "/menu/menu_att" },
-  {
-    label: "เพิ่มกิจกรรม",
-    path: "/menu/menu_event",
-  },
+  // ซ่อนการเพิ่มกิจกรรมจากผู้ใช้ทั่วไป (แอดมินใช้งานจากแผงแอดมิน)
   // { label: "เพิ่มสินค้า", path: "/menu/menu_prodact" },
   // {
   //   label: "โพสต์ของผู้ใช้",
   //   path: "/menu/menu_profile",
   // }
-  {
-    label: "กิจกรรมของผู้ใช้",
-    path: "/menu/show_event",
-  },
+  // {
+  //   label: "กิจกรรมของผู้ใช้",
+  //   path: "/menu/show_event",
+  // },
   {
     label: "สินค้าผู้ใช้",
     path: "/menu/show_product",
+  },
+  {
+    label: "ประวัติการถูกรายงาน",
+    path: "/menu/redactcommnet",
+  },
+  {
+    label: "ประวัติการรายงาน",
+    path: "/menu/historyreport",
   },
   {
     label: "แก้ไขโปรไฟล์",
@@ -38,6 +44,7 @@ const menuItems = [
 
 const Sidebar = ({ isOpen = true }) => {
   const [activeItem, setActiveItem] = React.useState("Dashboard");
+  const { myReportCount } = useReport() || {};
 
   const handleLogout = () => {
     console.log("Logging out...");
@@ -86,8 +93,11 @@ const Sidebar = ({ isOpen = true }) => {
                   <span className={isActive ? "text-white" : "text-purple-300"}>
                     {item.icon}
                   </span>
-                  <span className={`ml-3 ${!isOpen && "hidden"} font-medium`}>
+                  <span className={`ml-3 ${!isOpen && "hidden"} font-medium flex items-center gap-2`}>
                     {item.label}
+                    {item.path === "/menu/redactcommnet" && (
+                      <span className="badge badge-warning text-white">{myReportCount || 0}</span>
+                    )}
                   </span>
                 </span>
               </Link>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Mail,
   Lock,
@@ -17,6 +17,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 function Register() {
   const [data, setData] = useState({});
+  const [imageProfile, setImageProfile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -28,6 +30,20 @@ function Register() {
       [name]: value,
     }));
   };
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0] || null;
+    setImageProfile(file);
+  };
+
+  useEffect(() => {
+    if (imageProfile) {
+      const url = URL.createObjectURL(imageProfile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPreviewUrl(null);
+  }, [imageProfile]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,8 +80,21 @@ function Register() {
     }
 
     try {
-      // Uncomment these lines for actual implementation:
-      const res = await axios.post(import.meta.env.VITE_API + "register", data);
+      const formData = new FormData();
+      Object.entries(data || {}).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value);
+        }
+      });
+      if (imageProfile) {
+        formData.append("image_profile", imageProfile);
+      }
+
+      const res = await axios.post(
+        import.meta.env.VITE_API + "register",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
       toast.success(res.data.msg, {
         position: "top-right",
         autoClose: 1000,
@@ -307,6 +336,31 @@ function Register() {
                   </label>
                 </div>
               </div>
+            </div>
+
+            {/* Profile Image */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                รูปโปรไฟล์ (ไม่บังคับ)
+              </label>
+              <input
+                type="file"
+                name="image_profile"
+                accept="image/*"
+                onChange={handleFile}
+                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-gray-300 rounded-xl bg-white/50 p-2"
+              />
+              {previewUrl && (
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border">
+                    <img
+                      src={previewUrl}
+                      alt="ตัวอย่างรูปโปรไฟล์"
+                      className="w-20 h-20 object-cover"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}

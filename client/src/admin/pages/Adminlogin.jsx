@@ -22,6 +22,12 @@ function Adminlogin() {
         form
       );
       toast.success("เข้าสู่ระบบสำเร็จ", { autoClose: 1200 });
+      try {
+        if (res?.data?.token) {
+          localStorage.setItem('adminToken', res.data.token);
+          localStorage.setItem('isAdmin', '1');
+        }
+      } catch (_) {}
       setTimeout(() => {
         navigate("/admin");
       }, 1500);
