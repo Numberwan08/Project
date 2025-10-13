@@ -302,7 +302,7 @@ function HomePage() {
 
                   <div className="p-6">
                     <div className="flex justify-between items-center w-full">
-                      <div className="flex items-center gap-1">
+                      {/* <div className="flex items-center gap-1">
                         <ThumbsUp 
                           color={likedEvents.has(item.id_event) ? "#22c55e" : "#4093ffff"} 
                           className="cursor-pointer transition-transform hover:scale-110"
@@ -310,7 +310,7 @@ function HomePage() {
                         />
                         <span>{item.likes}</span>
                       </div>
-                      <div>โพสต์โดย: {item.first_name}</div>
+                      <div>โพสต์โดย: {item.first_name}</div> */}
                     </div>
                     <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors flex-1 truncate max-w-[300px]" title={item.name_event}>
                       {item.name_event}

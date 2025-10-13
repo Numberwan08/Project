@@ -11,7 +11,7 @@
  Target Server Version : 50744 (5.7.44)
  File Encoding         : 65001
 
- Date: 08/10/2025 15:18:29
+ Date: 10/10/2025 16:11:00
 */
 
 SET NAMES utf8mb4;
@@ -39,8 +39,29 @@ CREATE TABLE `comment_post`  (
   `images` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `star` char(5) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `id_comment` int(11) NOT NULL AUTO_INCREMENT,
+  `status` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id_comment`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for comment_reply
+-- ----------------------------
+DROP TABLE IF EXISTS `comment_reply`;
+CREATE TABLE `comment_reply`  (
+  `id_reply` int(11) NOT NULL AUTO_INCREMENT,
+  `id_comment` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `reply` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `reply_date` datetime NOT NULL,
+  `user_image` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `parent_reply_id` int(11) NULL DEFAULT NULL,
+  `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id_reply`) USING BTREE,
+  INDEX `fk_reply_comment`(`id_comment`) USING BTREE,
+  INDEX `fk_reply_user`(`id_user`) USING BTREE,
+  CONSTRAINT `fk_reply_comment` FOREIGN KEY (`id_comment`) REFERENCES `comment_post` (`id_comment`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_reply_user` FOREIGN KEY (`id_user`) REFERENCES `user` (`id_user`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for like_event
@@ -68,7 +89,27 @@ CREATE TABLE `post_type`  (
   `id_type` int(11) NOT NULL AUTO_INCREMENT,
   `name_type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for report_comment
+-- ----------------------------
+DROP TABLE IF EXISTS `report_comment`;
+CREATE TABLE `report_comment`  (
+  `id_report_comment` int(11) NOT NULL AUTO_INCREMENT,
+  `id_commnet` int(11) NULL DEFAULT NULL,
+  `id_post` int(11) NULL DEFAULT NULL,
+  `id_user` int(11) NULL DEFAULT NULL,
+  `id_reply` int(11) NULL DEFAULT NULL,
+  `detail_report` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `reason` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `status` tinyint(1) NULL DEFAULT 1,
+  `target_user_id` int(11) NULL DEFAULT NULL,
+  `created_at` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`id_report_comment`) USING BTREE,
+  INDEX `idx_comment_user`(`id_commnet`, `id_user`) USING BTREE,
+  INDEX `idx_reply_user`(`id_reply`, `id_user`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user
@@ -82,8 +123,9 @@ CREATE TABLE `user`  (
   `last_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'นามสกุล',
   `dob` datetime NULL DEFAULT NULL COMMENT 'วันเกิด',
   `sex` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'เพศ',
+  `image_profile` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id_user`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 123486 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 123487 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user_event
@@ -91,7 +133,6 @@ CREATE TABLE `user`  (
 DROP TABLE IF EXISTS `user_event`;
 CREATE TABLE `user_event`  (
   `id_event` int(11) NOT NULL AUTO_INCREMENT,
-  `id_user` int(11) NOT NULL,
   `name_event` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `location_event` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `phone` varchar(13) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
@@ -122,7 +163,7 @@ CREATE TABLE `user_post`  (
   `date` datetime NULL DEFAULT NULL,
   `id_type` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_post`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 43 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for user_prodact

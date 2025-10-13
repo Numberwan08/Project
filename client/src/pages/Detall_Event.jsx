@@ -540,7 +540,7 @@ function Detall_Event() {
                                   value={replyInputs[c.id_comment] || ''}
                                   onChange={(e)=> setReplyInputs((p)=>({ ...p, [c.id_comment]: e.target.value }))}
                                 />
-                                <input type="file" accept="image/*" onChange={(e)=> setReplyFiles((p)=>({ ...p, [c.id_comment]: e.target.files?.[0] || null }))} />
+                                <input type="file" className="file-input file-input-bordered file-input-sm" accept="image/*" onChange={(e)=> setReplyFiles((p)=>({ ...p, [c.id_comment]: e.target.files?.[0] || null }))} />
                                 <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm" onClick={()=> submitReply(c.id_comment)}>ส่ง</button>
                               </div>
                             </div>
@@ -553,44 +553,6 @@ function Detall_Event() {
                     </div>
                   </div>
                   {/* End Comments */}
-                </div>
-
-                {/* Related Events */}
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                    กิจกรรมใกล้เคียง
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {nearbyEvent.length > 0 ? (
-                      nearbyEvent.map((place, idx) => (
-                        <Link to={`/detall_event/${place.id_event}`} key={idx}>
-                          <div className="relative group cursor-pointer">
-                            <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
-                              <img
-                                src={place.images}
-                                alt={place.name_event}
-                                className="h-28 object-cover rounded-lg"
-                                style={{ maxWidth: "100%" }}
-                              />
-                            </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
-                              <p className="text-white text-sm font-medium">
-                                {place.name_event}
-                              </p>
-                              <p className="text-purple-100 text-xs">
-                                {place.detail_event}
-                              </p>
-                              <p className="text-purple-200 text-xs">
-                                ระยะทาง {place.distance.toFixed(2)} กม.
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -698,6 +660,44 @@ function Detall_Event() {
                     </div>
                   </div>
                 </div>
+
+                   {/* Related Events */}
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                    กิจกรรมใกล้เคียง
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {nearbyEvent.length > 0 ? (
+                      nearbyEvent.map((place, idx) => (
+                        <Link to={`/detall_event/${place.id_event}`} key={idx}>
+                          <div className="relative group cursor-pointer">
+                            <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
+                              <img
+                                src={place.images}
+                                alt={place.name_event}
+                                className="h-28 object-cover rounded-lg"
+                                style={{ maxWidth: "100%" }}
+                              />
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
+                              <p className="text-white text-sm font-medium">
+                                {place.name_event}
+                              </p>
+                              <p className="text-purple-100 text-xs">
+                                {place.detail_event}
+                              </p>
+                              <p className="text-purple-200 text-xs">
+                                ระยะทาง {place.distance.toFixed(2)} กม.
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      ))
+                    ) : (
+                      <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -754,7 +754,7 @@ function Detall_Event() {
               </div>
               <div>
                 <label className="block text-sm mb-1">รูปภาพ (ถ้ามี)</label>
-                <input type="file" accept="image/*" onChange={(e)=> setCommentFile(e.target.files?.[0] || null)} />
+                <input type="file" accept="image/*" className="file-input file-input-bordered file-input-sm" onChange={(e)=> setCommentFile(e.target.files?.[0] || null)} />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" className="px-4 py-2 rounded-lg border text-sm" onClick={()=> setCommentModal(false)}>ยกเลิก</button>

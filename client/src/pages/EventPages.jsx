@@ -302,7 +302,7 @@ const filteredEvents = events
                         {item.likes}
                       </span>
                     </button>
-
+{/* 
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <User className="w-3 h-3" />
                       <span
@@ -317,7 +317,7 @@ const filteredEvents = events
                           ? "ของฉัน"
                           : item.first_name}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Button */}
