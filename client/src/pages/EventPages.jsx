@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { ThumbsUp, Search, Calendar, MapPin, Clock, User } from "lucide-react";
+import { ThumbsUp, Search, Calendar, MapPin, Clock, User, MessageSquare } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Pagination from "../components/Pagination";
@@ -10,6 +10,7 @@ function EventPages() {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState("");
   const [likedEvents, setLikedEvents] = useState(new Set());
+  const [commentCounts, setCommentCounts] = useState({}); // id_event -> count
   const [userId, setUserId] = useState(localStorage.getItem("userId"));
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
@@ -27,8 +28,33 @@ function EventPages() {
       if (userId) {
         checkLikeStatus(eventsData);
       }
+      // Fetch comment counts per event
+      fetchCommentCounts(eventsData);
     } catch (error) {
       setEvents([]);
+    }
+  };
+
+  const fetchCommentCounts = async (eventsData) => {
+    try {
+      const pairs = await Promise.all(
+        (eventsData || []).map(async (ev) => {
+          try {
+            const res = await axios.get(
+              `${import.meta.env.VITE_API}event/comment_id/${ev.id_event}`
+            );
+            const arr = res?.data?.data || [];
+            return [ev.id_event, arr.length];
+          } catch (_) {
+            return [ev.id_event, 0];
+          }
+        })
+      );
+      const obj = {};
+      for (const [id, count] of pairs) obj[id] = count;
+      setCommentCounts(obj);
+    } catch (_) {
+      setCommentCounts({});
     }
   };
 
@@ -109,8 +135,8 @@ function EventPages() {
   const today = new Date();
 
   const getEventStatus = (startDate, endDate) => {
-    const end = new Date(startDate);
-    const start = new Date(endDate);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
     if (today > end) {
       return {
@@ -272,15 +298,15 @@ const filteredEvents = events
                   <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
                     <Calendar className="w-4 h-4 text-purple-600" />
                     <span className="truncate">
-                      {new Date(item.date_end).toLocaleDateString("th-TH", {
-                        day: "numeric",
-                        month: "short",
-                      })}{" "}
-                      -{" "}
                       {new Date(item.date_start).toLocaleDateString("th-TH", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
+                      })}
+                      {" "}-{" "}
+                      {new Date(item.date_end).toLocaleDateString("th-TH", {
+                        day: "numeric",
+                        month: "short",
                       })}
                     </span>
                   </div>
@@ -302,6 +328,12 @@ const filteredEvents = events
                         {item.likes}
                       </span>
                     </button>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <MessageSquare className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {commentCounts[item.id_event] ?? 0}
+                      </span>
+                    </div>
 {/* 
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <User className="w-3 h-3" />

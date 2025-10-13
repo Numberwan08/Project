@@ -254,19 +254,19 @@ function HistoryReport() {
               </table>
             </div>
 
-            <div className="mt-4 flex items-center justify-between px-4 pb-4">
+            <div className="flex items-center justify-center gap-3 px-4 py-4 border-t bg-gray-50">
               <button
-                className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
+                className="px-3 py-1 rounded cursor-pointer bg-base-200 hover:bg-base-300 disabled:opacity-50"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
                 ก่อนหน้า
               </button>
-              <div className="text-sm text-gray-600">
+              <div className="px-2">
                 หน้า {page} / {Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE))}
               </div>
               <button
-                className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
+                className="px-3 py-1 rounded cursor-pointer bg-primary text-white disabled:opacity-50"
                 onClick={() => setPage((p) => Math.min(Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1, p + 1))}
                 disabled={page >= (Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1)}
               >

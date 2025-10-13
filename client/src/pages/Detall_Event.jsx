@@ -94,15 +94,83 @@ function Detall_Event() {
   const { isReportedEventComment, isReportedEventReply, refreshMySubmitted } =
     useReport();
 
+  // Normalize image path for nearby events to use http://localhost:3000 when backend returns relative paths
+  const normalizeEventImage = (img) => {
+    try {
+      if (!img) return "";
+      return /^https?:\/\//i.test(img) ? img : `http://localhost:3000/${img}`;
+    } catch {
+      return img || "";
+    }
+  };
+
+  // Status badge helper for nearby events
+  const getNearbyStatus = (start, end) => {
+    try {
+      const now = new Date();
+      const s = start ? new Date(start) : null;
+      const e = end ? new Date(end) : null;
+      if (s && e && now >= s && now <= e) {
+        return { text: 'กำลังจัด', color: 'bg-green-100 text-green-700' };
+      }
+      if (s && now < s) {
+        const diffDays = Math.ceil((s - now) / (1000 * 60 * 60 * 24));
+        return { text: `เริ่มในอีก ${diffDays} วัน`, color: 'bg-orange-100 text-orange-700' };
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  };
+
   const getNearbyEvent = async () => {
     try {
       const res = await axios.get(
         import.meta.env.VITE_API + `nearby_event/${id}`
       );
-      console.log("nearby event", res.data);
-      setNerabyEvent(res.data.data || []);
+      const base = res?.data?.data || [];
+      // Enrich with date_start/date_end so we can filter out ended events
+      const detailed = await Promise.all(
+        base.map(async (p) => {
+          try {
+            const det = await axios.get(
+              import.meta.env.VITE_API + `get_event/${p.id_event}`
+            );
+            const info = (det?.data?.data && det.data.data[0]) || {};
+            return {
+              ...p,
+              date_start: info.date_start,
+              date_end: info.date_end,
+              // if nearby returns relative image but detail has absolute, keep nearby image to preserve thumbnail, normalize at render
+            };
+          } catch (_) {
+            return { ...p };
+          }
+        })
+      );
+
+      const now = new Date();
+      const isOngoingOrUpcoming = (s, e) => {
+        try {
+          const start = s ? new Date(s) : null;
+          const end = e ? new Date(e) : null;
+          if (end && !isNaN(end.getTime())) {
+            return end >= now; // not ended yet
+          }
+          // if end unknown, keep it
+          return true;
+        } catch {
+          return true;
+        }
+      };
+
+      const filtered = (detailed || []).filter((ev) =>
+        isOngoingOrUpcoming(ev.date_start, ev.date_end)
+      );
+      setNerabyEvent(filtered);
     } catch (err) {
       console.log("error get nearby event", err);
+      setNerabyEvent([]);
     }
   };
   const getEvent = async () => {
@@ -987,15 +1055,15 @@ function Detall_Event() {
                                         )}
                                         <div>
                                           <div className="text-sm font-medium">
-                                            {r.reply_user_name || "ผู้ใช้"}
-                                          </div>
-                                          <div className="text-xs text-gray-500">
-                                            {timeAgo(r.reply_date)}
+                                            {r.reply_user_name || "ผู้ใช้"}{" "}
+                                            <a className="text-xs text-gray-500">
+                                              {" "}
+                                              {timeAgo(r.reply_date)}
+                                            </a>
                                           </div>
                                         </div>
                                       </div>
 
-                                      {/* ปุ่มของเจ้าของ / ปุ่มรายงาน */}
                                       {String(r.id_user) === String(userId) ? (
                                         <div className="text-xs">
                                           {editingReplyId === r.id_reply ? (
@@ -1324,41 +1392,63 @@ function Detall_Event() {
                 </div>
 
                 {/* Related Events */}
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                <div className="bg-white rounded-2xl shadow-md p-6">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4">
                     กิจกรรมใกล้เคียง
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {nearbyEvent.length > 0 ? (
-                      nearbyEvent.map((place, idx) => (
-                        <Link to={`/detall_event/${place.id_event}`} key={idx}>
-                          <div className="relative group cursor-pointer">
-                            <div className="bg-gray-200 h-32 rounded-lg flex items-center justify-center">
+
+                  {nearbyEvent.length > 0 ? (
+                    <div className="flex flex-col gap-5">
+                      {nearbyEvent.map((place) => {
+                        const desc =
+                          place.detail_event || place.detail_location || "";
+                        const max = 90;
+                        const short =
+                          desc.length > max ? desc.slice(0, max) + "…" : desc;
+
+                        const st = getNearbyStatus(place.date_start, place.date_end);
+                        return (
+                          <Link
+                            key={place.id_event}
+                            to={`/detall_event/${place.id_event}`}
+                            className="group flex items-start gap-4 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
+                          >
+                            {/* รูปด้านซ้าย */}
+                            <div className="relative flex-shrink-0 w-36 h-24 bg-gray-100 overflow-hidden rounded-lg">
                               <img
-                                src={place.images}
+                                src={normalizeEventImage(place.images)}
                                 alt={place.name_event}
-                                className="h-28 object-cover rounded-lg"
-                                style={{ maxWidth: "100%" }}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                               />
+                              {/* Badge ระยะทาง */}
+                              <div className="absolute bottom-1 right-1">
+                                <span className="bg-white/90 text-gray-700 text-[11px] px-2 py-0.5 rounded-full shadow">
+                                  {Number(place.distance || 0).toFixed(1)} กม.
+                                </span>
+                              </div>
                             </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3 rounded-b-lg">
-                              <p className="text-white text-sm font-medium">
+
+                            {/* ข้อมูลด้านขวา */}
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-gray-900">
                                 {place.name_event}
                               </p>
-                              <p className="text-purple-100 text-xs">
-                                {place.detail_event}
-                              </p>
-                              <p className="text-purple-200 text-xs">
-                                ระยะทาง {place.distance.toFixed(2)} กม.
+                              {st && (
+                                <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] ${st.color}`}>
+                                  {st.text}
+                                </span>
+                              )}
+                              <p className="mt-1 text-xs text-gray-600 line-clamp-2">
+                                {short || "—"}
                               </p>
                             </div>
-                          </div>
-                        </Link>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
-                    )}
-                  </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">ไม่พบกิจกรรมใกล้เคียง</p>
+                  )}
                 </div>
               </div>
             </div>

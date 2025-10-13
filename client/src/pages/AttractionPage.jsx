@@ -8,6 +8,7 @@ import {
   MapPin,
   Filter,
   Package,
+  ShoppingBag,
 } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -293,7 +294,7 @@ function AttractionPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Package className="w-5 h-5 text-purple-600" />
+                    <ShoppingBag className="w-5 h-5 text-purple-600" />
                     <span className="text-sm font-medium text-gray-700">
                       {item.products}
                     </span>

@@ -7,33 +7,25 @@ function Dashboard() {
   const [productCount, setProductCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
 
-  // ...existing code...
   useEffect(() => {
-    // ดึงจำนวนโพสต์
     axios.get(import.meta.env.VITE_API + "post")
       .then(res => setPostCount(res.data.data ? res.data.data.length : 0))
       .catch(() => setPostCount(0));
-    // ดึงจำนวนกิจกรรม
     axios.get(import.meta.env.VITE_API + "event")
       .then(res => setEventCount(res.data.data ? res.data.data.length : 0))
       .catch(() => setEventCount(0));
-    // ดึงจำนวนสินค้า
     axios.get(import.meta.env.VITE_API + "product")
       .then(res => setProductCount(res.data.data ? res.data.data.length : 0))
       .catch(() => setProductCount(0));
-    // ดึงจำนวนผู้ใช้งาน (ใช้ endpoint /user/member)
     axios.get(import.meta.env.VITE_API + "allmember")
       .then(res =>{
-        //  console.log(res.data.rows.cccccc)
          setUserCount(res.data.rows.cccccc)
       }
       )
       .catch(() => setUserCount(0));
 
-      // console.log(userCount);
       
   }, []);
-// ...existing code...
 
   return (
     <div className="flex flex-col items-center text-center min-h-screen p-4">

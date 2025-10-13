@@ -23,7 +23,8 @@ L.Icon.Default.mergeOptions({
 function Detail_Att() {
   const { id } = useParams();
   const hiddenToastShownRef = useRef(false);
-  const { isReportedComment, isReportedReply, refreshMySubmitted } = useReport();
+  const { isReportedComment, isReportedReply, refreshMySubmitted } =
+    useReport();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -38,17 +39,18 @@ function Detail_Att() {
   const [commentError, setCommentError] = useState("");
   const [comments, setComments] = useState([]);
   const [commentPage, setCommentPage] = useState(1);
-  const COMMENTS_PER_PAGE = 20;
+  const COMMENTS_PER_PAGE = 100;
   const location = useLocation();
   const [highlightCommentId, setHighlightCommentId] = useState(null);
   const [highlightReplyId, setHighlightReplyId] = useState(null);
   const [highlightProductId, setHighlightProductId] = useState(null);
-  const [expandedReplies, setExpandedReplies] = useState({}); 
+  // highlight target for product cards
+  const [expandedReplies, setExpandedReplies] = useState({});
   const [repliesMap, setRepliesMap] = useState({});
-  const [replyInputs, setReplyInputs] = useState({}); 
+  const [replyInputs, setReplyInputs] = useState({});
   const [replyFiles, setReplyFiles] = useState({});
-  const [replyFormOpen, setReplyFormOpen] = useState({}); 
-  const [expandedCommentText, setExpandedCommentText] = useState({}); 
+  const [replyFormOpen, setReplyFormOpen] = useState({});
+  const [expandedCommentText, setExpandedCommentText] = useState({});
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
   const [editCommentRating, setEditCommentRating] = useState(0);
@@ -67,9 +69,9 @@ function Detail_Att() {
   }, [comments]);
 
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportTarget, setReportTarget] = useState(null); 
-  const [reportReason, setReportReason] = useState('');
-  const [reportDetails, setReportDetails] = useState('');
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
   const timeAgo = (date) => {
@@ -84,7 +86,11 @@ function Detail_Att() {
     if (hours < 24) return `${hours} ชม. ที่แล้ว`;
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days} วันก่อน`;
-    return d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+    return d.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   const buildReplyTree = (flat = []) => {
@@ -96,7 +102,13 @@ function Detail_Att() {
       ? rep.parent_reply_user_name || "ผู้ใช้"
       : rep.target_user_name || "ผู้ใช้";
     return (
-      <div className={`bg-purple-50 rounded-md p-3 ${String(highlightReplyId) === String(rep.id_reply) ? 'ring-2 ring-red-400' : ''}`}>
+      <div
+        className={`bg-purple-50 rounded-md p-3 ${
+          String(highlightReplyId) === String(rep.id_reply)
+            ? "ring-2 ring-red-400"
+            : ""
+        }`}
+      >
         <div className="flex items-start gap-2">
           {rep.reply_user_image ? (
             <img
@@ -109,10 +121,14 @@ function Detail_Att() {
           )}
           <div className="flex-1">
             <div className="text-sm text-gray-700">
-              <span className="font-semibold mr-1">{rep.reply_user_name || "ผู้ใช้"}</span>
-              <span className="text-gray-500 text-xs">{timeAgo(rep.reply_date)}</span>
-              {String(rep.id_user) !== String(userId) && (
-                (isReportedReply && isReportedReply(rep.id_reply)) ? (
+              <span className="font-semibold mr-1">
+                {rep.reply_user_name || "ผู้ใช้"}
+              </span>
+              <span className="text-gray-500 text-xs">
+                {timeAgo(rep.reply_date)}
+              </span>
+              {String(rep.id_user) !== String(userId) &&
+                (isReportedReply && isReportedReply(rep.id_reply) ? (
                   <span className="ml-3 text-xs text-gray-400">รายงานแล้ว</span>
                 ) : (
                   <button
@@ -121,8 +137,7 @@ function Detail_Att() {
                   >
                     รายงาน
                   </button>
-                )
-              )}
+                ))}
               {String(rep.id_user) === String(userId) && (
                 <span className="float-right flex gap-2">
                   {editingReplyId === rep.id_reply ? (
@@ -130,28 +145,41 @@ function Detail_Att() {
                       <button
                         className="text-gray-600 hover:text-gray-800 text-xs"
                         onClick={() => cancelEditReply()}
-                      >ยกเลิก</button>
+                      >
+                        ยกเลิก
+                      </button>
                     </>
                   ) : (
                     <>
                       <button
                         className="text-blue-600 hover:text-blue-800 text-xs"
                         onClick={() => openEditReply(rep)}
-                      >แก้ไข</button>
+                      >
+                        แก้ไข
+                      </button>
                       <button
                         className="text-red-500 hover:text-red-700 text-xs"
                         onClick={() => handleDeleteReply(rep)}
-                      >ลบ</button>
+                      >
+                        ลบ
+                      </button>
                     </>
                   )}
                 </span>
               )}
             </div>
-            <div id={`reply-${rep.id_reply}`} className="text-sm text-gray-800 mt-1">
+            <div
+              id={`reply-${rep.id_reply}`}
+              className="text-sm text-gray-800 mt-1"
+            >
               {rep.reply}
             </div>
             {rep.user_image && (
-              <img src={rep.user_image} alt="reply" className="mt-2 rounded-md max-h-32" />
+              <img
+                src={rep.user_image}
+                alt="reply"
+                className="mt-2 rounded-md max-h-32"
+              />
             )}
 
             {editingReplyId === rep.id_reply && (
@@ -169,7 +197,9 @@ function Detail_Att() {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setEditReplyFile(e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      setEditReplyFile(e.target.files?.[0] || null)
+                    }
                     className="file-input file-input-bordered file-input-sm"
                   />
                 </div>
@@ -186,12 +216,16 @@ function Detail_Att() {
                     className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
                     onClick={cancelEditReply}
                     disabled={editReplyLoading}
-                  >ยกเลิก</button>
+                  >
+                    ยกเลิก
+                  </button>
                   <button
                     type="submit"
                     className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
                     disabled={editReplyLoading}
-                  >{editReplyLoading ? "กำลังบันทึก..." : "บันทึก"}</button>
+                  >
+                    {editReplyLoading ? "กำลังบันทึก..." : "บันทึก"}
+                  </button>
                 </div>
               </form>
             )}
@@ -319,31 +353,47 @@ function Detail_Att() {
 
   const handleReportComment = (item) => {
     if (!userId) {
-      toast.error('กรุณาเข้าสู่ระบบก่อนรายงาน', { position: 'top-center', autoClose: 1200 });
+      toast.error("กรุณาเข้าสู่ระบบก่อนรายงาน", {
+        position: "top-center",
+        autoClose: 1200,
+      });
       return;
     }
     if (isReportedComment && isReportedComment(item.id_comment)) {
-      toast.info('คุณได้รายงานความคิดเห็นนี้แล้ว', { position: 'top-center', autoClose: 1500 });
+      toast.info("คุณได้รายงานความคิดเห็นนี้แล้ว", {
+        position: "top-center",
+        autoClose: 1500,
+      });
       return;
     }
-    setReportTarget({ type: 'comment', id_comment: item.id_comment });
-    setReportReason('');
-    setReportDetails('');
+    setReportTarget({ type: "comment", id_comment: item.id_comment });
+    setReportReason("");
+    setReportDetails("");
     setShowReportModal(true);
   };
 
   const handleReportReply = (rep) => {
     if (!userId) {
-      toast.error('กรุณาเข้าสู่ระบบก่อนรายงาน', { position: 'top-center', autoClose: 1200 });
+      toast.error("กรุณาเข้าสู่ระบบก่อนรายงาน", {
+        position: "top-center",
+        autoClose: 1200,
+      });
       return;
     }
     if (isReportedReply && isReportedReply(rep.id_reply)) {
-      toast.info('คุณได้รายงานการตอบกลับนี้แล้ว', { position: 'top-center', autoClose: 1500 });
+      toast.info("คุณได้รายงานการตอบกลับนี้แล้ว", {
+        position: "top-center",
+        autoClose: 1500,
+      });
       return;
     }
-    setReportTarget({ type: 'reply', id_reply: rep.id_reply, id_comment: rep.id_comment });
-    setReportReason('');
-    setReportDetails('');
+    setReportTarget({
+      type: "reply",
+      id_reply: rep.id_reply,
+      id_comment: rep.id_comment,
+    });
+    setReportReason("");
+    setReportDetails("");
     setShowReportModal(true);
   };
 
@@ -352,7 +402,7 @@ function Detail_Att() {
     if (!reportTarget || !reportReason) return;
     try {
       setReportSubmitting(true);
-      if (reportTarget.type === 'comment') {
+      if (reportTarget.type === "comment") {
         await axios.post(`${import.meta.env.VITE_API}report/comment`, {
           id_comment: reportTarget.id_comment,
           id_post: id,
@@ -371,14 +421,23 @@ function Detail_Att() {
         });
       }
       setShowReportModal(false);
-      toast.success('ส่งรายงานสำเร็จ', { position: 'top-center', autoClose: 1000 });
+      toast.success("ส่งรายงานสำเร็จ", {
+        position: "top-center",
+        autoClose: 1000,
+      });
       if (refreshMySubmitted) refreshMySubmitted();
     } catch (err) {
       const msg = err?.response?.data?.msg;
       if (err?.response?.status === 409) {
-        toast.info(msg || 'คุณได้รายงานเนื้อหานี้แล้ว', { position: 'top-center', autoClose: 1500 });
+        toast.info(msg || "คุณได้รายงานเนื้อหานี้แล้ว", {
+          position: "top-center",
+          autoClose: 1500,
+        });
       } else {
-        toast.error(msg || 'ไม่สามารถส่งรายงานได้', { position: 'top-center', autoClose: 1500 });
+        toast.error(msg || "ไม่สามารถส่งรายงานได้", {
+          position: "top-center",
+          autoClose: 1500,
+        });
       }
     } finally {
       setReportSubmitting(false);
@@ -388,7 +447,10 @@ function Detail_Att() {
   // Open modals with login guard
   const openCommentModal = () => {
     if (!userId) {
-      toast.error("กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น", { position: "top-center", autoClose: 1200 });
+      toast.error("กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น", {
+        position: "top-center",
+        autoClose: 1200,
+      });
       return;
     }
     setShowCommentModal(true);
@@ -396,7 +458,10 @@ function Detail_Att() {
 
   const openProductModal = () => {
     if (!userId) {
-      toast.error("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้า", { position: "top-center", autoClose: 1200 });
+      toast.error("กรุณาเข้าสู่ระบบก่อนเพิ่มสินค้า", {
+        position: "top-center",
+        autoClose: 1200,
+      });
       return;
     }
     setShowProductModal(true);
@@ -461,14 +526,14 @@ function Detail_Att() {
       if (!text) return;
 
       const form = new FormData();
-      form.append('id_user', userId);
-      form.append('reply', text);
-      if (parent_reply_id) form.append('parent_reply_id', parent_reply_id);
-      if (replyFiles[key]) form.append('image', replyFiles[key]);
+      form.append("id_user", userId);
+      form.append("reply", text);
+      if (parent_reply_id) form.append("parent_reply_id", parent_reply_id);
+      if (replyFiles[key]) form.append("image", replyFiles[key]);
       await axios.post(
         `${import.meta.env.VITE_API}comment/${id_comment}/replies`,
         form,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       setReplyInputs((prev) => ({ ...prev, [key]: "" }));
@@ -483,7 +548,10 @@ function Detail_Att() {
             : c
         )
       );
-      toast.success("ตอบกลับสำเร็จ", { position: "top-center", autoClose: 800 });
+      toast.success("ตอบกลับสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
     } catch (err) {
       console.log("Error add reply:", err);
       toast.error("เกิดข้อผิดพลาดในการตอบกลับ", {
@@ -526,22 +594,30 @@ function Detail_Att() {
     try {
       setEditReplyLoading(true);
       const form = new FormData();
-      form.append('id_user', userId);
-      form.append('reply', editReplyText);
-      if (editReplyFile) form.append('image', editReplyFile);
+      form.append("id_user", userId);
+      form.append("reply", editReplyText);
+      if (editReplyFile) form.append("image", editReplyFile);
 
       await axios.patch(
-        `${import.meta.env.VITE_API}comment/${id_comment}/replies/${rep.id_reply}`,
+        `${import.meta.env.VITE_API}comment/${id_comment}/replies/${
+          rep.id_reply
+        }`,
         form,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       await fetchReplies(id_comment);
-      toast.success('แก้ไขการตอบกลับสำเร็จ', { position: 'top-center', autoClose: 800 });
+      toast.success("แก้ไขการตอบกลับสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
       cancelEditReply();
     } catch (err) {
-      console.log('Error edit reply:', err);
-      toast.error('ไม่สามารถแก้ไขการตอบกลับได้', { position: 'top-center', autoClose: 1200 });
+      console.log("Error edit reply:", err);
+      toast.error("ไม่สามารถแก้ไขการตอบกลับได้", {
+        position: "top-center",
+        autoClose: 1200,
+      });
     } finally {
       setEditReplyLoading(false);
     }
@@ -552,15 +628,29 @@ function Detail_Att() {
       if (!window.confirm("คุณต้องการลบการตอบกลับนี้ใช่หรือไม่?")) return;
       const id_comment = rep.id_comment;
       await axios.delete(
-        `${import.meta.env.VITE_API}comment/${id_comment}/replies/${rep.id_reply}`,
+        `${import.meta.env.VITE_API}comment/${id_comment}/replies/${
+          rep.id_reply
+        }`,
         { data: { id_user: userId } }
       );
       await fetchReplies(id_comment);
-      setComments((prev) => prev.map((c) => c.id_comment === id_comment ? { ...c, replies_count: Math.max(0, (c.replies_count || 0) - 1) } : c));
-      toast.success('ลบการตอบกลับสำเร็จ', { position: 'top-center', autoClose: 800 });
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id_comment === id_comment
+            ? { ...c, replies_count: Math.max(0, (c.replies_count || 0) - 1) }
+            : c
+        )
+      );
+      toast.success("ลบการตอบกลับสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
     } catch (err) {
-      console.log('Error delete reply:', err);
-      toast.error('ไม่สามารถลบการตอบกลับได้', { position: 'top-center', autoClose: 1200 });
+      console.log("Error delete reply:", err);
+      toast.error("ไม่สามารถลบการตอบกลับได้", {
+        position: "top-center",
+        autoClose: 1200,
+      });
     }
   };
 
@@ -568,7 +658,10 @@ function Detail_Att() {
     e.preventDefault();
     if (!userId) return;
     if (!editCommentText) {
-      toast.error("กรุณากรอกข้อความ", { position: "top-center", autoClose: 1000 });
+      toast.error("กรุณากรอกข้อความ", {
+        position: "top-center",
+        autoClose: 1000,
+      });
       return;
     }
     try {
@@ -596,11 +689,17 @@ function Detail_Att() {
             : c
         )
       );
-      toast.success("แก้ไขความคิดเห็นสำเร็จ", { position: "top-center", autoClose: 800 });
+      toast.success("แก้ไขความคิดเห็นสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
       cancelEditComment();
     } catch (err) {
       console.log("Error edit comment:", err);
-      toast.error("ไม่สามารถแก้ไขความคิดเห็นได้", { position: "top-center", autoClose: 1200 });
+      toast.error("ไม่สามารถแก้ไขความคิดเห็นได้", {
+        position: "top-center",
+        autoClose: 1200,
+      });
     } finally {
       setEditLoading(false);
     }
@@ -733,11 +832,13 @@ function Detail_Att() {
     getDetailAtt();
     getNearbyAtt();
     const sp = new URLSearchParams(location.search);
-    const hC = sp.get('highlightComment');
-    const hR = sp.get('highlightReply');
-    const suppressHiddenToast = sp.get('suppressHiddenToast') === '1';
+    const hC = sp.get("highlightComment");
+    const hR = sp.get("highlightReply");
+    const hP = sp.get("highlightProduct");
+    const suppressHiddenToast = sp.get("suppressHiddenToast") === "1";
     setHighlightCommentId(hC ? String(hC) : null);
     setHighlightReplyId(hR ? String(hR) : null);
+    setHighlightProductId(hP ? String(hP) : null);
     const fetchComments = async () => {
       try {
         const res = await axios.get(
@@ -751,14 +852,21 @@ function Detail_Att() {
         // If user navigated with highlight param but the comment isn't visible (likely hidden)
         // check status; show toast once unless suppressed via query
         if (hC && !suppressHiddenToast && !hiddenToastShownRef.current) {
-          const exists = sorted.some((c) => String(c.id_comment) === String(hC));
+          const exists = sorted.some(
+            (c) => String(c.id_comment) === String(hC)
+          );
           if (!exists) {
             try {
-              const st = await axios.get(`${import.meta.env.VITE_API}post/comment_status/${hC}`);
+              const st = await axios.get(
+                `${import.meta.env.VITE_API}post/comment_status/${hC}`
+              );
               const s = st?.data?.data?.status;
-              if (String(s) === '0' && !hiddenToastShownRef.current) {
+              if (String(s) === "0" && !hiddenToastShownRef.current) {
                 hiddenToastShownRef.current = true;
-                toast.info('คอมเมนต์นี้ถูกซ่อนแล้ว', { position: 'top-center', autoClose: 2000 });
+                toast.info("คอมเมนต์นี้ถูกซ่อนแล้ว", {
+                  position: "top-center",
+                  autoClose: 2000,
+                });
               }
             } catch (e) {
               // ignore if cannot check (possibly deleted)
@@ -771,8 +879,10 @@ function Detail_Att() {
             await fetchReplies(hC);
           }
           setTimeout(() => {
-            const el = document.getElementById(hR ? `reply-${hR}` : `comment-${hC}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const el = document.getElementById(
+              hR ? `reply-${hR}` : `comment-${hC}`
+            );
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
           }, 300);
         }
       } catch (err) {
@@ -782,6 +892,24 @@ function Detail_Att() {
     fetchComments();
     fetchRelatedProducts();
   }, [id]);
+
+  // Try to scroll to highlighted product; if not visible, load all products
+  useEffect(() => {
+    const hP = String(highlightProductId || "");
+    if (!hP) return;
+    const el = document.getElementById(`product-${hP}`);
+    if (el) {
+      try {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch {}
+      const t = setTimeout(() => setHighlightProductId(null), 2500);
+      return () => clearTimeout(t);
+    }
+    if (!showAllProducts && (relatedProducts || []).length > 0) {
+      // Product not in random list; load all
+      fetchAllProducts();
+    }
+  }, [relatedProducts, allProducts, highlightProductId, showAllProducts]);
 
   if (loading) {
     return (
@@ -815,7 +943,10 @@ function Detail_Att() {
                   <div className="flex items-center space-x-4 flex-shrink-0">
                     <div className="flex items-center bg-yellow-100 px-3 py-1 rounded-full">
                       <h4 className="text-sm font-semibold text-yellow-800 whitespace-nowrap">
-                        คะแนน {item.star > 0 ? `${item.star} (${ratingCount} คน)` : "ไม่มีคะแนน"}
+                        คะแนน{" "}
+                        {item.star > 0
+                          ? `${item.star} (${ratingCount} คน)`
+                          : "ไม่มีคะแนน"}
                       </h4>
                     </div>
 
@@ -911,7 +1042,7 @@ function Detail_Att() {
                   <h2 className="text-xl font-bold text-gray-800">
                     สินค้าที่เกี่ยวข้องของชุมชน
                   </h2>
-                  
+
                   <button
                     className="w-50 cursor-pointer bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors"
                     onClick={openProductModal}
@@ -948,7 +1079,13 @@ function Detail_Att() {
                       relatedProducts.map((product, idx) => (
                         <div
                           key={idx}
-                          className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          id={`product-${product.id_product}`}
+                          className={`bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow ${
+                            String(highlightProductId) ===
+                            String(product.id_product)
+                              ? "ring-4 ring-yellow-400 animate-pulse"
+                              : ""
+                          }`}
                         >
                           <div className="relative mb-3">
                             <img
@@ -1031,7 +1168,13 @@ function Detail_Att() {
                         allProducts.map((product, idx) => (
                           <div
                             key={idx}
-                            className="m-5 bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                            id={`product-${product.id_product}`}
+                            className={`m-5 bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow ${
+                              String(highlightProductId) ===
+                              String(product.id_product)
+                                ? "ring-4 ring-yellow-400 animate-pulse"
+                                : ""
+                            }`}
                           >
                             <div className="relative mb-3">
                               <img
@@ -1095,13 +1238,11 @@ function Detail_Att() {
                   </div>
                 )}
               </div>
-          {/* Recommendation Badge */}
+              {/* Recommendation Badge */}
               <div className="bg-gradient-to-r bg-gray-100 rounded-lg p-4">
-               <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-                 <h3 className="font-bold text-xl  mb-4 ">
-                  ความคิดเห็น
-                </h3>
-                 <button
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+                  <h3 className="font-bold text-xl  mb-4 ">ความคิดเห็น</h3>
+                  <button
                     className="w-50 cursor-pointer   bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors mb-3"
                     onClick={openCommentModal}
                   >
@@ -1120,7 +1261,7 @@ function Detail_Att() {
                     </svg>
                     <span>แสดงความคิดเห็น</span>
                   </button>
-               </div>
+                </div>
                 {comments.length > 0 ? (
                   <div className="space-y-4">
                     {comments
@@ -1132,7 +1273,12 @@ function Detail_Att() {
                         <div
                           id={`comment-${item.id_comment}`}
                           key={idx}
-                          className={`bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow ${String(highlightCommentId) === String(item.id_comment) ? 'ring-2 ring-red-400' : ''}`}
+                          className={`bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow ${
+                            String(highlightCommentId) ===
+                            String(item.id_comment)
+                              ? "ring-2 ring-red-400"
+                              : ""
+                          }`}
                         >
                           {/* ปุ่มลบคอมเมนต์ เฉพาะเจ้าของ */}
                           {userId === String(item.id_user) && (
@@ -1145,7 +1291,9 @@ function Detail_Att() {
                               </button>
                               <button
                                 className="text-red-500 cursor-pointer hover:text-red-700"
-                                onClick={() => handleDeleteComment(item.id_comment)}
+                                onClick={() =>
+                                  handleDeleteComment(item.id_comment)
+                                }
                               >
                                 ลบ
                               </button>
@@ -1153,17 +1301,28 @@ function Detail_Att() {
                           )}
                           <div className="flex items-start gap-3 mb-2">
                             {item.user_image ? (
-                              <img src={item.user_image} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                              <img
+                                src={item.user_image}
+                                alt="avatar"
+                                className="w-8 h-8 rounded-full object-cover"
+                              />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-purple-200" />
                             )}
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold">{item.first_name}</span>
-                                <span className="text-xs text-gray-500">{timeAgo(item.date_comment)}</span>
-                                {String(item.id_user) !== String(userId) && (
-                                  (isReportedComment && isReportedComment(item.id_comment)) ? (
-                                    <span className="ml-2 text-xs text-gray-400">รายงานแล้ว</span>
+                                <span className="font-semibold">
+                                  {item.first_name}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {timeAgo(item.date_comment)}
+                                </span>
+                                {String(item.id_user) !== String(userId) &&
+                                  (isReportedComment &&
+                                  isReportedComment(item.id_comment) ? (
+                                    <span className="ml-2 text-xs text-gray-400">
+                                      รายงานแล้ว
+                                    </span>
                                   ) : (
                                     <button
                                       className="ml-2 text-xs text-red-500 hover:text-red-700"
@@ -1171,30 +1330,39 @@ function Detail_Att() {
                                     >
                                       รายงาน
                                     </button>
-                                  )
-                                )}
+                                  ))}
                                 <div className="flex items-center space-x-1 ml-2">
-                                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-yellow-400">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                    className="w-4 h-4 text-yellow-400"
+                                  >
                                     <path d="M12 .587l3.668 7.568L24 9.75l-6 5.85 1.416 8.4L12 19.771l-7.416 4.229L6 15.6 0 9.75l8.332-1.595z" />
                                   </svg>
-                                  <span className="text-sm font-medium text-gray-700">{item.star}</span>
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {item.star}
+                                  </span>
                                 </div>
                               </div>
                               <div className="mt-1 text-gray-800">
                                 {expandedCommentText[item.id_comment]
                                   ? item.comment
-                                  : (item.comment || '').slice(0, 180)}
+                                  : (item.comment || "").slice(0, 180)}
                                 {item.comment && item.comment.length > 180 && (
                                   <button
                                     className="ml-2 text-purple-700 hover:text-purple-900 text-sm cursor-pointer"
                                     onClick={() =>
                                       setExpandedCommentText((prev) => ({
                                         ...prev,
-                                        [item.id_comment]: !prev[item.id_comment],
+                                        [item.id_comment]:
+                                          !prev[item.id_comment],
                                       }))
                                     }
                                   >
-                                    {expandedCommentText[item.id_comment] ? "ย่อข้อความ" : "ดูเพิ่มเติม"}
+                                    {expandedCommentText[item.id_comment]
+                                      ? "ย่อข้อความ"
+                                      : "ดูเพิ่มเติม"}
                                   </button>
                                 )}
                               </div>
@@ -1209,12 +1377,19 @@ function Detail_Att() {
                           )}
                           {/* Edit form (inline) */}
                           {editingCommentId === item.id_comment && (
-                            <form className="mt-3 space-y-3" onSubmit={(e)=>handleEditCommentSubmit(e, item.id_comment)}>
+                            <form
+                              className="mt-3 space-y-3"
+                              onSubmit={(e) =>
+                                handleEditCommentSubmit(e, item.id_comment)
+                              }
+                            >
                               <textarea
                                 className="w-full p-2 border rounded-lg"
                                 rows={3}
                                 value={editCommentText}
-                                onChange={(e)=>setEditCommentText(e.target.value)}
+                                onChange={(e) =>
+                                  setEditCommentText(e.target.value)
+                                }
                                 placeholder="แก้ไขความคิดเห็นของคุณ"
                               />
                               {/* <div className="flex items-center gap-4">
@@ -1235,7 +1410,11 @@ function Detail_Att() {
                               <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e)=>setEditCommentImage(e.target.files?.[0]||null)}
+                                onChange={(e) =>
+                                  setEditCommentImage(
+                                    e.target.files?.[0] || null
+                                  )
+                                }
                                 className="file-input file-input-bordered file-input-sm"
                               />
                               {editCommentImage && (
@@ -1246,10 +1425,19 @@ function Detail_Att() {
                                 />
                               )}
                               <div className="flex gap-2">
-                                <button type="button" className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={cancelEditComment} disabled={editLoading}>
+                                <button
+                                  type="button"
+                                  className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                                  onClick={cancelEditComment}
+                                  disabled={editLoading}
+                                >
                                   ยกเลิก
                                 </button>
-                                <button type="submit" className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50" disabled={editLoading}>
+                                <button
+                                  type="submit"
+                                  className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                                  disabled={editLoading}
+                                >
                                   {editLoading ? "กำลังบันทึก..." : "บันทึก"}
                                 </button>
                               </div>
@@ -1259,7 +1447,9 @@ function Detail_Att() {
                           <div className="mt-3">
                             <button
                               className="text-sm text-purple-700 hover:text-purple-900 font-medium cursor-pointer"
-                              onClick={() => handleToggleReplies(item.id_comment)}
+                              onClick={() =>
+                                handleToggleReplies(item.id_comment)
+                              }
                             >
                               {expandedReplies[item.id_comment]
                                 ? "ซ่อนการตอบกลับ"
@@ -1270,19 +1460,30 @@ function Detail_Att() {
                           {/* Replies list */}
                           {expandedReplies[item.id_comment] && (
                             <div className="mt-3 pl-4 border-l-2 border-purple-200 space-y-3">
-                              {buildReplyTree(repliesMap[item.id_comment] || []).map((rep) => (
-                                <ReplyItem key={rep.id_reply} rep={rep} id_comment={item.id_comment} depth={1} />
+                              {buildReplyTree(
+                                repliesMap[item.id_comment] || []
+                              ).map((rep) => (
+                                <ReplyItem
+                                  key={rep.id_reply}
+                                  rep={rep}
+                                  id_comment={item.id_comment}
+                                  depth={1}
+                                />
                               ))}
 
                               {/* Add reply input */}
                               <form
                                 className="flex items-center gap-2"
-                                onSubmit={(e) => handleAddReply(e, item.id_comment)}
+                                onSubmit={(e) =>
+                                  handleAddReply(e, item.id_comment)
+                                }
                               >
                                 <input
                                   type="text"
                                   className="input input-sm input-bordered flex-1"
-                                  placeholder={`ตอบกลับ ${item.first_name || ''}...`}
+                                  placeholder={`ตอบกลับ ${
+                                    item.first_name || ""
+                                  }...`}
                                   value={replyInputs[item.id_comment] || ""}
                                   onChange={(e) =>
                                     setReplyInputs((prev) => ({
@@ -1298,7 +1499,8 @@ function Detail_Att() {
                                   onChange={(e) =>
                                     setReplyFiles((prev) => ({
                                       ...prev,
-                                      [item.id_comment]: e.target.files?.[0] || null,
+                                      [item.id_comment]:
+                                        e.target.files?.[0] || null,
                                     }))
                                   }
                                 />
@@ -1428,54 +1630,57 @@ function Detail_Att() {
               </div> */}
               {/* Related Places Section */}
               <div className="bg-white rounded-2xl shadow-md p-6">
-  <h2 className="text-xl font-bold text-gray-800 mb-4">สถานที่ใกล้เคียง</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">
+                  สถานที่ใกล้เคียง
+                </h2>
 
-  {nearbyAtt.length > 0 ? (
-    <div className="flex flex-col gap-5">
-      {nearbyAtt.map((place) => {
-        const desc = place.detail_att || place.detail_location || "";
-        const max = 90;
-        const short = desc.length > max ? desc.slice(0, max) + "…" : desc;
+                {nearbyAtt.length > 0 ? (
+                  <div className="flex flex-col gap-5">
+                    {nearbyAtt.map((place) => {
+                      const desc =
+                        place.detail_att || place.detail_location || "";
+                      const max = 90;
+                      const short =
+                        desc.length > max ? desc.slice(0, max) + "…" : desc;
 
-        return (
-          <Link
-            key={place.id_post}
-            to={`/detall_att/${place.id_post}`}
-            className="group flex items-start gap-4 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
-          >
-            {/* รูปด้านซ้าย */}
-            <div className="relative flex-shrink-0 w-36 h-24 bg-gray-100 overflow-hidden rounded-lg">
-              <img
-                src={place.images}
-                alt={place.name_location}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              {/* Badge ระยะทาง */}
-              <div className="absolute bottom-1 right-1">
-                <span className="bg-white/90 text-gray-700 text-[11px] px-2 py-0.5 rounded-full shadow">
-                  {place.distance.toFixed(1)} กม.
-                </span>
+                      return (
+                        <Link
+                          key={place.id_post}
+                          to={`/detall_att/${place.id_post}`}
+                          className="group flex items-start gap-4 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
+                        >
+                          {/* รูปด้านซ้าย */}
+                          <div className="relative flex-shrink-0 w-36 h-24 bg-gray-100 overflow-hidden rounded-lg">
+                            <img
+                              src={place.images}
+                              alt={place.name_location}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            {/* Badge ระยะทาง */}
+                            <div className="absolute bottom-1 right-1">
+                              <span className="bg-white/90 text-gray-700 text-[11px] px-2 py-0.5 rounded-full shadow">
+                                {place.distance.toFixed(1)} กม.
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* ข้อมูลด้านขวา */}
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900">
+                              {place.name_location}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-600 line-clamp-2">
+                              {short || "—"}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
+                )}
               </div>
-            </div>
-
-            {/* ข้อมูลด้านขวา */}
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">
-                {place.name_location}
-              </p>
-              <p className="mt-1 text-xs text-gray-600 line-clamp-2">
-                {short || "—"}
-              </p>
-            </div>
-          </Link>
-        );
-      })}
-    </div>
-  ) : (
-    <p className="text-gray-500">ไม่พบสถานที่ใกล้เคียง</p>
-  )}
-</div>
-
             </div>
           </div>
         </div>
@@ -1525,7 +1730,7 @@ function Detail_Att() {
 
             {/* Header */}
             <h2 className="text-2xl font-bold mb-6 text-base-content flex items-center gap-2">
-               แสดงความคิดเห็น
+              แสดงความคิดเห็น
             </h2>
 
             {/* Form */}
@@ -1673,13 +1878,16 @@ function Detail_Att() {
             </button>
 
             <h2 className="text-2xl font-bold mb-6 text-base-content flex items-center gap-2">
-               รายงาน{reportTarget?.type === 'reply' ? 'การตอบกลับ' : 'ความคิดเห็น'}
+              รายงาน
+              {reportTarget?.type === "reply" ? "การตอบกลับ" : "ความคิดเห็น"}
             </h2>
 
             <form onSubmit={submitReport} className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-medium">สาเหตุการรายงาน</span>
+                  <span className="label-text font-medium">
+                    สาเหตุการรายงาน
+                  </span>
                 </label>
                 <select
                   className="select select-bordered w-full"
@@ -1687,7 +1895,9 @@ function Detail_Att() {
                   onChange={(e) => setReportReason(e.target.value)}
                   required
                 >
-                  <option value="" disabled>เลือกสาเหตุ</option>
+                  <option value="" disabled>
+                    เลือกสาเหตุ
+                  </option>
                   <option value="spam">สแปม / โฆษณา</option>
                   <option value="harassment">กลั่นแกล้ง / คุกคาม</option>
                   <option value="hate">เฮทสปีช / ความรุนแรง</option>
@@ -1698,7 +1908,9 @@ function Detail_Att() {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-medium">รายละเอียดเพิ่มเติม (ถ้ามี)</span>
+                  <span className="label-text font-medium">
+                    รายละเอียดเพิ่มเติม (ถ้ามี)
+                  </span>
                 </label>
                 <textarea
                   className="textarea textarea-bordered w-full h-28"
@@ -1709,11 +1921,21 @@ function Detail_Att() {
               </div>
 
               <div className="modal-action">
-                <button type="button" className="btn" onClick={() => setShowReportModal(false)}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setShowReportModal(false)}
+                >
                   ยกเลิก
                 </button>
-                <button type="submit" className={`btn btn-error ${reportSubmitting ? 'loading' : ''}`} disabled={reportSubmitting || !reportReason}>
-                  {reportSubmitting ? 'กำลังส่ง...' : 'ส่งรายงาน'}
+                <button
+                  type="submit"
+                  className={`btn btn-error ${
+                    reportSubmitting ? "loading" : ""
+                  }`}
+                  disabled={reportSubmitting || !reportReason}
+                >
+                  {reportSubmitting ? "กำลังส่ง..." : "ส่งรายงาน"}
                 </button>
               </div>
             </form>
@@ -1931,4 +2153,3 @@ function Detail_Att() {
 }
 
 export default Detail_Att;
-

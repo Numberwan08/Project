@@ -1,6 +1,6 @@
 import axios from "axios";
-import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -18,10 +18,13 @@ L.Icon.Default.mergeOptions({
 
 function Detall_Prodact() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [nearbyProduct, setNearbyProduct] = useState([]);
+  const [isHighlight, setIsHighlight] = useState(!!searchParams.get("highlight"));
+  const highlightRef = useRef(null);
 
   const getDetailProduct = async () => {
     try {
@@ -56,6 +59,18 @@ function Detall_Prodact() {
     getNearbyProduct();
   }, [id]);
 
+  useEffect(() => {
+    const shouldHighlight = !!searchParams.get("highlight");
+    if (!loading && shouldHighlight && highlightRef.current) {
+      try {
+        highlightRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {}
+      setIsHighlight(true);
+      const t = setTimeout(() => setIsHighlight(false), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [loading, searchParams]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-emerald-50 flex items-center justify-center">
@@ -72,7 +87,11 @@ function Detall_Prodact() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-emerald-50">
       {data.map((item, index) => (
-        <div key={index} className="max-w-7xl mx-auto px-4 py-8">
+        <div
+          key={index}
+          ref={index === 0 ? highlightRef : null}
+          className={`max-w-7xl mx-auto px-4 py-8 ${isHighlight ? 'ring-4 ring-yellow-400 animate-pulse' : ''}`}
+        >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* ฝั่งซ้าย - รูปภาพและข้อมูลสินค้า */}
             <div className="lg:col-span-2 space-y-6">

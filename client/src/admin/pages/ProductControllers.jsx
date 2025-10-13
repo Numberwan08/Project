@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Trash2, ChevronLeft, ChevronRight, Search, Package, MapPin } from 'lucide-react'
+import { Trash2, ChevronLeft, ChevronRight, Search, Package, MapPin, ExternalLink } from 'lucide-react'
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -41,8 +41,6 @@ function ProductControllers() {
   );
 });
 
-
-  // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
     (page - 1) * itemsPerPage,
@@ -137,6 +135,15 @@ function ProductControllers() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-center">
+                          <a
+                            href={`/detall_att/${item.id_post}?highlightProduct=${item.id_product}&suppressHiddenToast=1`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            เปิดโพสต์
+                          </a>
                           <button
                             onClick={() => handleDelete(item.id_product)}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
