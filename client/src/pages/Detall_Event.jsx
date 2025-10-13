@@ -533,7 +533,8 @@ function Detall_Event() {
                       </div>
                     </div>
                   </div>
-
+                </div>
+                <div className="bg-gray-100 rounded-2xl shadow-lg p-6">
                   {/* Comments Section */}
                   <div className="mt-8">
                     <div className="flex items-center justify-between mb-3">
@@ -544,11 +545,10 @@ function Detall_Event() {
                         onClick={() => setCommentModal(true)}
                         className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm"
                       >
-                        เพิ่มความคิดเห็น
+                        แสดงความคิดเห็น
                       </button>
                     </div>
 
-                    
                     <div className="space-y-4">
                       {(comments || []).map((c) => (
                         <div
@@ -937,7 +937,9 @@ function Detall_Event() {
               {/* Comment Text Area */}
               <div className="form-control">
                 <label className="label flex mb-2">
-                  <span className="label-text font-medium">ความคิดเห็นของคุณ</span>
+                  <span className="label-text font-medium">
+                    ความคิดเห็นของคุณ
+                  </span>
                 </label>
                 <textarea
                   className="textarea w-full textarea-bordered textarea-primary h-24 resize-none focus:textarea-primary"
@@ -966,14 +968,18 @@ function Detall_Event() {
                   ))}
                 </div>
                 <label className="label">
-                  <span className="label-text-alt">คะแนน: {commentStar || 0}/5</span>
+                  <span className="label-text-alt">
+                    คะแนน: {commentStar || 0}/5
+                  </span>
                 </label>
               </div>
 
               {/* Image Upload */}
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text font-medium">เพิ่มรูปภาพ (ถ้ามี)</span>
+                  <span className="label-text font-medium">
+                    เพิ่มรูปภาพ (ถ้ามี)
+                  </span>
                 </label>
                 <input
                   type="file"
@@ -1003,7 +1009,9 @@ function Detall_Event() {
                 </button>
                 <button
                   type="submit"
-                  className={`btn btn-primary ${commentSubmitting ? "loading" : ""}`}
+                  className={`btn btn-primary ${
+                    commentSubmitting ? "loading" : ""
+                  }`}
                   disabled={commentSubmitting}
                 >
                   {commentSubmitting ? (
