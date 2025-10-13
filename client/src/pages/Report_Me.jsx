@@ -14,6 +14,8 @@ function Report_Me() {
   const [expandedKeys, setExpandedKeys] = useState(new Set());
   const [isAllOpen, setIsAllOpen] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("post"); // 'post' | 'event'
+  const ITEMS_PER_PAGE = 10;
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     refreshMyReports?.();
@@ -141,6 +143,17 @@ function Report_Me() {
 
   const grouped = sourceFilter === "event" ? groupedEvent : groupedPost;
 
+  // reset page when dataset changes
+  useEffect(() => {
+    setPage(1);
+  }, [sourceFilter, grouped.length]);
+
+  const totalPages = Math.max(1, Math.ceil((grouped.length || 0) / ITEMS_PER_PAGE));
+  const pagedGroups = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return grouped.slice(start, start + ITEMS_PER_PAGE);
+  }, [grouped, page]);
+
   // --- ปุ่ม "แสดงทั้งหมด / ซ่อนทั้งหมด" ---
   const openAll = () => {
     const next = new Set(grouped.map((g) => g.key));
@@ -214,7 +227,7 @@ function Report_Me() {
         <div className="text-gray-500">กำลังโหลด...</div>
       ) : grouped.length > 0 ? (
         <div className="space-y-4">
-          {grouped.map((g) => {
+          {pagedGroups.map((g) => {
             const groupStatusLabel = statusText(g.status_group);
             const link = g.source === 'event'
               ? (g.id_event
@@ -325,6 +338,28 @@ function Report_Me() {
               </div>
             );
           })}
+
+          <div className="flex items-center justify-between pt-2">
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              ก่อนหน้า
+            </button>
+            <div className="text-sm text-gray-600">
+              หน้า {page} / {totalPages}
+            </div>
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              ถัดไป
+            </button>
+          </div>
         </div>
       ) : (
         <div className="text-gray-500">ยังไม่มีการรายงานที่เกี่ยวกับคุณ</div>

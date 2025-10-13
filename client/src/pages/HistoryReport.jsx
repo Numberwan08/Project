@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Eye, AlertCircle, CheckCircle2, Clock, FileText, ExternalLink } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function HistoryReport() {
   const [reportData, setReportData] = useState([]);
@@ -75,21 +77,69 @@ function HistoryReport() {
     );
   }, [reportData, sourceFilter]);
 
-  const openPostInNewTab = (item) => {
+  const openPostInNewTab = async (item) => {
+    const api = import.meta.env.VITE_API;
     const isEvent = item?.source === 'event';
-    if (isEvent) {
-      if (!item?.id_event || !(item?.id_event_comment || item?.id_event_reply)) return;
-      const link = `/detall_event/${item.id_event}?` + (item.id_event_reply
-        ? `highlightComment=${item.id_event_comment}&highlightReply=${item.id_event_reply}`
-        : `highlightComment=${item.id_event_comment}`) + `&suppressHiddenToast=1`;
+    try {
+      if (isEvent) {
+        if (!item?.id_event || !(item?.id_event_comment || item?.id_event_reply)) return;
+        // Check visibility by fetching list endpoints that exclude hidden (status '0')
+        // If target missing from list => considered hidden/deleted
+        if (item?.id_event_reply) {
+          const rep = await axios.get(`${api}event/comment/${item.id_event_comment}/replies`);
+          const found = (rep?.data?.data || []).some(r => String(r.id_reply) === String(item.id_event_reply));
+          if (!found) {
+            toast.info("คอมเมนต์นี้ถูกลบแล้ว", { position: "top-center", autoClose: 1500 });
+            return;
+          }
+        } else if (item?.id_event_comment) {
+          const com = await axios.get(`${api}event/comment_id/${item.id_event}`);
+          const found = (com?.data?.data || []).some(c => String(c.id_comment) === String(item.id_event_comment));
+          if (!found) {
+            toast.info("คอมเมนต์นี้ถูกลบแล้ว", { position: "top-center", autoClose: 1500 });
+            return;
+          }
+        }
+        const link = `/detall_event/${item.id_event}?` + (item.id_event_reply
+          ? `highlightComment=${item.id_event_comment}&highlightReply=${item.id_event_reply}`
+          : `highlightComment=${item.id_event_comment}`) + `&suppressHiddenToast=1`;
+        window.open(link, "_blank", "noopener");
+        return;
+      }
+      // Post
+      if (!item?.id_post || !item?.id_comment) return;
+      // If reply, confirm it still exists
+      if (item?.id_reply) {
+        const rep = await axios.get(`${api}comment/${item.id_comment}/replies`);
+        const found = (rep?.data?.data || []).some(r => String(r.id_reply) === String(item.id_reply));
+        if (!found) {
+          toast.info("คอมเมนต์นี้ถูกลบแล้ว", { position: "top-center", autoClose: 1500 });
+          return;
+        }
+      } else {
+        // Check comment status
+        try {
+          const st = await axios.get(`${api}post/comment_status/${item.id_comment}`);
+          const s = st?.data?.data?.status;
+          if (String(s) === '0') {
+            toast.info("คอมเมนต์นี้ถูกลบแล้ว", { position: "top-center", autoClose: 1500 });
+            return;
+          }
+        } catch (err) {
+          if (err?.response?.status === 404) {
+            toast.info("คอมเมนต์นี้ถูกลบแล้ว", { position: "top-center", autoClose: 1500 });
+            return;
+          }
+          // If other errors, continue to attempt open
+        }
+      }
+      const link = `/detall_att/${item.id_post}?` + (item.id_reply
+        ? `highlightComment=${item.id_comment}&highlightReply=${item.id_reply}`
+        : `highlightComment=${item.id_comment}`) + `&suppressHiddenToast=1`;
       window.open(link, "_blank", "noopener");
-      return;
+    } catch (e) {
+      toast.error("ไม่สามารถเปิดดูคอมเมนต์ได้", { position: "top-center", autoClose: 1500 });
     }
-    if (!item?.id_post || !item?.id_comment) return;
-    const link = `/detall_att/${item.id_post}?` + (item.id_reply
-      ? `highlightComment=${item.id_comment}&highlightReply=${item.id_reply}`
-      : `highlightComment=${item.id_comment}`) + `&suppressHiddenToast=1`;
-    window.open(link, "_blank", "noopener");
   };
 
   if (loading) {
@@ -117,6 +167,7 @@ function HistoryReport() {
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+      <ToastContainer />
       <div className="max-w-7xl mx-auto">
         <div className="mb-5 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">ประวัติการรายงาน</h1>
@@ -286,12 +337,12 @@ function HistoryReport() {
               </div>
 
               <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex gap-2 justify-end">
-                {selected?.id_post && selected?.id_comment && (
+                {(selected && ((selected.id_post && selected.id_comment) || (selected.id_event && (selected.id_event_comment || selected.id_event_reply)))) && (
                   <button
                     onClick={() => openPostInNewTab(selected)}
                     className="px-4 py-2 text-sm rounded-lg border flex items-center gap-1"
                   >
-                    <ExternalLink size={14} /> ไปยังโพสต์
+                    <ExternalLink size={14} /> ไปยังโพสต์/กิจกรรม
                   </button>
                 )}
                 <button
