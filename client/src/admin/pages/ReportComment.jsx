@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 function ReportComment() {
   const { reports, loadingAll, refreshReports } = useReport();
+  const [sourceFilter, setSourceFilter] = useState("post"); // 'post' | 'event'
   const api = import.meta.env.VITE_API;
   const [expandedKeys, setExpandedKeys] = useState(new Set());
   const [processingKey, setProcessingKey] = useState(null);
@@ -103,6 +104,13 @@ function ReportComment() {
     });
   }, [reports]);
 
+  const filteredGroups = useMemo(() => {
+    if (!grouped) return [];
+    return grouped.filter((g) =>
+      sourceFilter === "event" ? g.source === "event" : g.source !== "event"
+    );
+  }, [grouped, sourceFilter]);
+
   // toggle ทีละกลุ่ม
   const toggleOne = (key) => {
     const next = new Set(expandedKeys);
@@ -124,6 +132,28 @@ function ReportComment() {
           <h1 className="text-2xl font-bold text-gray-800 mb-1">จัดการการรายงานความคิดเห็น</h1>
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">รวมรายงานตามคอมเมนต์/รีพลาย</p>
+            <div className="inline-flex rounded-lg border overflow-hidden">
+              <button
+                className={`px-3 py-1.5 text-sm ${
+                  sourceFilter === "post"
+                    ? "bg-purple-600 text-white"
+                    : "bg-white text-gray-700"
+                }`}
+                onClick={() => setSourceFilter("post")}
+              >
+                โพสต์
+              </button>
+              <button
+                className={`px-3 py-1.5 text-sm border-l ${
+                  sourceFilter === "event"
+                    ? "bg-purple-600 text-white"
+                    : "bg-white text-gray-700"
+                }`}
+                onClick={() => setSourceFilter("event")}
+              >
+                กิจกรรม
+              </button>
+            </div>
             {/* {!loadingAll && grouped.length > 0 && (
               expandedKeys.size === grouped.length ? (
                 <button
@@ -166,14 +196,14 @@ function ReportComment() {
                       กำลังโหลด...
                     </td>
                   </tr>
-                ) : grouped.length === 0 ? (
+                ) : filteredGroups.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center">
                       <div className="text-gray-400 text-sm font-medium">ไม่พบรายการรายงาน</div>
                     </td>
                   </tr>
                 ) : (
-                  grouped.map((g, index) => {
+                  filteredGroups.map((g, index) => {
                     const busy = processingKey === g.key;
                     return (
                       <React.Fragment key={g.key}>

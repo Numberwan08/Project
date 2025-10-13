@@ -11,7 +11,7 @@
  Target Server Version : 50744 (5.7.44)
  File Encoding         : 65001
 
- Date: 10/10/2025 16:11:00
+ Date: 13/10/2025 16:23:16
 */
 
 SET NAMES utf8mb4;
@@ -41,7 +41,7 @@ CREATE TABLE `comment_post`  (
   `id_comment` int(11) NOT NULL AUTO_INCREMENT,
   `status` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id_comment`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 35 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for comment_reply
@@ -61,7 +61,39 @@ CREATE TABLE `comment_reply`  (
   INDEX `fk_reply_user`(`id_user`) USING BTREE,
   CONSTRAINT `fk_reply_comment` FOREIGN KEY (`id_comment`) REFERENCES `comment_post` (`id_comment`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_reply_user` FOREIGN KEY (`id_user`) REFERENCES `user` (`id_user`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for event_comment
+-- ----------------------------
+DROP TABLE IF EXISTS `event_comment`;
+CREATE TABLE `event_comment`  (
+  `id_comment` int(11) NOT NULL AUTO_INCREMENT,
+  `id_event` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `date_comment` datetime NULL DEFAULT NULL,
+  `comment` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `images` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `star` char(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id_comment`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for event_comment_reply
+-- ----------------------------
+DROP TABLE IF EXISTS `event_comment_reply`;
+CREATE TABLE `event_comment_reply`  (
+  `id_reply` int(11) NOT NULL AUTO_INCREMENT,
+  `id_comment` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `reply` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `reply_date` datetime NULL DEFAULT NULL,
+  `user_image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `parent_reply_id` int(11) NULL DEFAULT NULL,
+  `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`id_reply`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for like_event
@@ -106,6 +138,9 @@ CREATE TABLE `report_comment`  (
   `status` tinyint(1) NULL DEFAULT 1,
   `target_user_id` int(11) NULL DEFAULT NULL,
   `created_at` datetime NULL DEFAULT NULL,
+  `id_event_comment` int(11) NULL DEFAULT NULL,
+  `id_event_reply` int(11) NULL DEFAULT NULL,
+  `id_event` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_report_comment`) USING BTREE,
   INDEX `idx_comment_user`(`id_commnet`, `id_user`) USING BTREE,
   INDEX `idx_reply_user`(`id_reply`, `id_user`) USING BTREE
@@ -143,6 +178,7 @@ CREATE TABLE `user_event`  (
   `longitude` decimal(10, 7) NULL DEFAULT NULL,
   `date_end` datetime NULL DEFAULT NULL,
   `type` int(1) NULL DEFAULT NULL,
+  `id_user` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_event`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 

@@ -13,6 +13,7 @@ function Report_Me() {
   // จากเดิมใช้ expanded เดี่ยว → เปลี่ยนเป็นชุด key ที่ถูกกางอยู่
   const [expandedKeys, setExpandedKeys] = useState(new Set());
   const [isAllOpen, setIsAllOpen] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState("post"); // 'post' | 'event'
 
   useEffect(() => {
     refreshMyReports?.();
@@ -61,6 +62,17 @@ function Report_Me() {
       toast.info("คอมเมนต์นี้ถูกซ่อนแล้ว", { position: "top-center", autoClose: 1500 });
       return;
     }
+    if (g.source === "event") {
+      const link = g.id_event
+        ? `/detall_event/${g.id_event}?` +
+          (g.id_event_reply
+            ? `highlightComment=${g.id_event_comment}&highlightReply=${g.id_event_reply}`
+            : `highlightComment=${g.id_event_comment}`) +
+          `&suppressHiddenToast=1`
+        : undefined;
+      if (link) navigate(link);
+      return;
+    }
     handleOpen({
       id_post: g.id_post,
       id_comment: g.id_comment,
@@ -69,13 +81,15 @@ function Report_Me() {
   };
 
   // ---- จัดกลุ่มรายงานตามคอมเมนต์/รีพลายเดียวกัน ----
-  const grouped = useMemo(() => {
+  const groupedPost = useMemo(() => {
     const map = new Map();
-    (myReports || []).forEach((r) => {
-      const key = r.id_reply ? `reply:${r.id_reply}` : `comment:${r.id_comment}`;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(r);
-    });
+    (myReports || [])
+      .filter((r) => r.source !== "event")
+      .forEach((r) => {
+        const key = r.id_reply ? `post_reply:${r.id_reply}` : `post_comment:${r.id_comment}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(r);
+      });
 
     return Array.from(map.entries()).map(([key, items]) => {
       const first = items[0] || {};
@@ -83,6 +97,7 @@ function Report_Me() {
       return {
         key,
         items,
+        source: "post",
         id_post: first.id_post,
         id_comment: first.id_comment,
         id_reply: first.id_reply,
@@ -93,6 +108,38 @@ function Report_Me() {
       };
     });
   }, [myReports]);
+
+  const groupedEvent = useMemo(() => {
+    const map = new Map();
+    (myReports || [])
+      .filter((r) => r.source === "event")
+      .forEach((r) => {
+        const key = r.id_event_reply
+          ? `event_reply:${r.id_event_reply}`
+          : `event_comment:${r.id_event_comment}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(r);
+      });
+
+    return Array.from(map.entries()).map(([key, items]) => {
+      const first = items[0] || {};
+      const anyHidden = items.some((x) => Number(x.status) === 0);
+      return {
+        key,
+        items,
+        source: "event",
+        id_event: first.id_event,
+        id_event_comment: first.id_event_comment,
+        id_event_reply: first.id_event_reply,
+        type: first.id_event_reply ? "reply" : "comment",
+        event_name: first.event_name,
+        count: items.length,
+        status_group: anyHidden ? 0 : 1,
+      };
+    });
+  }, [myReports]);
+
+  const grouped = sourceFilter === "event" ? groupedEvent : groupedPost;
 
   // --- ปุ่ม "แสดงทั้งหมด / ซ่อนทั้งหมด" ---
   const openAll = () => {
@@ -120,7 +167,27 @@ function Report_Me() {
     <div className="max-w-3xl mx-auto p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">ประวัติการถูกรายงาน</h1>
-        {/* {!loadingMine && grouped.length > 0 && (
+        <div className="inline-flex rounded-lg border overflow-hidden">
+          <button
+            type="button"
+            className={`px-3 py-1.5 text-sm ${
+              sourceFilter === "post" ? "bg-blue-600 text-white" : "bg-white text-gray-700"
+            }`}
+            onClick={() => setSourceFilter("post")}
+          >
+            โพสต์
+          </button>
+          <button
+            type="button"
+            className={`px-3 py-1.5 text-sm border-l ${
+              sourceFilter === "event" ? "bg-blue-600 text-white" : "bg-white text-gray-700"
+            }`}
+            onClick={() => setSourceFilter("event")}
+          >
+            กิจกรรม
+          </button>
+        </div>
+      {/* {!loadingMine && grouped.length > 0 && (
           <div className="flex gap-2">
             {isAllOpen ? (
               <button
@@ -149,13 +216,21 @@ function Report_Me() {
         <div className="space-y-4">
           {grouped.map((g) => {
             const groupStatusLabel = statusText(g.status_group);
-            const link = g.id_post
-              ? `/detall_att/${g.id_post}?` +
-                (g.id_reply
-                  ? `highlightComment=${g.id_comment}&highlightReply=${g.id_reply}`
-                  : `highlightComment=${g.id_comment}`) +
-                `&suppressHiddenToast=1`
-              : undefined;
+            const link = g.source === 'event'
+              ? (g.id_event
+                  ? `/detall_event/${g.id_event}?` +
+                    (g.id_event_reply
+                      ? `highlightComment=${g.id_event_comment}&highlightReply=${g.id_event_reply}`
+                      : `highlightComment=${g.id_event_comment}`) +
+                    `&suppressHiddenToast=1`
+                  : undefined)
+              : (g.id_post
+                  ? `/detall_att/${g.id_post}?` +
+                    (g.id_reply
+                      ? `highlightComment=${g.id_comment}&highlightReply=${g.id_reply}`
+                      : `highlightComment=${g.id_comment}`) +
+                    `&suppressHiddenToast=1`
+                  : undefined);
 
             const isOpen = expandedKeys.has(g.key);
 
@@ -163,8 +238,8 @@ function Report_Me() {
               <div key={g.key} className="bg-white rounded-md shadow p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <div className="text-sm text-gray-500">โพสต์</div>
-                    <div className="font-medium truncate">{g.post_name || "-"}</div>
+                    <div className="text-sm text-gray-500">{g.source === 'event' ? 'กิจกรรม' : 'โพสต์'}</div>
+                    <div className="font-medium truncate">{g.source === 'event' ? (g.event_name || '-') : (g.post_name || '-')}</div>
 
                     <div className="mt-2 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
                       {/* <div>

@@ -10,6 +10,7 @@ function HistoryReport() {
   const [selected, setSelected] = useState(null);
   const ITEMS_PER_PAGE = 10;
   const [page, setPage] = useState(1);
+  const [sourceFilter, setSourceFilter] = useState('post'); // 'post' | 'event'
 
   const userId = localStorage.getItem("userId");
 
@@ -19,7 +20,7 @@ function HistoryReport() {
       setReportData(res.data?.data || []);
     } catch (err) {
       console.log("Error get historyReport:", err);
-      setError("ไม่สามารถโหลดข้อมูลได้");
+      setError("คุณยังไม่เคยรายงานคอมเมนต์ใด ๆ");
     } finally {
       setLoading(false);
     }
@@ -66,7 +67,13 @@ function HistoryReport() {
 
   useEffect(() => {
     setPage(1);
-  }, [reportData.length]);
+  }, [reportData.length, sourceFilter]);
+
+  const filteredData = React.useMemo(() => {
+    return (reportData || []).filter((item) =>
+      sourceFilter === 'event' ? item.source === 'event' : item.source !== 'event'
+    );
+  }, [reportData, sourceFilter]);
 
   const openPostInNewTab = (item) => {
     const isEvent = item?.source === 'event';
@@ -101,7 +108,7 @@ function HistoryReport() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
           <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-center text-lg font-semibold text-gray-900 mb-2">เกิดข้อผิดพลาด</h3>
+          <h3 className="text-center text-lg font-semibold text-gray-900 mb-2">ยังไม่มีการรายงาน</h3>
           <p className="text-center text-red-600">{error}</p>
         </div>
       </div>
@@ -111,11 +118,29 @@ function HistoryReport() {
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-5">
+        <div className="mb-5 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">ประวัติการรายงาน</h1>
+          <div className="inline-flex rounded-lg border overflow-hidden">
+            <button
+              className={`px-3 py-1.5 text-sm ${
+                sourceFilter === 'post' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
+              }`}
+              onClick={() => setSourceFilter('post')}
+            >
+              โพสต์
+            </button>
+            <button
+              className={`px-3 py-1.5 text-sm border-l ${
+                sourceFilter === 'event' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'
+              }`}
+              onClick={() => setSourceFilter('event')}
+            >
+              กิจกรรม
+            </button>
+          </div>
         </div>
 
-        {reportData.length === 0 ? (
+        {filteredData.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <FileText className="mx-auto h-16 w-16 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">ไม่มีข้อมูลรายงาน</h3>
@@ -137,7 +162,7 @@ function HistoryReport() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData
+                  {filteredData
                     .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
                     .map((item, index) => {
                       const content = item?.reply_text || item?.comment_text || "-";
@@ -187,12 +212,12 @@ function HistoryReport() {
                 ก่อนหน้า
               </button>
               <div className="text-sm text-gray-600">
-                หน้า {page} / {Math.max(1, Math.ceil(reportData.length / ITEMS_PER_PAGE))}
+                หน้า {page} / {Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE))}
               </div>
               <button
                 className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
-                onClick={() => setPage((p) => Math.min(Math.ceil(reportData.length / ITEMS_PER_PAGE) || 1, p + 1))}
-                disabled={page >= (Math.ceil(reportData.length / ITEMS_PER_PAGE) || 1)}
+                onClick={() => setPage((p) => Math.min(Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1, p + 1))}
+                disabled={page >= (Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1)}
               >
                 ถัดไป
               </button>
@@ -236,8 +261,8 @@ function HistoryReport() {
                     <p className="text-sm text-gray-900">{selected.id_reply ? "การตอบกลับ" : "ความคิดเห็น"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">โพสต์</p>
-                    <p className="text-sm text-gray-900">{selected.post_name || "-"}</p>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{selected?.source === 'event' ? 'กิจกรรม' : 'โพสต์'}</p>
+                    <p className="text-sm text-gray-900">{selected?.source === 'event' ? (selected.event_name || '-') : (selected.post_name || '-')}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">เจ้าของความคิดเห็น</p>
