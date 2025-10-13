@@ -38,30 +38,26 @@ function Detail_Att() {
   const [commentError, setCommentError] = useState("");
   const [comments, setComments] = useState([]);
   const [commentPage, setCommentPage] = useState(1);
-  const COMMENTS_PER_PAGE = 100;
+  const COMMENTS_PER_PAGE = 20;
   const location = useLocation();
   const [highlightCommentId, setHighlightCommentId] = useState(null);
   const [highlightReplyId, setHighlightReplyId] = useState(null);
   const [highlightProductId, setHighlightProductId] = useState(null);
-  // Replies state
-  const [expandedReplies, setExpandedReplies] = useState({}); // { [id_comment]: boolean }
-  const [repliesMap, setRepliesMap] = useState({}); // { [id_comment]: Reply[] }
-  const [replyInputs, setReplyInputs] = useState({}); // { [key]: string } key can be id_comment or 'rep_'+id_reply
-  const [replyFiles, setReplyFiles] = useState({}); // { [key]: File }
-  const [replyFormOpen, setReplyFormOpen] = useState({}); // { [key]: boolean }
-  const [expandedCommentText, setExpandedCommentText] = useState({}); // { [id_comment]: boolean }
-  // Edit comment state
+  const [expandedReplies, setExpandedReplies] = useState({}); 
+  const [repliesMap, setRepliesMap] = useState({});
+  const [replyInputs, setReplyInputs] = useState({}); 
+  const [replyFiles, setReplyFiles] = useState({});
+  const [replyFormOpen, setReplyFormOpen] = useState({}); 
+  const [expandedCommentText, setExpandedCommentText] = useState({}); 
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
   const [editCommentRating, setEditCommentRating] = useState(0);
   const [editCommentImage, setEditCommentImage] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
-  // Edit reply state
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [editReplyText, setEditReplyText] = useState("");
   const [editReplyFile, setEditReplyFile] = useState(null);
   const [editReplyLoading, setEditReplyLoading] = useState(false);
-  // Rating count (number of comments that have a star > 0)
   const ratingCount = useMemo(() => {
     try {
       return (comments || []).filter((c) => Number(c?.star) > 0).length;
@@ -69,14 +65,13 @@ function Detail_Att() {
       return 0;
     }
   }, [comments]);
-  // Report state
+
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportTarget, setReportTarget] = useState(null); // { type: 'comment'|'reply', id_comment, id_reply }
+  const [reportTarget, setReportTarget] = useState(null); 
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
-  // Facebook-like relative time formatter (Thai)
   const timeAgo = (date) => {
     if (!date) return "";
     const now = new Date();
@@ -92,12 +87,10 @@ function Detail_Att() {
     return d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
   };
 
-  // Build replies list: only first-level replies (root -> reply)
   const buildReplyTree = (flat = []) => {
     return (flat || []).filter((r) => r.parent_reply_id == null);
   };
 
-  // Recursive reply item renderer
   const ReplyItem = ({ rep }) => {
     const targetName = rep.parent_reply_id
       ? rep.parent_reply_user_name || "ผู้ใช้"
@@ -161,7 +154,6 @@ function Detail_Att() {
               <img src={rep.user_image} alt="reply" className="mt-2 rounded-md max-h-32" />
             )}
 
-            {/* Only one level of replies is displayed (no sub-replies). */}
             {editingReplyId === rep.id_reply && (
               <form
                 className="mt-3 space-y-2"
@@ -209,7 +201,6 @@ function Detail_Att() {
     );
   };
 
-  // Product Modal States
   const [showProductModal, setShowProductModal] = useState(false);
   const [productData, setProductData] = useState({
     name_product: "",
@@ -224,8 +215,6 @@ function Detail_Att() {
   const [productPreview, setProductPreview] = useState(null);
   const [productLoading, setProductLoading] = useState(false);
   const [productError, setProductError] = useState("");
-
-  // Related Products States
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [showAllProducts, setShowAllProducts] = useState(false);

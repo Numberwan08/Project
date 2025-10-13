@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -27,6 +27,8 @@ function Detall_Event() {
   const [liked, setLiked] = useState(false);
   const [nearbyEvent, setNerabyEvent] = useState([]);
   const [comments, setComments] = useState([]);
+  const [commentPage, setCommentPage] = useState(1);
+  const COMMENTS_PER_PAGE = 20;
   const [commentModal, setCommentModal] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentStar, setCommentStar] = useState(0);
@@ -50,6 +52,7 @@ function Detall_Event() {
   const [repliesMap, setRepliesMap] = useState({}); // id_comment -> replies[]
   const [replyInputs, setReplyInputs] = useState({}); // id_comment -> text
   const [replyFiles, setReplyFiles] = useState({}); // id_comment -> File
+
   const location = useLocation();
   const [highlightCommentId, setHighlightCommentId] = useState(null);
   const [highlightReplyId, setHighlightReplyId] = useState(null);
@@ -80,6 +83,12 @@ function Detall_Event() {
       return 0;
     }
   }, [comments]);
+
+  // Edit/Delete reply (event)
+  const [editingReplyId, setEditingReplyId] = useState(null);
+  const [editReplyText, setEditReplyText] = useState("");
+  const [editReplyFile, setEditReplyFile] = useState(null);
+  const [editReplyLoading, setEditReplyLoading] = useState(false);
 
   const userId = localStorage.getItem("userId");
   const { isReportedEventComment, isReportedEventReply, refreshMySubmitted } =
@@ -193,7 +202,11 @@ function Detall_Event() {
     if (hours < 24) return `${hours} ชม. ที่แล้ว`;
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days} วันก่อน`;
-    return d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+    return d.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   // Edit/Delete event comment
@@ -202,6 +215,72 @@ function Detall_Event() {
     setEditCommentText(item.comment || "");
     setEditCommentRating(Number(item.star) || 0);
     setEditCommentImage(null);
+  };
+
+  // Edit reply
+  const openEditReply = (rep) => {
+    setEditingReplyId(rep.id_reply);
+    setEditReplyText(rep.reply || "");
+    setEditReplyFile(null);
+  };
+  const cancelEditReply = () => {
+    setEditingReplyId(null);
+    setEditReplyText("");
+    setEditReplyFile(null);
+  };
+  const handleEditReplySubmit = async (e, id_comment, id_reply) => {
+    e.preventDefault();
+    if (!userId) return;
+    try {
+      setEditReplyLoading(true);
+      const form = new FormData();
+      form.append("id_user", userId);
+      form.append("reply", editReplyText);
+      if (editReplyFile) form.append("image", editReplyFile);
+      await axios.patch(
+        `${
+          import.meta.env.VITE_API
+        }event/comment/${id_comment}/replies/${id_reply}`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      await fetchReplies(id_comment);
+      cancelEditReply();
+      toast.success("แก้ไขการตอบกลับสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
+    } catch (err) {
+      console.log("Error edit event reply:", err);
+      toast.error("ไม่สามารถแก้ไขการตอบกลับได้", {
+        position: "top-center",
+        autoClose: 1200,
+      });
+    } finally {
+      setEditReplyLoading(false);
+    }
+  };
+  const handleDeleteReply = async (id_comment, id_reply) => {
+    try {
+      if (!window.confirm("คุณต้องการลบการตอบกลับนี้ใช่หรือไม่?")) return;
+      await axios.delete(
+        `${
+          import.meta.env.VITE_API
+        }event/comment/${id_comment}/replies/${id_reply}`,
+        { data: { id_user: userId } }
+      );
+      await fetchReplies(id_comment);
+      toast.success("ลบการตอบกลับสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
+    } catch (err) {
+      console.log("Error delete event reply:", err);
+      toast.error("ไม่สามารถลบการตอบกลับได้", {
+        position: "top-center",
+        autoClose: 1200,
+      });
+    }
   };
   const cancelEditComment = () => {
     setEditingCommentId(null);
@@ -213,7 +292,10 @@ function Detall_Event() {
     e.preventDefault();
     if (!userId) return;
     if (!editCommentText) {
-      toast.error("กรุณากรอกข้อความ", { position: "top-center", autoClose: 1000 });
+      toast.error("กรุณากรอกข้อความ", {
+        position: "top-center",
+        autoClose: 1000,
+      });
       return;
     }
     try {
@@ -241,11 +323,17 @@ function Detall_Event() {
             : c
         )
       );
-      toast.success("แก้ไขความคิดเห็นสำเร็จ", { position: "top-center", autoClose: 800 });
+      toast.success("แก้ไขความคิดเห็นสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
       cancelEditComment();
     } catch (err) {
       console.log("Error edit event comment:", err);
-      toast.error("ไม่สามารถแก้ไขความคิดเห็นได้", { position: "top-center", autoClose: 1200 });
+      toast.error("ไม่สามารถแก้ไขความคิดเห็นได้", {
+        position: "top-center",
+        autoClose: 1200,
+      });
     } finally {
       setEditLoading(false);
     }
@@ -253,12 +341,22 @@ function Detall_Event() {
   const handleDeleteComment = async (id_comment) => {
     if (!window.confirm("คุณต้องการลบความคิดเห็นนี้ใช่หรือไม่?")) return;
     try {
-      await axios.delete(`${import.meta.env.VITE_API}event/delete_comment/${id_comment}`);
-      setComments((prev) => (prev || []).filter((c) => c.id_comment !== id_comment));
-      toast.success("ลบความคิดเห็นสำเร็จ", { position: "top-center", autoClose: 900 });
+      await axios.delete(
+        `${import.meta.env.VITE_API}event/delete_comment/${id_comment}`
+      );
+      setComments((prev) =>
+        (prev || []).filter((c) => c.id_comment !== id_comment)
+      );
+      toast.success("ลบความคิดเห็นสำเร็จ", {
+        position: "top-center",
+        autoClose: 900,
+      });
     } catch (err) {
       console.log("Error delete event comment:", err);
-      toast.error("เกิดข้อผิดพลาดในการลบความคิดเห็น", { position: "top-center", autoClose: 1200 });
+      toast.error("เกิดข้อผิดพลาดในการลบความคิดเห็น", {
+        position: "top-center",
+        autoClose: 1200,
+      });
     }
   };
 
@@ -504,7 +602,10 @@ function Detall_Event() {
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center bg-yellow-100 px-3 py-1 rounded-full">
                           <h4 className="text-sm font-semibold text-yellow-800 whitespace-nowrap">
-                            คะแนน {avgRating > 0 ? `${avgRating} (${ratingCount} คน)` : "ไม่มีคะแนน"}
+                            คะแนน{" "}
+                            {avgRating > 0
+                              ? `${avgRating} (${ratingCount} คน)`
+                              : "ไม่มีคะแนน"}
                           </h4>
                         </div>
                         <ThumbsUp
@@ -648,288 +749,473 @@ function Detall_Event() {
                     </div>
                   </div>
                 </div>
-               <div className="bg-gradient-to-r bg-gray-100 rounded-lg p-4">
-  {/* Header */}
-  <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-    <h3 className="font-bold text-xl mb-4">ความคิดเห็น</h3>
+                <div className="bg-gradient-to-r bg-gray-100 rounded-lg p-4">
+                  {/* Header */}
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+                    <h3 className="font-bold text-xl mb-4">ความคิดเห็น</h3>
 
-    <button
-      onClick={() => setCommentModal(true)}
-      className="w-50 cursor-pointer bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors mb-3"
-    >
-      <svg
-        className="w-4 h-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-      <span>แสดงความคิดเห็น</span>
-    </button>
-  </div>
-
-  {/* List */}
-  {comments?.length > 0 ? (
-    <div className="space-y-4">
-      {(comments || []).map((c) => (
-        <div
-          key={c.id_comment}
-          id={`comment-${c.id_comment}`}
-          className={`bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow ${
-            String(highlightCommentId) === String(c.id_comment)
-              ? "ring-2 ring-red-400"
-              : ""
-          }`}
-        >
-          {/* owner actions */}
-          {String(c.id_user) === String(userId) && (
-            <div className="ml-auto flex gap-3 mb-2">
-              <button
-                className="text-blue-600 cursor-pointer hover:text-blue-800"
-                onClick={() => openEditComment(c)}
-              >
-                แก้ไข
-              </button>
-              <button
-                className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={() => handleDeleteComment(c.id_comment)}
-              >
-                ลบ
-              </button>
-            </div>
-          )}
-
-          {/* header row */}
-          <div className="flex items-start gap-3 mb-2">
-            {c.user_image ? (
-              <img
-                src={c.user_image}
-                alt="avatar"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-purple-200" />
-            )}
-
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{c.first_name || "ผู้ใช้"}</span>
-                <span className="text-xs text-gray-500">
-                  {new Date(c.date_comment).toLocaleString("th-TH")}
-                </span>
-
-                {/* report button (เฉพาะไม่ใช่เจ้าของ และยังไม่เคยรายงาน) */}
-                {String(c.id_user) !== String(userId) &&
-                  !isReportedEventComment?.(c.id_comment) && (
                     <button
-                      className="ml-2 text-xs text-red-500 hover:text-red-700"
-                      onClick={() =>
-                        openReport({ type: "comment", id_comment: c.id_comment })
-                      }
+                      onClick={() => setCommentModal(true)}
+                      className="w-50 cursor-pointer bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors mb-3"
                     >
-                      รายงาน
-                    </button>
-                  )}
-
-                {/* rating */}
-                <div className="flex items-center space-x-1 ml-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    className="w-4 h-4 text-yellow-400"
-                  >
-                    <path d="M12 .587l3.668 7.568L24 9.75l-6 5.85 1.416 8.4L12 19.771l-7.416 4.229L6 15.6 0 9.75l8.332-1.595z" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-700">
-                    {c.star}
-                  </span>
-                </div>
-              </div>
-
-              {/* text */}
-              <div className="mt-1 text-gray-800">{c.comment}</div>
-            </div>
-          </div>
-
-          {/* image */}
-          {c.images && (
-            <img src={c.images} alt="comment" className="mt-2 rounded-lg max-h-32" />
-          )}
-
-          {/* inline edit */}
-          {editingCommentId === c.id_comment && (
-            <form
-              className="mt-3 space-y-3"
-              onSubmit={(e) => handleEditCommentSubmit(e, c.id_comment)}
-            >
-              <textarea
-                className="w-full p-2 border rounded-lg"
-                rows={3}
-                value={editCommentText}
-                onChange={(e) => setEditCommentText(e.target.value)}
-                placeholder="แก้ไขความคิดเห็นของคุณ"
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  setEditCommentImage(e.target.files?.[0] || null)
-                }
-                className="file-input file-input-bordered file-input-sm"
-              />
-              {editCommentImage && (
-                <img
-                  src={URL.createObjectURL(editCommentImage)}
-                  alt="ภาพใหม่"
-                  className="mt-2 rounded-lg max-h-32 border"
-                />
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
-                  onClick={cancelEditComment}
-                  disabled={editLoading}
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  type="submit"
-                  className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
-                  disabled={editLoading}
-                >
-                  {editLoading ? "กำลังบันทึก..." : "บันทึก"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* replies toggle */}
-          <div className="mt-3">
-            <button
-              className="text-sm text-purple-700 hover:text-purple-900 font-medium cursor-pointer"
-              onClick={async () => {
-                const next = !expandedReplies[c.id_comment];
-                setExpandedReplies((p) => ({ ...p, [c.id_comment]: next }));
-                if (next) await fetchReplies(c.id_comment);
-              }}
-            >
-              {expandedReplies[c.id_comment] ? "ซ่อนการตอบกลับ" : "ดูการตอบกลับ"}
-            </button>
-          </div>
-
-          {/* replies list */}
-          {expandedReplies[c.id_comment] && (
-            <div className="mt-3 pl-4 border-l-2 border-purple-200 space-y-3">
-              {(repliesMap[c.id_comment] || []).map((r) => (
-                <div
-                  key={r.id_reply}
-                  id={`reply-${r.id_reply}`}
-                  className={`${
-                    String(r.id_reply) === String(highlightReplyId)
-                      ? "ring-1 ring-red-400 rounded"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      {r.reply_user_image ? (
-                        <img
-                          src={r.reply_user_image}
-                          className="w-7 h-7 rounded-full"
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                         />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-purple-200" />
-                      )}
-                      <div>
-                        <div className="text-sm font-medium">
-                          {r.reply_user_name || "ผู้ใช้"}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {new Date(r.reply_date).toLocaleString("th-TH")}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-xs">
-                      {String(r.id_user) !== String(userId) &&
-                        !isReportedEventReply?.(r.id_reply) && (
-                          <button
-                            className="text-red-600"
-                            onClick={() =>
-                              openReport({
-                                type: "reply",
-                                id_comment: c.id_comment,
-                                id_reply: r.id_reply,
-                              })
-                            }
-                          >
-                            รายงาน
-                          </button>
-                        )}
-                    </div>
+                      </svg>
+                      <span>แสดงความคิดเห็น</span>
+                    </button>
                   </div>
 
-                  <div className="text-sm mt-1">{r.reply}</div>
-                  {r.user_image && (
-                    <img src={r.user_image} className="mt-2 rounded-md max-h-32" />
+                  {/* List */}
+                  {comments?.length > 0 ? (
+                    <div className="space-y-4">
+                      {(comments || [])
+                        .slice(
+                          (commentPage - 1) * COMMENTS_PER_PAGE,
+                          commentPage * COMMENTS_PER_PAGE
+                        )
+                        .map((c) => (
+                          <div
+                            key={c.id_comment}
+                            id={`comment-${c.id_comment}`}
+                            className={`bg-white bg-opacity-80 rounded-lg p-4 text-left text-gray-800 shadow ${
+                              String(highlightCommentId) ===
+                              String(c.id_comment)
+                                ? "ring-2 ring-red-400"
+                                : ""
+                            }`}
+                          >
+                            {/* ปุ่มแก้ไข/ลบ ของเจ้าของคอมเมนต์ */}
+                            {String(c.id_user) === String(userId) && (
+                              <div className="ml-auto flex gap-3 mb-2">
+                                <button
+                                  className="text-blue-600 cursor-pointer hover:text-blue-800"
+                                  onClick={() => openEditComment(c)}
+                                >
+                                  แก้ไข
+                                </button>
+                                <button
+                                  className="text-red-500 cursor-pointer hover:text-red-700"
+                                  onClick={() =>
+                                    handleDeleteComment(c.id_comment)
+                                  }
+                                >
+                                  ลบ
+                                </button>
+                              </div>
+                            )}
+
+                            {/* แถวหัวคอมเมนต์ */}
+                            <div className="flex items-start gap-3 mb-2">
+                              {c.user_image ? (
+                                <img
+                                  src={c.user_image}
+                                  alt="avatar"
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-purple-200" />
+                              )}
+
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold">
+                                    {c.first_name || "ผู้ใช้"}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {timeAgo(c.date_comment)}
+                                  </span>
+
+                                  {/* ปุ่มรายงาน (เฉพาะไม่ใช่เจ้าของ และยังไม่เคยรายงาน) */}
+                                  {String(c.id_user) !== String(userId) &&
+                                    !isReportedEventComment?.(c.id_comment) && (
+                                      <button
+                                        className="ml-2 text-xs text-red-500 hover:text-red-700"
+                                        onClick={() =>
+                                          openReport({
+                                            type: "comment",
+                                            id_comment: c.id_comment,
+                                          })
+                                        }
+                                      >
+                                        รายงาน
+                                      </button>
+                                    )}
+
+                                  {/* คะแนน */}
+                                  <div className="flex items-center space-x-1 ml-2">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      fill="currentColor"
+                                      viewBox="0 0 24 24"
+                                      className="w-4 h-4 text-yellow-400"
+                                    >
+                                      <path d="M12 .587l3.668 7.568L24 9.75l-6 5.85 1.416 8.4L12 19.771l-7.416 4.229L6 15.6 0 9.75l8.332-1.595z" />
+                                    </svg>
+                                    <span className="text-sm font-medium text-gray-700">
+                                      {c.star}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* เนื้อความคอมเมนต์ */}
+                                <div className="mt-1 text-gray-800">
+                                  {c.comment}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* รูปภาพคอมเมนต์ */}
+                            {c.images && (
+                              <img
+                                src={c.images}
+                                alt="comment"
+                                className="mt-2 rounded-lg max-h-32"
+                              />
+                            )}
+
+                            {/* ฟอร์มแก้ไขคอมเมนต์ (inline) */}
+                            {editingCommentId === c.id_comment && (
+                              <form
+                                className="mt-3 space-y-3"
+                                onSubmit={(e) =>
+                                  handleEditCommentSubmit(e, c.id_comment)
+                                }
+                              >
+                                <textarea
+                                  className="w-full p-2 border rounded-lg"
+                                  rows={3}
+                                  value={editCommentText}
+                                  onChange={(e) =>
+                                    setEditCommentText(e.target.value)
+                                  }
+                                  placeholder="แก้ไขความคิดเห็นของคุณ"
+                                />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) =>
+                                    setEditCommentImage(
+                                      e.target.files?.[0] || null
+                                    )
+                                  }
+                                  className="file-input file-input-bordered file-input-sm"
+                                />
+                                {editCommentImage && (
+                                  <img
+                                    src={URL.createObjectURL(editCommentImage)}
+                                    alt="ภาพใหม่"
+                                    className="mt-2 rounded-lg max-h-32 border"
+                                  />
+                                )}
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                                    onClick={cancelEditComment}
+                                    disabled={editLoading}
+                                  >
+                                    ยกเลิก
+                                  </button>
+                                  <button
+                                    type="submit"
+                                    className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                                    disabled={editLoading}
+                                  >
+                                    {editLoading ? "กำลังบันทึก..." : "บันทึก"}
+                                  </button>
+                                </div>
+                              </form>
+                            )}
+
+                            {/* ปุ่มเปิด/ปิดการตอบกลับ */}
+                            <div className="mt-3">
+                              <button
+                                className="text-sm text-purple-700 hover:text-purple-900 font-medium cursor-pointer"
+                                onClick={async () => {
+                                  const next = !expandedReplies[c.id_comment];
+                                  setExpandedReplies((p) => ({
+                                    ...p,
+                                    [c.id_comment]: next,
+                                  }));
+                                  if (next) await fetchReplies(c.id_comment);
+                                }}
+                              >
+                                {expandedReplies[c.id_comment]
+                                  ? "ซ่อนการตอบกลับ"
+                                  : "ดูการตอบกลับ"}
+                              </button>
+                              {(repliesMap[c.id_comment] || []).length > 0 && (
+                                <span className="ml-2 text-xs text-purple-500">
+                                  ({(repliesMap[c.id_comment] || []).length})
+                                </span>
+                              )}
+                            </div>
+
+                            {/* รายการตอบกลับ */}
+                            {expandedReplies[c.id_comment] && (
+                              <div className="mt-3 pl-4 border-l-2 border-purple-200 space-y-3">
+                                {(repliesMap[c.id_comment] || []).map((r) => (
+                                  <div
+                                    key={r.id_reply}
+                                    id={`reply-${r.id_reply}`}
+                                    className={`bg-purple-50 rounded-md p-3 ${
+                                      String(r.id_reply) ===
+                                      String(highlightReplyId)
+                                        ? "ring-1 ring-red-400"
+                                        : ""
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex items-center gap-2">
+                                        {r.reply_user_image ? (
+                                          <img
+                                            src={r.reply_user_image}
+                                            className="w-7 h-7 rounded-full"
+                                          />
+                                        ) : (
+                                          <div className="w-7 h-7 rounded-full bg-purple-200" />
+                                        )}
+                                        <div>
+                                          <div className="text-sm font-medium">
+                                            {r.reply_user_name || "ผู้ใช้"}
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {timeAgo(r.reply_date)}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* ปุ่มของเจ้าของ / ปุ่มรายงาน */}
+                                      {String(r.id_user) === String(userId) ? (
+                                        <div className="text-xs">
+                                          {editingReplyId === r.id_reply ? (
+                                            <button
+                                              className="text-gray-500"
+                                              onClick={cancelEditReply}
+                                              type="button"
+                                            >
+                                              ยกเลิก
+                                            </button>
+                                          ) : (
+                                            <>
+                                              <button
+                                                className="text-blue-600 mr-2"
+                                                onClick={() => openEditReply(r)}
+                                                type="button"
+                                              >
+                                                แก้ไข
+                                              </button>
+                                              <button
+                                                className="text-red-600"
+                                                onClick={() =>
+                                                  handleDeleteReply(
+                                                    c.id_comment,
+                                                    r.id_reply
+                                                  )
+                                                }
+                                                type="button"
+                                              >
+                                                ลบ
+                                              </button>
+                                            </>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs">
+                                          {!isReportedEventReply?.(
+                                            r.id_reply
+                                          ) && (
+                                            <button
+                                              className="text-red-600"
+                                              onClick={() =>
+                                                openReport({
+                                                  type: "reply",
+                                                  id_comment: c.id_comment,
+                                                  id_reply: r.id_reply,
+                                                })
+                                              }
+                                              type="button"
+                                            >
+                                              รายงาน
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* เนื้อหา / ฟอร์มแก้ไขตอบกลับ */}
+                                    {editingReplyId === r.id_reply ? (
+                                      <form
+                                        className="mt-2 space-y-3"
+                                        onSubmit={(e) =>
+                                          handleEditReplySubmit(
+                                            e,
+                                            c.id_comment,
+                                            r.id_reply
+                                          )
+                                        }
+                                      >
+                                        <textarea
+                                          className="w-full p-2 border rounded-lg text-sm"
+                                          rows={3}
+                                          value={editReplyText}
+                                          onChange={(e) =>
+                                            setEditReplyText(e.target.value)
+                                          }
+                                          placeholder="แก้ไขการตอบกลับของคุณ"
+                                          required
+                                        />
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="file-input file-input-bordered file-input-sm"
+                                          onChange={(e) =>
+                                            setEditReplyFile(
+                                              e.target.files?.[0] || null
+                                            )
+                                          }
+                                        />
+                                        {editReplyFile && (
+                                          <img
+                                            src={URL.createObjectURL(
+                                              editReplyFile
+                                            )}
+                                            alt="ภาพตัวอย่าง"
+                                            className="mt-2 rounded-lg max-h-32 border"
+                                          />
+                                        )}
+                                        <div className="flex gap-2">
+                                          <button
+                                            type="button"
+                                            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+                                            onClick={cancelEditReply}
+                                            disabled={editReplyLoading}
+                                          >
+                                            ยกเลิก
+                                          </button>
+                                          <button
+                                            type="submit"
+                                            className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                                            disabled={editReplyLoading}
+                                          >
+                                            {editReplyLoading
+                                              ? "กำลังบันทึก..."
+                                              : "บันทึก"}
+                                          </button>
+                                        </div>
+                                      </form>
+                                    ) : (
+                                      <>
+                                        <div className="text-sm mt-1">
+                                          {r.reply}
+                                        </div>
+                                        {r.user_image && (
+                                          <img
+                                            src={r.user_image}
+                                            className="mt-2 rounded-md max-h-32"
+                                          />
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                ))}
+
+                                {/* กล่องตอบกลับใหม่ */}
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    className="input input-sm input-bordered flex-1"
+                                    placeholder="ตอบกลับ..."
+                                    value={replyInputs[c.id_comment] || ""}
+                                    onChange={(e) =>
+                                      setReplyInputs((p) => ({
+                                        ...p,
+                                        [c.id_comment]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  <input
+                                    type="file"
+                                    className="file-input file-input-bordered file-input-sm"
+                                    accept="image/*"
+                                    onChange={(e) =>
+                                      setReplyFiles((p) => ({
+                                        ...p,
+                                        [c.id_comment]:
+                                          e.target.files?.[0] || null,
+                                      }))
+                                    }
+                                  />
+                                  <button
+                                    className="btn btn-sm btn-primary cursor-pointer"
+                                    onClick={() => submitReply(c.id_comment)}
+                                  >
+                                    ตอบกลับ
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                      {/* Pagination (จัดวางกึ่งกลางแบบตัวอย่าง) */}
+                      <div className="flex justify-center mt-4 space-x-2">
+                        <button
+                          className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                          onClick={() =>
+                            setCommentPage((p) => Math.max(1, p - 1))
+                          }
+                          disabled={commentPage === 1}
+                        >
+                          ก่อนหน้า
+                        </button>
+
+                        <span className="px-2">
+                          หน้า {commentPage} /{" "}
+                          {Math.ceil(
+                            (comments || []).length / COMMENTS_PER_PAGE
+                          )}
+                        </span>
+
+                        <button
+                          className="px-3 py-1 rounded bg-purple-600 text-white disabled:opacity-50"
+                          onClick={() =>
+                            setCommentPage((p) =>
+                              Math.min(
+                                Math.ceil(
+                                  (comments || []).length / COMMENTS_PER_PAGE
+                                ),
+                                p + 1
+                              )
+                            )
+                          }
+                          disabled={
+                            commentPage ===
+                            Math.ceil(
+                              (comments || []).length / COMMENTS_PER_PAGE
+                            )
+                          }
+                        >
+                          ถัดไป
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-purple-100 text-sm">
+                      ยังไม่มีความคิดเห็น
+                    </p>
                   )}
                 </div>
-              ))}
-
-              {/* add reply */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  className="input input-sm input-bordered flex-1"
-                  placeholder="ตอบกลับ..."
-                  value={replyInputs[c.id_comment] || ""}
-                  onChange={(e) =>
-                    setReplyInputs((p) => ({
-                      ...p,
-                      [c.id_comment]: e.target.value,
-                    }))
-                  }
-                />
-                <input
-                  type="file"
-                  className="file-input file-input-bordered file-input-sm"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setReplyFiles((p) => ({
-                      ...p,
-                      [c.id_comment]: e.target.files?.[0] || null,
-                    }))
-                  }
-                />
-                <button
-                  className="btn btn-sm btn-primary cursor-pointer"
-                  onClick={() => submitReply(c.id_comment)}
-                >
-                  ตอบกลับ
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* ไม่มีคอมเมนต์ */}
-      {comments.length === 0 && (
-        <p className="text-purple-100 text-sm">ยังไม่มีความคิดเห็น</p>
-      )}
-    </div>
-  ) : (
-    <p className="text-purple-100 text-sm">ยังไม่มีความคิดเห็น</p>
-  )}
-</div>
-
               </div>
 
               {/* ฝั่งขวา - แผนที่และข้อมูลเพิ่มเติม */}
