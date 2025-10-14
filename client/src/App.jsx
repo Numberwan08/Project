@@ -38,6 +38,7 @@ import ReportComment from "./admin/pages/reportcomment";
 import Report_Me from "./pages/Report_Me";
 import HistoryReport from "./pages/HistoryReport";
 import Comment_Me from "./pages/Comment_Me";
+import Show_Profile from "./pages/Show_Profile";
 
 function App() {
   const router = createBrowserRouter([
@@ -122,6 +123,10 @@ function App() {
         {
           path:"/detall_product/:id",
           element:<Detall_Prodact/>,
+        },
+        {
+          path:"/showprofile/:id",
+          element:<Show_Profile/>,
         },
       ]
     },

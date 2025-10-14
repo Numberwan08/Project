@@ -164,6 +164,18 @@ function Detall_Event() {
       setNerabyEvent([]);
     }
   };
+
+  // Open comment modal with login guard
+  const openCommentModal = () => {
+    if (!userId) {
+      toast.error("กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น", {
+        position: "top-center",
+        autoClose: 1200,
+      });
+      return;
+    }
+    setCommentModal(true);
+  };
   const getEvent = async () => {
     try {
       setLoading(true);
@@ -827,7 +839,7 @@ function Detall_Event() {
                     <h3 className="font-bold text-xl mb-4">ความคิดเห็น</h3>
 
                     <button
-                      onClick={() => setCommentModal(true)}
+                      onClick={openCommentModal}
                       className="w-50 cursor-pointer bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors mb-3"
                     >
                       <svg
@@ -888,21 +900,24 @@ function Detall_Event() {
 
                             {/* แถวหัวคอมเมนต์ */}
                             <div className="flex items-start gap-3 mb-2">
-                              {c.user_image ? (
-                                <img
-                                  src={c.user_image}
-                                  alt="avatar"
-                                  className="w-8 h-8 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-purple-200" />
-                              )}
-
+                              <Link to={`/showprofile/${c.id_user}`}>
+                                {c.user_image ? (
+                                  <img
+                                    src={c.user_image}
+                                    alt="avatar"
+                                    className="w-8 h-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-purple-200" />
+                                )}
+                              </Link>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-semibold">
-                                    {c.first_name || "ผู้ใช้"}
-                                  </span>
+                                  <Link to={`/showprofile/${c.id_user}`}>
+                                    <span className="font-semibold">
+                                      {c.first_name || "ผู้ใช้"}
+                                    </span>
+                                  </Link>
                                   <span className="text-xs text-gray-500">
                                     {timeAgo(c.date_comment)}
                                   </span>

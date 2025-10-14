@@ -120,20 +120,23 @@ function Detail_Att() {
         }`}
       >
         <div className="flex items-start gap-2">
-          {rep.reply_user_image ? (
-            <img
-              src={rep.reply_user_image}
-              alt="avatar"
-              className="w-6 h-6 rounded-full object-cover mt-0.5"
-            />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-purple-200 mt-0.5" />
-          )}
+          <Link to={`/showprofile/${rep.id_user}`} className="shrink-0">
+            {rep.reply_user_image ? (
+              <img
+                src={rep.reply_user_image}
+                alt="avatar"
+                className="w-6 h-6 rounded-full object-cover mt-0.5 hover:opacity-90 transition"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-purple-200 mt-0.5 hover:opacity-90 transition" />
+            )}
+         </Link>
           <div className="flex-1">
             <div className="text-sm text-gray-700">
               <span className="font-semibold mr-1">
                 {rep.reply_user_name || "ผู้ใช้"}
               </span>
+        
               <span className="text-gray-500 text-xs">
                 {timeAgo(rep.reply_date)}
               </span>
@@ -1123,6 +1126,7 @@ function Detail_Att() {
                             <span className="text-lg font-bold text-purple-600">
                               ฿{product.price}
                             </span>
+                            <Link to={`/showprofile/${product.id_user}`}>
                             <span className="text-xs">
                               โดย:{" "}
                               {String(product.id_user) === String(userId) ? (
@@ -1135,6 +1139,7 @@ function Detail_Att() {
                                 </span>
                               )}
                             </span>
+                            </Link>
                           </div>
                           <div className="mt-2 flex justify-between items-center">
                             <a
@@ -1212,18 +1217,20 @@ function Detail_Att() {
                               <span className="text-lg font-bold text-purple-600">
                                 ฿{product.price}
                               </span>
-                              <span className="text-xs">
-                                โดย:{" "}
-                                {String(product.id_user) === String(userId) ? (
-                                  <span className="text-green-600 font-semibold">
-                                    ของฉัน
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-500">
-                                    {product.first_name}
-                                  </span>
-                                )}
-                              </span>
+                              <Link to={`/showprofile/${product.id_user}`}>
+                                <span className="text-xs">
+                                  โดย:{" "}
+                                  {String(product.id_user) === String(userId) ? (
+                                    <span className="text-green-600 font-semibold">
+                                      ของฉัน
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-500 hover:underline">
+                                      {product.first_name}
+                                    </span>
+                                  )}
+                                </span>
+                              </Link>
                             </div>
                             <div className="mt-2 flex justify-between items-center">
                               <a
@@ -1319,20 +1326,24 @@ function Detail_Att() {
                             </div>
                           )}
                           <div className="flex items-start gap-3 mb-2">
-                            {item.user_image ? (
-                              <img
-                                src={item.user_image}
-                                alt="avatar"
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-purple-200" />
-                            )}
+                            <Link to={`/showprofile/${item.id_user}`} className="shrink-0">
+                              {item.user_image ? (
+                                <img
+                                  src={item.user_image}
+                                  alt="avatar"
+                                  className="w-8 h-8 rounded-full object-cover hover:opacity-90 transition"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-purple-200 hover:opacity-90 transition" />
+                              )}
+                            </Link>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
+                                <Link to={`/showprofile/${item.id_user}`} className="cursor-pointer">
                                 <span className="font-semibold">
                                   {item.first_name}
                                 </span>
+                                </Link>
                                 <span className="text-xs text-gray-500">
                                   {timeAgo(item.date_comment)}
                                 </span>
