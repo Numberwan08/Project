@@ -34,7 +34,7 @@ function Detail_Att() {
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentRating, setCommentRating] = useState(0);
-  const [commentImage, setCommentImage] = useState(null);
+  const [commentImages, setCommentImages] = useState([]);
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentError, setCommentError] = useState("");
   const [comments, setComments] = useState([]);
@@ -54,12 +54,13 @@ function Detail_Att() {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
   const [editCommentRating, setEditCommentRating] = useState(0);
-  const [editCommentImage, setEditCommentImage] = useState(null);
+  const [editCommentImages, setEditCommentImages] = useState([]);
   const [editLoading, setEditLoading] = useState(false);
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [editReplyText, setEditReplyText] = useState("");
   const [editReplyFile, setEditReplyFile] = useState(null);
   const [editReplyLoading, setEditReplyLoading] = useState(false);
+  const [galleryModal, setGalleryModal] = useState({ open: false, images: [] });
   const ratingCount = useMemo(() => {
     try {
       return (comments || []).filter((c) => Number(c?.star) > 0).length;
@@ -329,7 +330,11 @@ function Detail_Att() {
       formData.append("userId", userId);
       formData.append("comment", commentText);
       formData.append("star", commentRating);
-      if (commentImage) formData.append("image", commentImage);
+      if (commentImages && commentImages.length > 0) {
+        for (const f of commentImages) {
+          formData.append("images", f);
+        }
+      }
       await axios.post(
         `${import.meta.env.VITE_API}post/comment/${id}`,
         formData,
@@ -338,7 +343,7 @@ function Detail_Att() {
       setShowCommentModal(false);
       setCommentText("");
       setCommentRating(0);
-      setCommentImage(null);
+      setCommentImages([]);
       toast.success("โพสต์ความคิดเห็นสำเร็จ!", {
         position: "top-center",
         autoClose: 100,
@@ -565,14 +570,14 @@ function Detail_Att() {
     setEditingCommentId(item.id_comment);
     setEditCommentText(item.comment || "");
     setEditCommentRating(item.star || 0);
-    setEditCommentImage(null);
+    setEditCommentImages([]);
   };
 
   const cancelEditComment = () => {
     setEditingCommentId(null);
     setEditCommentText("");
     setEditCommentRating(0);
-    setEditCommentImage(null);
+    setEditCommentImages([]);
   };
 
   const openEditReply = (rep) => {
@@ -670,7 +675,11 @@ function Detail_Att() {
       form.append("id_user", userId);
       form.append("comment", editCommentText);
       form.append("star", editCommentRating);
-      if (editCommentImage) form.append("image", editCommentImage);
+      if (editCommentImages && editCommentImages.length > 0) {
+        for (const f of editCommentImages) {
+          form.append("images", f);
+        }
+      }
       const res = await axios.patch(
         `${import.meta.env.VITE_API}post/comment/${id_comment}`,
         form,
@@ -685,6 +694,7 @@ function Detail_Att() {
                 comment: updated?.comment ?? editCommentText,
                 star: updated?.star ?? editCommentRating,
                 images: updated?.images ?? c.images,
+                images_list: updated?.images_list ?? c.images_list,
               }
             : c
         )
@@ -1368,12 +1378,44 @@ function Detail_Att() {
                               </div>
                             </div>
                           </div>
-                          {item.images && (
-                            <img
-                              src={item.images}
-                              alt="comment"
-                              className="mt-2 rounded-lg max-h-32"
-                            />
+                          {Array.isArray(item.images_list) && item.images_list.length > 0 ? (
+                            (() => {
+                              const imgs = item.images_list;
+                              const display = imgs.slice(0, 4);
+                              const extra = Math.max(0, imgs.length - 4);
+                              return (
+                                <div className="mt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                  {display.map((url, idx) => (
+                                    <div key={idx} className="relative group">
+                                      <img
+                                        src={url}
+                                        alt={`comment ${idx + 1}`}
+                                        className="rounded-lg h-28 md:h-32 lg:h-36 object-cover w-full cursor-pointer"
+                                        onClick={() => setSelectedImage(url)}
+                                      />
+                                      {idx === display.length - 1 && extra > 0 && (
+                                        <button
+                                          type="button"
+                                          className="absolute inset-0 bg-black/50 text-white font-semibold text-sm md:text-base rounded-lg flex items-center justify-center opacity-100"
+                                          onClick={() => setGalleryModal({ open: true, images: imgs })}
+                                        >
+                                          ดูทั้งหมด ({imgs.length})
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            item.images && (
+                              <img
+                                src={item.images}
+                                alt="comment"
+                                className="mt-2 rounded-lg max-h-32 cursor-pointer"
+                                onClick={() => setSelectedImage(item.images)}
+                              />
+                            )
                           )}
                           {/* Edit form (inline) */}
                           {editingCommentId === item.id_comment && (
@@ -1410,19 +1452,24 @@ function Detail_Att() {
                               <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) =>
-                                  setEditCommentImage(
-                                    e.target.files?.[0] || null
-                                  )
-                                }
+                                multiple
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  setEditCommentImages(files);
+                                }}
                                 className="file-input file-input-bordered file-input-sm"
                               />
-                              {editCommentImage && (
-                                <img
-                                  src={URL.createObjectURL(editCommentImage)}
-                                  alt="ภาพใหม่"
-                                  className="mt-2 rounded-lg max-h-32 border"
-                                />
+                              {editCommentImages && editCommentImages.length > 0 && (
+                                <div className="mt-2 grid grid-cols-3 gap-2">
+                                  {editCommentImages.map((f, i) => (
+                                    <img
+                                      key={i}
+                                      src={URL.createObjectURL(f)}
+                                      alt={`ภาพใหม่ ${i + 1}`}
+                                      className="rounded-lg max-h-28 border object-cover w-full"
+                                    />
+                                  ))}
+                                </div>
                               )}
                               <div className="flex gap-2">
                                 <button
@@ -1717,6 +1764,28 @@ function Detail_Att() {
           </div>
         </div>
       )}
+      {galleryModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4" onClick={() => setGalleryModal({ open: false, images: [] })}>
+          <div className="relative bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-auto p-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setGalleryModal({ open: false, images: [] })}
+              className="absolute top-3 right-3 btn btn-sm btn-ghost"
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold mb-3">รูปภาพทั้งหมด</h3>
+            {Array.isArray(galleryModal.images) && galleryModal.images.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {galleryModal.images.map((url, i) => (
+                  <img key={i} src={url} alt={`all-${i}`} className="rounded-lg object-cover w-full h-40 cursor-pointer" onClick={() => setSelectedImage(url)} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">ไม่พบรูปภาพ</p>
+            )}
+          </div>
+        </div>
+      )}
       {showCommentModal && (
         <div className="modal modal-open">
           <div className="modal-box max-w-lg relative ">
@@ -1775,26 +1844,33 @@ function Detail_Att() {
                 </label>
               </div>
 
-              {/* Image Upload */}
+              {/* Image Upload (Multiple) */}
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-medium">
-                    เพิ่มรูปภาพ (ถ้ามี)
+                    เพิ่มรูปภาพ (เลือกได้หลายรูป)
                   </span>
                 </label>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setCommentImage(e.target.files[0])}
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setCommentImages(files);
+                  }}
                   className="file-input file-input-bordered file-input-primary w-full"
                 />
-                {commentImage && (
-                  <div className="mt-2">
-                    <img
-                      src={URL.createObjectURL(commentImage)}
-                      alt="ภาพตัวอย่าง"
-                      className="rounded-lg max-h-48 border"
-                    />
+                {commentImages && commentImages.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {commentImages.map((f, idx) => (
+                      <img
+                        key={idx}
+                        src={URL.createObjectURL(f)}
+                        alt={`ภาพตัวอย่าง ${idx + 1}`}
+                        className="rounded-lg max-h-32 border object-cover w-full"
+                      />
+                    ))}
                   </div>
                 )}
               </div>

@@ -26,8 +26,17 @@ router.post("/post/likes/:id",likes);
 router.get('/nearby/:id',nearby);
 router.get("/post/likes/check/:id_post/:id_user", likes_check);
 router.delete("/post/likes/:id_post/:id_user", require('../controller/user_post').unlike);
-router.post("/post/comment/:id_post",uploadToPostImg.single("image"),comment_post);
-router.patch("/post/comment/:id", uploadToPostImg.single("image"), require('../controller/user_post').edit_comment);
+// Comments with multiple image uploads
+router.post(
+  "/post/comment/:id_post",
+  uploadToPostImg.array("images", 10),
+  comment_post
+);
+router.patch(
+  "/post/comment/:id",
+  uploadToPostImg.array("images", 10),
+  require('../controller/user_post').edit_comment
+);
 router.get("/post/comment_id/:id_post",get_comment);
 router.get("/post/comment_status/:id_comment", require('../controller/user_post').get_comment_status);
 // My comments (places)

@@ -11,7 +11,7 @@
  Target Server Version : 50744 (5.7.44)
  File Encoding         : 65001
 
- Date: 14/10/2025 18:33:38
+ Date: 14/10/2025 19:36:47
 */
 
 SET NAMES utf8mb4;
@@ -41,8 +41,9 @@ CREATE TABLE `comment_post`  (
   `star` char(5) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `id_comment` int(11) NOT NULL AUTO_INCREMENT,
   `status` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `id_images_post` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_comment`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 42 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 43 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for comment_reply
@@ -77,6 +78,7 @@ CREATE TABLE `event_comment`  (
   `images` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `star` char(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `id_images_event` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_comment`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
@@ -95,6 +97,16 @@ CREATE TABLE `event_comment_reply`  (
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id_reply`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for images
+-- ----------------------------
+DROP TABLE IF EXISTS `images`;
+CREATE TABLE `images`  (
+  `id_mages_post` int(11) NULL DEFAULT NULL,
+  `images` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `id_images_event` int(11) NULL DEFAULT NULL
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for like_event
@@ -180,7 +192,6 @@ CREATE TABLE `user_event`  (
   `longitude` decimal(10, 7) NULL DEFAULT NULL,
   `date_end` datetime NULL DEFAULT NULL,
   `type` int(1) NULL DEFAULT NULL,
-  `id_user` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_event`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 

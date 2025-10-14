@@ -19,7 +19,17 @@ const deleteImage =(path)=>{
 exports.delete_comment = async (req, res) => {
     try {
         const { id } = req.params;
-        const [rows] = await db.promise().query("SELECT images FROM comment_post WHERE id_comment = ?", [id]);
+        await ensureCommentImagesSupport();
+        let rows;
+        try {
+            [rows] = await db
+                .promise()
+                .query("SELECT images, id_images_post FROM comment_post WHERE id_comment = ?", [id]);
+        } catch (_) {
+            [rows] = await db
+                .promise()
+                .query("SELECT images FROM comment_post WHERE id_comment = ?", [id]);
+        }
         if (rows.length === 0) {
             return res.status(404).json({
                 msg: "คอมเมนต์ไม่พบ",
@@ -27,8 +37,14 @@ exports.delete_comment = async (req, res) => {
             });
         }
         const imagePath = rows[0].images;
+        const groupId = rows[0].id_images_post ? rows[0].id_images_post : null;
+        // delete single image path if existed
         if (imagePath && fs.existsSync(imagePath)) {
             deleteImage(imagePath);
+        }
+        // delete images group if existed
+        if (groupId) {
+            await deleteImagesGroup(groupId);
         }
         const [result] = await db.promise().query("DELETE FROM comment_post WHERE id_comment = ?", [id]);
         if (result.affectedRows === 0) {
@@ -160,13 +176,45 @@ exports.get_comment = async (req ,res ) => {
             return res.status(200).json({ msg: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: []});
         }
 
-        const formatData = rows.map((row)=>({
-            ...row,
-            replies_count: row.replies_count || 0,
-            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
-            // ใช้รูปโปรไฟล์จากตาราง user (image_profile) เป็น avatar ของผู้คอมเมนต์
-            user_image: row.image_profile ? `${req.protocol}://${req.headers.host}/${row.image_profile}`: null,
-        }));
+        // Collect all image group ids present (if column exists)
+        let groups = [];
+        try {
+            groups = rows
+                .map((r) => r.id_images_post)
+                .filter((v) => v !== undefined && v !== null);
+        } catch (_) {}
+
+        let imagesByGroup = {};
+        if (groups.length > 0) {
+            try {
+                const [imgRows] = await db
+                    .promise()
+                    .query(
+                        `SELECT id_mages_post, images FROM images WHERE id_mages_post IN (${groups.map(()=> '?').join(',')})`,
+                        groups
+                    );
+                for (const ir of imgRows) {
+                    const gid = ir.id_mages_post;
+                    if (!imagesByGroup[gid]) imagesByGroup[gid] = [];
+                    imagesByGroup[gid].push(ir.images);
+                }
+            } catch (_) {}
+        }
+
+        const base = `${req.protocol}://${req.headers.host}/`;
+        const toAbs = (p) => (p ? (p.startsWith('http') ? p : base + p) : null);
+
+        const formatData = rows.map((row)=>{
+            const list = (row.id_images_post && imagesByGroup[row.id_images_post]) ? imagesByGroup[row.id_images_post].map(toAbs) : [];
+            return {
+                ...row,
+                replies_count: row.replies_count || 0,
+                images: row.images ? toAbs(row.images) : (list[0] || null),
+                images_list: list,
+                // ใช้รูปโปรไฟล์จากตาราง user (image_profile) เป็น avatar ของผู้คอมเมนต์
+                user_image: row.image_profile ? toAbs(row.image_profile) : null,
+            };
+        });
 
         return res.status(200).json({msg: "ดึงข้อมูลคอมเมนต์สำเร็จ", data: formatData});
         
@@ -186,7 +234,25 @@ exports.get_my_comments = async (req, res) => {
         if (!id_user) {
             return res.status(400).json({ msg: "ต้องระบุ id_user", error: "id_user required" });
         }
-        const [rows] = await db.promise().query(`
+        const colExists = await hasCommentImagesColumn();
+        const selectSql = colExists ? `
+            SELECT 
+                cp.id_comment,
+                cp.id_post,
+                cp.date_comment,
+                cp.comment,
+                cp.images,
+                cp.id_images_post,
+                up.name_location AS post_name,
+                u.first_name AS user_name,
+                u.image_profile AS user_image
+            FROM comment_post cp
+            JOIN user_post up ON up.id_post = cp.id_post
+            JOIN user u ON u.id_user = cp.id_user
+            WHERE cp.id_user = ?
+              AND (cp.status IS NULL OR cp.status <> '0')
+            ORDER BY cp.date_comment DESC
+        ` : `
             SELECT 
                 cp.id_comment,
                 cp.id_post,
@@ -202,12 +268,37 @@ exports.get_my_comments = async (req, res) => {
             WHERE cp.id_user = ?
               AND (cp.status IS NULL OR cp.status <> '0')
             ORDER BY cp.date_comment DESC
-        `, [id_user]);
-        const data = rows.map(r => ({
-            ...r,
-            images: r.images ? `${req.protocol}://${req.headers.host}/${r.images}` : null,
-            user_image: r.user_image ? `${req.protocol}://${req.headers.host}/${r.user_image}` : null,
-        }));
+        `;
+        const [rows] = await db.promise().query(selectSql, [id_user]);
+        // batch load images by group
+        const groups = colExists ? rows.map(r => r.id_images_post).filter(v => v !== undefined && v !== null) : [];
+        let imagesByGroup = {};
+        if (groups.length > 0) {
+            try {
+                const [imgRows] = await db
+                    .promise()
+                    .query(
+                        `SELECT id_mages_post, images FROM images WHERE id_mages_post IN (${groups.map(()=> '?').join(',')})`,
+                        groups
+                    );
+                for (const ir of imgRows) {
+                    const gid = ir.id_mages_post;
+                    if (!imagesByGroup[gid]) imagesByGroup[gid] = [];
+                    imagesByGroup[gid].push(ir.images);
+                }
+            } catch (_) {}
+        }
+        const base = `${req.protocol}://${req.headers.host}/`;
+        const toAbs = (p) => (p ? (p.startsWith('http') ? p : base + p) : null);
+        const data = rows.map(r => {
+            const list = (r.id_images_post && imagesByGroup[r.id_images_post]) ? imagesByGroup[r.id_images_post].map(toAbs) : [];
+            return {
+                ...r,
+                images: r.images ? toAbs(r.images) : (list[0] || null),
+                images_list: list,
+                user_image: r.user_image ? toAbs(r.user_image) : null,
+            };
+        });
         return res.status(200).json({ msg: "ดึงความคิดเห็นของผู้ใช้สำเร็จ", data });
     } catch (err) {
         console.log("error get_my_comments", err);
@@ -691,17 +782,46 @@ exports.nearby = async (req, res) => {
 
 exports.comment_post = async (req, res) => {
     const {id_post} = req.params;
-    const {id_comment,userId, star, comment} = req.body;
-    const image = req.file;
+    const {userId, star, comment} = req.body;
+    // Support multiple files via req.files (array)
+    const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
     
     
-
     try{
-        const [rows] =await db.promise().query(`INSERT INTO comment_post (id_comment,id_post,id_user,date_comment,images,star,comment) VALUES (?,?,?,?,?,?,?)`
-                                                ,[id_comment,id_post,userId,getFormattedNow(),image.path,star,comment]);
+        await ensureCommentImagesSupport();
+
+        let imagePath = null;
+        let groupId = null;
+
+        // Prepare image storage (first image path for legacy column, all images to images table)
+        const filePaths = (files || []).map((f) => f?.path).filter(Boolean);
+        const colExists = await hasCommentImagesColumn();
+        if (filePaths.length > 0) {
+            imagePath = filePaths[0];
+            if (colExists) {
+                groupId = await getNextImageGroupId();
+                await insertImagesForGroup(groupId, filePaths);
+            }
+        }
+
+        let rows;
+        if (colExists) {
+            [rows] = await db.promise().query(
+                `INSERT INTO comment_post (id_post,id_user,date_comment,images,star,comment,id_images_post) VALUES (?,?,?,?,?,?,?)`,
+                [id_post,userId,getFormattedNow(),imagePath,star,comment,groupId]
+            );
+        } else {
+            [rows] = await db.promise().query(
+                `INSERT INTO comment_post (id_post,id_user,date_comment,images,star,comment) VALUES (?,?,?,?,?,?)`,
+                [id_post,userId,getFormattedNow(),imagePath,star,comment]
+            );
+        }
         if(rows.affectedRows === 0){
-            if(image && image.path){
-                deleteImage(image.path);
+            // rollback any uploaded files
+            if (groupId) {
+                try { await deleteImagesGroup(groupId); } catch(_) {}
+            } else if (imagePath) {
+                try { deleteImage(imagePath); } catch(_) {}
             }
             return res.status(400).json({
                 msg: "ไม่สามารถคอมเมนต์โพสต์ได้",
@@ -766,11 +886,11 @@ exports.get_comment_status = async (req, res) => {
     }
 };
 
-// แก้ไขคอมเมนต์ของตนเอง
+// แก้ไขคอมเมนต์ของตนเอง (รองรับหลายรูป)
 exports.edit_comment = async (req, res) => {
     try {
         const { id } = req.params; // id_comment
-        const { id_user, comment, star, remove_image } = req.body;
+        const { id_user, comment, star, remove_image, remove_images } = req.body;
 
         if (!id || !id_user) {
             return res.status(400).json({ msg: "ข้อมูลไม่ครบถ้วน", error: "ต้องระบุ id และ id_user" });
@@ -786,27 +906,60 @@ exports.edit_comment = async (req, res) => {
             return res.status(403).json({ msg: "ไม่มีสิทธิ์แก้ไขความคิดเห็นนี้", error: "forbidden" });
         }
 
+        await ensureCommentImagesSupport();
+
+        // รองรับหลายไฟล์จาก req.files (multer array)
+        const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+        const colExists = await hasCommentImagesColumn();
         let imagePath = cm.images || null;
-        // หากอัปโหลดรูปใหม่ ให้ลบรูปเดิม
-        if (req.file && req.file.path) {
-            if (imagePath && fs.existsSync(imagePath)) {
-                deleteImage(imagePath);
-            }
-            imagePath = req.file.path;
-        } else if (remove_image === '1' || remove_image === 'true') {
+        let groupId = colExists ? (cm.id_images_post || null) : null;
+
+        const wantRemoveAll = remove_images === '1' || remove_images === 'true' || remove_image === '1' || remove_image === 'true';
+        if (wantRemoveAll) {
+            if (colExists && groupId) await deleteImagesGroup(groupId);
+            groupId = null;
             if (imagePath && fs.existsSync(imagePath)) {
                 deleteImage(imagePath);
             }
             imagePath = null;
         }
 
+        if (files && files.length > 0) {
+            const filePaths = files.map(f => f?.path).filter(Boolean);
+            if (colExists) {
+                // แทนที่ชุดรูปเดิมทั้งหมด
+                if (groupId) {
+                    await deleteImagesGroup(groupId);
+                } else {
+                    groupId = await getNextImageGroupId();
+                }
+                if (filePaths.length > 0) {
+                    imagePath = filePaths[0];
+                    await insertImagesForGroup(groupId, filePaths);
+                } else {
+                    imagePath = null;
+                }
+            } else {
+                // ไม่มีคอลัมน์ชุดรูป ใช้เพียงรูปเดียว
+                imagePath = filePaths[0] || null;
+            }
+        }
+
         const newComment = typeof comment === 'string' ? comment : cm.comment;
         const newStar = (star !== undefined && star !== null && star !== '') ? star : cm.star;
 
-        const [result] = await db.promise().query(
-            "UPDATE comment_post SET comment = ?, star = ?, images = ? WHERE id_comment = ?",
-            [newComment, newStar, imagePath, id]
-        );
+        let result;
+        if (colExists) {
+            [result] = await db.promise().query(
+                "UPDATE comment_post SET comment = ?, star = ?, images = ?, id_images_post = ? WHERE id_comment = ?",
+                [newComment, newStar, imagePath, groupId, id]
+            );
+        } else {
+            [result] = await db.promise().query(
+                "UPDATE comment_post SET comment = ?, star = ?, images = ? WHERE id_comment = ?",
+                [newComment, newStar, imagePath, id]
+            );
+        }
 
         if (result.affectedRows === 0) {
             return res.status(400).json({ msg: "ไม่สามารถแก้ไขความคิดเห็นได้", error: "update failed" });
@@ -815,17 +968,35 @@ exports.edit_comment = async (req, res) => {
         const [updatedRows] = await db.promise().query("SELECT * FROM comment_post WHERE id_comment = ?", [id]);
         const updated = updatedRows[0];
 
+        const base = `${req.protocol}://${req.headers.host}/`;
+        const toAbs = (p) => (p ? (p.startsWith('http') ? p : base + p) : null);
+        let images_list = [];
+        if (colExists && updated.id_images_post) {
+            try {
+                const [imgRows] = await db
+                  .promise()
+                  .query('SELECT images FROM images WHERE id_mages_post = ?', [updated.id_images_post]);
+                images_list = imgRows.map(r => toAbs(r.images));
+            } catch(_) {}
+        }
         return res.status(200).json({
             msg: "แก้ไขความคิดเห็นสำเร็จ",
             data: {
                 ...updated,
-                images: updated.images ? `${req.protocol}://${req.headers.host}/${updated.images}` : null
+                images: updated.images ? toAbs(updated.images) : (images_list[0] || null),
+                images_list,
             }
         });
     } catch (err) {
         console.log("error edit comment", err);
         // ลบไฟล์ใหม่ที่อัปโหลดแล้วหากเกิดข้อผิดพลาด
-        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        if (Array.isArray(req.files)) {
+            for (const f of req.files) {
+                if (f?.path && fs.existsSync(f.path)) {
+                    try { fs.unlinkSync(f.path); } catch(_) {}
+                }
+            }
+        } else if (req.file && req.file.path && fs.existsSync(req.file.path)) {
             fs.unlink(req.file.path, () => {});
         }
         return res.status(500).json({ msg: "ไม่สามารถแก้ไขความคิดเห็นได้", error: err.message });
@@ -919,6 +1090,76 @@ exports.delete_post_type = async (req, res) => {
         }
         return res.status(500).json({ msg: "ไม่สามารถลบประเภทได้" + (id ? ` (${id})` : ""), error: err.message });
     }
+};
+
+// Ensure schema for multi-image comments (MySQL 5.7 safe)
+let _hasCommentImagesColCache = null;
+const hasCommentImagesColumn = async () => {
+    if (_hasCommentImagesColCache !== null) return _hasCommentImagesColCache;
+    try {
+        const [cols] = await db
+            .promise()
+            .query("SHOW COLUMNS FROM comment_post LIKE 'id_images_post'");
+        _hasCommentImagesColCache = Array.isArray(cols) && cols.length > 0;
+    } catch (_) {
+        _hasCommentImagesColCache = false;
+    }
+    return _hasCommentImagesColCache;
+};
+const ensureCommentImagesSupport = async () => {
+    try {
+        const exists = await hasCommentImagesColumn();
+        if (!exists) {
+            await db
+                .promise()
+                .query("ALTER TABLE comment_post ADD COLUMN id_images_post INT NULL");
+            _hasCommentImagesColCache = true;
+        }
+    } catch (_) {
+        // ignore add column failure (e.g., permissions); fallback to single-image mode
+        _hasCommentImagesColCache = await hasCommentImagesColumn();
+    }
+    try {
+        // Ensure images table exists (generic bucket used elsewhere too)
+        await db
+            .promise()
+            .query(
+                `CREATE TABLE IF NOT EXISTS images (
+                    id_mages_post INT NULL,
+                    images VARCHAR(255) NULL,
+                    id_images_event INT NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8`
+            );
+    } catch (_) {}
+};
+
+const getNextImageGroupId = async () => {
+    const [rows] = await db
+        .promise()
+        .query('SELECT COALESCE(MAX(id_mages_post),0) AS max_id FROM images');
+    return Number(rows?.[0]?.max_id || 0) + 1;
+};
+
+const insertImagesForGroup = async (groupId, filePaths = []) => {
+    if (!filePaths || filePaths.length === 0) return;
+    const values = filePaths.map((p) => [groupId, p, null]);
+    await db
+        .promise()
+        .query('INSERT INTO images (id_mages_post, images, id_images_event) VALUES ?',[values]);
+};
+
+const deleteImagesGroup = async (groupId) => {
+    if (!groupId) return;
+    const [rows] = await db
+        .promise()
+        .query('SELECT images FROM images WHERE id_mages_post = ?', [groupId]);
+    for (const r of rows) {
+        const p = r?.images;
+        if (p && fs.existsSync(p)) {
+            try { fs.unlinkSync(p); } catch(_) {}
+        }
+    }
+    await db.promise().query('DELETE FROM images WHERE id_mages_post = ?', [groupId]);
 };
 
 exports.get_type_name = async (req, res) => {
