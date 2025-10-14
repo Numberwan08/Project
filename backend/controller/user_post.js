@@ -351,15 +351,35 @@ exports.add_post = async (req, res) => {
       });
     }
 
+    // ตัดค่าว่างจากตัวแปรที่รับ
+    const trimmedNameLocation = name_location ? name_location.replace(/\s+/g, ' ').trim() : "";
+    const trimmedDetailLocation = detail_location ? detail_location.trim() : "";
+    const trimmedPhone = phone ? phone.trim() : "";
+    const trimmedDetailAtt = detail_att ? detail_att.trim() : "";
+
+    // ตรวจสอบ name_location ซ้ำ
+    const [dupRows] = await db
+      .promise()
+      .query("SELECT id_post FROM user_post WHERE name_location = ?", [trimmedNameLocation]);
+    if (dupRows.length > 0) {
+      if (image && image.path) {
+        deleteImage(image.path);
+      }
+      return res.status(400).json({
+        msg: "ชื่อสถานที่นี้ถูกใช้ไปแล้ว",
+        error: "ชื่อสถานที่ซ้ำ",
+      });
+    }
+
     const [rows] = await db
       .promise()
       .query(
         "INSERT INTO user_post (name_location, detail_location, phone, detail_att, images, latitude, longitude, date, type, id_type) VALUES (?,?,?,?,?,?,?,?,?,?)",
         [
-          name_location,
-          detail_location,
-          phone,
-          detail_att,
+          trimmedNameLocation,
+          trimmedDetailLocation,
+          trimmedPhone,
+          trimmedDetailAtt,
           image.path,
           latitude,
           longitude,
@@ -406,6 +426,24 @@ exports.edit_post = async (req, res) => {
     } = req.body;
 
     try {
+        // Trim name_location for duplicate check
+        const trimmedNameLocation = name_location ? name_location.replace(/\s+/g, ' ').trim() : "";
+
+        // ตรวจสอบ name_location ซ้ำ (ยกเว้นตัวเอง)
+        const [dupRows] = await db.promise().query(
+            "SELECT id_post FROM user_post WHERE name_location = ? AND id_post <> ?",
+            [trimmedNameLocation, id]
+        );
+        if (dupRows.length > 0) {
+            if (req.file && req.file.path) {
+                deleteImage(req.file.path);
+            }
+            return res.status(400).json({
+                msg: "ชื่อสถานที่นี้ถูกใช้ไปแล้ว",
+                error: "ชื่อสถานที่ซ้ำ"
+            });
+        }
+
         let imagePath = null;
         if (req.file) {
             imagePath = req.file.path;
@@ -761,7 +799,8 @@ exports.edit_comment = async (req, res) => {
 // Add: get list of post types
 exports.get_post_types = async (req, res) => {
     try {
-        const [rows] = await db.promise().query(`SELECT id_type, name_type FROM post_type ORDER BY id_type`);
+        const [rows] = await db.promise().query(`SELECT post_type.id_type as id_type,name_type, COUNT(id_post) as count_location  FROM post_type LEFT JOIN 
+                user_post on post_type.id_type=user_post.id_type GROUP BY post_type.id_type,name_type`);
         return res.status(200).json({ msg: "ดึงประเภทโพสต์สำเร็จ", data: rows });
     } catch (err) {
         console.log("error get post types", err);
@@ -817,29 +856,39 @@ exports.update_post_type = async (req, res) => {
 
 // Delete a post type
 exports.delete_post_type = async (req, res) => {
+    // อ่านพารามิเตอร์ไว้ก่อน เพื่อให้ใช้งานได้ใน catch ด้วย
+    const { id } = req.params;
     try {
-        const { id } = req.params;
+        // ตรวจสอบว่ามี user_post ที่ใช้ id_type นี้หรือไม่
+        const [usedRows] = await db.promise().query(
+            "SELECT COUNT(*) as count FROM user_post WHERE id_type = ?",
+            [id]
+        );
+        if (usedRows[0].count > 0) {
+            return res.status(409).json({ msg: "ไม่สามารถลบประเภทได้ เนื่องจากมีโพสต์ใช้งานอยู่" });
+        }
         const [result] = await db.promise().query(
             "DELETE FROM post_type WHERE id_type = ?",
             [id]
         );
         if (result.affectedRows === 0) {
-            return res.status(404).json({ msg: "ไม่พบประเภทที่ต้องการลบ" });
+            return res.status(404).json({ msg: "ไม่พบประเภทที่ต้องการลบ"+id });
         }
         return res.status(200).json({ msg: "ลบประเภทสำเร็จ" });
     } catch (err) {
-        // Handle MySQL foreign key constraint
-        if (err && (err.code === 'ER_ROW_IS_REFERENCED_2' || err.errno === 1451)) {
-            return res.status(409).json({ msg: "ไม่สามารถลบประเภทได้ เนื่องจากถูกใช้งานอยู่", error: err.message });
-        }
         console.log("error delete post type", err);
-        return res.status(500).json({ msg: "ไม่สามารถลบประเภทได้", error: err.message });
+        // จัดการกรณีติด Foreign Key constraint จาก DB โดยตรง
+        if (err && (err.code === 'ER_ROW_IS_REFERENCED_2' || err.errno === 1451)) {
+            return res.status(409).json({ msg: "ไม่สามารถลบประเภทได้ เนื่องจากมีโพสต์ใช้งานอยู่" });
+        }
+        return res.status(500).json({ msg: "ไม่สามารถลบประเภทได้" + (id ? ` (${id})` : ""), error: err.message });
     }
 };
 
 exports.get_type_name = async (req, res) => {
     try{
-        const [rows] = await db.promise().query("SELECT name_type FROM post_type");
+        const [rows] = await db.promise().query(`SELECT name_type, COUNT(id_post) as count_location  FROM post_type LEFT JOIN 
+                user_post on post_type.id_type=user_post.id_type GROUP BY name_type`);
         return res.status(200).json({ msg: "ดึงชื่อประเภทสำเร็จ", data: rows });
     }catch(err){
         console.log("error get type name", err);

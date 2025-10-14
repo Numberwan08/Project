@@ -1060,13 +1060,32 @@ function EventControllers() {
                   )}
                 </div>
 
+                {/* รายละเอียดกิจกรรม */}
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">
+                    รายละเอียดกิจกรรม
+                  </label>
+                  <textarea
+                    className="w-full px-4 py-2.5 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none text-sm"
+                    rows={3}
+                    placeholder="รายละเอียดเพิ่มเติมของกิจกรรม เช่น กิจกรรมภายในงาน เวลาจัดงาน เงื่อนไขการเข้าร่วม เป็นต้น"
+                    value={formdata.detail_event}
+                    onChange={(e) =>
+                      setFormdata({
+                        ...formdata,
+                        detail_event: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
                 {/* Actions */}
-                <div className="pt-2">
+                <div className="pt-2 flex justify-end">
                   <button
                     type="submit"
                     disabled={submitting}
                     aria-busy={submitting}
-                    className="w-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white py-3.5 px-6 rounded-xl text-base font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-[1.02] shadow-lg disabled:opacity-50"
+                    className="w-50 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white py-3.5 px-6 rounded-xl text-base font-bold hover:from-red-600 hover:to-pink-600 transition-all transform hover:scale-[1.02] shadow-lg disabled:opacity-50"
                   >
                     {submitting ? "กำลังบันทึก..." : "โพสต์กิจกรรม"}
                   </button>
@@ -1278,7 +1297,7 @@ function EventControllers() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                  <div>
+                  {/* <div>
                     <label className="block text-sm text-gray-700 mb-1">
                       ประเภท (type)
                     </label>
@@ -1290,7 +1309,7 @@ function EventControllers() {
                         setEditForm({ ...editForm, type: e.target.value })
                       }
                     />
-                  </div>
+                  </div> */}
                   <div>
                     <label className="block text-sm text-gray-700 mb-1">
                       รูปภาพ
@@ -1299,6 +1318,7 @@ function EventControllers() {
                       type="file"
                       accept="image/*"
                       onChange={handleEditImageChange}
+                      name="image"
                     />
                     {editPreview && (
                       <img

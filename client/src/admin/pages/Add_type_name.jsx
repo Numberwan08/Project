@@ -138,6 +138,7 @@ function Add_type_name() {
   const handleDelete = async (typeItem) => {
     if (!typeItem) return;
     if (!window.confirm(`ยืนยันการลบประเภท "${typeItem.name_type}" ?`)) return;
+    console.log("delete type id => ", typeItem.id_type);
     try {
       await axios.delete(API + `post/type/${typeItem.id_type}`);
       toast.success("ลบประเภทสำเร็จ", {
@@ -189,12 +190,11 @@ function Add_type_name() {
                   <th className="w-[10%] px-4 py-3 text-center font-medium text-sm">
                     ลำดับ
                   </th>
-                  <th className="w-[20%] px-4 py-3 text-left font-medium text-sm">
-                    ID
-                  </th>
+                 
                   <th className="w-[45%] px-4 py-3 text-left font-medium text-sm">
                     ชื่อประเภท
                   </th>
+                  <th className="w-[30%]">จำนวนสถายที่ท่องเที่ยว</th>
                   <th className="w-[25%] px-4 py-3 text-center font-medium text-sm">
                     จัดการ
                   </th>
@@ -233,15 +233,14 @@ function Add_type_name() {
                       <td className="px-4 py-3 text-center text-gray-700 font-medium text-sm">
                         {(page - 1) * itemsPerPage + idx + 1}
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-                          {item.id_type}
-                        </span>
-                      </td>
+                    
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900 text-sm">
                           {item.name_type}
                         </div>
+                      </td>
+                      <td>
+                        {item.count_location}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-center">

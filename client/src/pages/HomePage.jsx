@@ -32,12 +32,22 @@ function HomePage() {
       // const productsData = productsRes.data.data || [];
 
       setPlaces(placesData);
-      setEvents(eventsData);
-      // setProducts(productsData);
+      const now = new Date();
+      const filteredEvents = (eventsData || []).filter((ev) => {
+        try {
+          const s = ev?.date_start ? new Date(ev.date_start) : null;
+          const e = ev?.date_end ? new Date(ev.date_end) : null;
+          if (e && !isNaN(e)) return now <= e; 
+          if (s && !isNaN(s)) return now <= s; 
+          return false; 
+        } catch {
+          return false;
+        }
+      });
+      setEvents(filteredEvents);
 
-      // เช็คสถานะไลค์สำหรับโพสต์และอีเวนต์
       if (userId) {
-        await checkLikeStatus(placesData, eventsData);
+        await checkLikeStatus(placesData, filteredEvents);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -50,7 +60,6 @@ function HomePage() {
     const likedPostsSet = new Set();
     const likedEventsSet = new Set();
 
-    // เช็คไลค์สำหรับโพสต์
     for (const post of placesData) {
       try {
         const res = await axios.get(
@@ -63,8 +72,7 @@ function HomePage() {
         console.log("Error checking post like status:", error);
       }
     }
-
-    // เช็คไลค์สำหรับอีเวนต์
+    
     for (const event of eventsData) {
       try {
         const res = await axios.get(

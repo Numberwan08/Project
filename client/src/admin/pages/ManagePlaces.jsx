@@ -617,7 +617,6 @@ function ManagePlaces() {
                           ประเภทสถานที่
                         </label>
 
-                        {/* REPLACED: text input -> select + add button */}
                         <div className="flex gap-2">
                           <select
                             value={formdata.id_type || ""}
@@ -926,7 +925,6 @@ function ManagePlaces() {
                       </div>
                     </div>
 
-                    {/* Type Name (REPLACED similarly) */}
                     <div className="space-y-2">
                       <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
                         <MapPin className="h-5 w-5 text-purple-600" />

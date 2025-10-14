@@ -7,6 +7,9 @@ import {
   Package,
   MapPin,
   LogOut,
+  ShoppingBag,
+  Tag,
+  MessageSquareWarning,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -15,9 +18,9 @@ const menuItems = [
   { label: "จัดการจำนวนผู้ใช้งาน", icon: <Users size={20} />, path: "usermember" },
   { label: "จัดการสถานที่ท่องเที่ยว", icon: <MapPin size={20} />, path: "places" },
   { label: "จัดการกิจกรรม", icon: <Calendar size={20} />, path: "event" },
-  { label: "จัดการสินค้า", icon: <Package size={20} />, path: "product" },
-  { label: "เพิ่มประเภทสถานที่", icon: <Package size={20} />, path: "addtype" },
-  { label: "รายงานคอมเม้น", icon: <Package size={20} />, path: "reportcomment" },
+  { label: "จัดการสินค้า", icon: <ShoppingBag size={20} />, path: "product" },
+  { label: "ประเภทสถานที่", icon: <Tag size={20} />, path: "addtype" },
+  { label: "รายงานคอมเม้น", icon: <MessageSquareWarning size={20} />, path: "reportcomment" },
 ];
 
 const Sidebar = ({ isOpen = true }) => {
@@ -78,7 +81,7 @@ const Sidebar = ({ isOpen = true }) => {
           >
             <LogOut size={20} />
             <span className={`ml-3 ${!isOpen && "hidden"} font-medium`}>
-              กลับหน้าหลัก
+              ออกจากระบบ
             </span>
           </span>
         </Link>
