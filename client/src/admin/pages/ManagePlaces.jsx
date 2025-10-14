@@ -1293,6 +1293,15 @@ function ManagePlaces() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2 justify-center">
+                            <a
+                              href={`/detall_att/${item.id_post}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              ดูโพสต์
+                            </a>
                             <button
                               onClick={() => handleEdit(item)}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"

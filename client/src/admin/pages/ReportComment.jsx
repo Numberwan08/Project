@@ -7,7 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Package
+  Package,
+  FileText,
 } from "lucide-react";
 
 function ReportComment() {
@@ -113,6 +114,26 @@ function ReportComment() {
       };
     });
   }, [reports]);
+
+  const buildTargetLink = (g) => {
+    try {
+      if (g.source === "event") {
+        if (!g.id_event || !(g.id_event_comment || g.id_event_reply)) return null;
+        const qs = g.id_event_reply
+          ? `highlightComment=${g.id_event_comment}&highlightReply=${g.id_event_reply}`
+          : `highlightComment=${g.id_event_comment}`;
+        return `/detall_event/${g.id_event}?${qs}&suppressHiddenToast=1`;
+      }
+      // post (places)
+      if (!g.id_post || !g.id_comment) return null;
+      const qs = g.id_reply
+        ? `highlightComment=${g.id_comment}&highlightReply=${g.id_reply}`
+        : `highlightComment=${g.id_comment}`;
+      return `/detall_att/${g.id_post}?${qs}&suppressHiddenToast=1`;
+    } catch (_) {
+      return null;
+    }
+  };
 
   const filteredGroups = useMemo(() => {
     if (!grouped) return [];
@@ -267,6 +288,18 @@ function ReportComment() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2 justify-center">
+                              {buildTargetLink(g) && (
+                                <a
+                                  href={buildTargetLink(g)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                                  title="เปิดโพสต์และไฮไลต์คอมเมนต์"
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                  ดูโพสต์
+                                </a>
+                              )}
                               <button
                                 className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs disabled:opacity-60"
                                 disabled={busy}

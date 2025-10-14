@@ -163,13 +163,27 @@ exports.add_event = async (req , res )=> {
         const image = req.file;
 
     try{
+        // Validate and enforce unique name_event (trimmed)
+        const trimmedName = (name_event || "").replace(/\s+/g, " ").trim();
+        if (!trimmedName) {
+            if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
+            return res.status(400).json({ mag: "กรุณาระบุชื่อกิจกรรม", error: "name_event required" });
+        }
+        const [dup] = await db.promise().query(
+            "SELECT id_event FROM user_event WHERE name_event = ?",
+            [trimmedName]
+        );
+        if (dup.length > 0) {
+            if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
+            return res.status(400).json({ mag: "ชื่องานนี้ถูกใช้ไปแล้ว", error: "duplicate name_event" });
+        }
         const id_user_insert = (req.body && req.body.id_user) ? req.body.id_user : null;
         const startAt = toMysqlDatetime(date_start);
         const endAt = toMysqlDatetime(date_end);
         const [rows]=await db.promise().query("INSERT INTO user_event (id_event,id_user, name_event, location_event, phone, detail_event, date_start, date_end, images, latitude, longitude, type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",[
             max_id+1,
             id_user_insert,
-            name_event,
+            trimmedName,
             location_event,
             phone,
             detail_event,
@@ -217,6 +231,20 @@ exports.edit_event = async (req, res) => {
     } = req.body;
 
     try {
+        // Uniqueness check for name_event (exclude current id)
+        const trimmedName = (name_event || "").replace(/\s+/g, " ").trim();
+        if (!trimmedName) {
+            if (req.file && req.file.path && fs.existsSync(req.file.path)) deleteImage(req.file.path);
+            return res.status(400).json({ mag: "กรุณาระบุชื่อกิจกรรม", error: "name_event required" });
+        }
+        const [dup] = await db.promise().query(
+            "SELECT id_event FROM user_event WHERE name_event = ? AND id_event <> ?",
+            [trimmedName, id]
+        );
+        if (dup.length > 0) {
+            if (req.file && req.file.path && fs.existsSync(req.file.path)) deleteImage(req.file.path);
+            return res.status(400).json({ mag: "ชื่องานนี้ถูกใช้ไปแล้ว", error: "duplicate name_event" });
+        }
         // ตรวจสอบว่ามีการอัปโหลดไฟล์ใหม่หรือไม่
         let imagePath = null;
         if (req.file) {
@@ -239,7 +267,7 @@ exports.edit_event = async (req, res) => {
         const [rows] = await db.promise().query(
             "UPDATE user_event SET name_event = ?, location_event = ?, phone = ?, detail_event = ?, date_start = ?, date_end = ?, images = ?, latitude = ?, longitude = ?, type = ? WHERE id_event = ?",
             [
-                name_event,
+                trimmedName,
                 location_event,
                 phone,
                 detail_event,

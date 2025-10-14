@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
   MapPin, 
@@ -33,6 +33,46 @@ function PlaceDetail() {
     fetchPlaceDetails();
     fetchComments();
   }, [id]);
+
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const h = params.get('highlight');
+    if (!h) return;
+    const parts = h.split(':');
+    if (parts.length < 2) return;
+    const type = parts[0] === 'reply' ? 'reply' : 'comment';
+    const targetId = Number(parts[1]);
+    if (!targetId) return;
+
+    const elementId = `${type}-${targetId}`;
+    const addFlash = (el) => {
+      try {
+        el.classList.add('ring-2','ring-yellow-400','bg-yellow-50');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          el.classList.remove('ring-2','ring-yellow-400','bg-yellow-50');
+        }, 3000);
+      } catch {}
+    };
+
+    const ensureVisible = async () => {
+      if (type === 'reply') {
+        for (const c of comments) {
+          try {
+            // ensure replies loaded for this comment
+            await fetchReplies(c.id_comment);
+          } catch {}
+        }
+      }
+      setTimeout(() => {
+        const el = document.getElementById(elementId);
+        if (el) addFlash(el);
+      }, 300);
+    };
+
+    ensureVisible();
+  }, [location.search, comments]);
 
   const fetchPlaceDetails = async () => {
     try {
@@ -311,7 +351,7 @@ function PlaceDetail() {
               {comments.length > 0 ? (
                 <div className="space-y-4">
                   {comments.map((comment) => (
-                    <div key={comment.id_comment} className="border-b border-purple-100 pb-4 last:border-b-0">
+                    <div id={`comment-${comment.id_comment}`} key={comment.id_comment} className="border-b border-purple-100 pb-4 last:border-b-0">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-medium">
                           {comment.first_name ? comment.first_name.charAt(0).toUpperCase() : 'U'}
@@ -366,7 +406,7 @@ function PlaceDetail() {
                         {expanded[comment.id_comment] && (
                           <div className="space-y-2">
                             {(repliesMap[comment.id_comment] || []).map((r) => (
-                              <div key={r.id_reply} className="bg-purple-50 rounded-lg p-3">
+                              <div id={`reply-${r.id_reply}`} key={r.id_reply} className="bg-purple-50 rounded-lg p-3">
                                 <div className="text-sm text-purple-800 font-medium">
                                   {r.first_name || 'ผู้ใช้'}
                                 </div>

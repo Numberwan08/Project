@@ -114,12 +114,30 @@ exports.add_prodact = async (req , res )=>{
 
     const image = req.file;
     try{
+        // Enforce name uniqueness within the same post (id_post)
+        const trimmedName = (name_product || "").replace(/\s+/g, " ").trim();
+        if (!id_post) {
+            if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
+            return res.status(400).json({ msg: "กรุณาระบุโพสต์ (id_post)", error: "id_post required" });
+        }
+        if (!trimmedName) {
+            if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
+            return res.status(400).json({ msg: "กรุณาระบุชื่อสินค้า", error: "name_product required" });
+        }
+        const [dup] = await db.promise().query(
+            "SELECT id_product FROM user_prodact WHERE name_product = ? AND id_post = ?",
+            [trimmedName, id_post]
+        );
+        if (dup.length > 0) {
+            if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
+            return res.status(400).json({ msg: "ชื่อนี้ถูกใช้ในโพสต์นี้แล้ว", error: "duplicate name_product in post" });
+        }
 
         const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,id_post,name_product,detail_product,phone,price,images,type)VALUES (?,?,?,?,?,?,?,?,?)",[
             max_id+1,
             id_user,
             id_post,
-            name_product,
+            trimmedName,
             detail_product,
             phone,
             price,
@@ -158,6 +176,24 @@ exports.edit_prodact = async (req, res) => {
     } = req.body;
 
     try {
+        // Get product's post to enforce per-post uniqueness
+        const [[info]] = await db.promise().query("SELECT id_post FROM user_prodact WHERE id_product = ?", [id]);
+        const postId = info ? info.id_post : null;
+        const trimmedName = (name_product || "").replace(/\s+/g, " ").trim();
+        if (!trimmedName) {
+            if (req.file && req.file.path && fs.existsSync(req.file.path)) deleteImage(req.file.path);
+            return res.status(400).json({ msg: "กรุณาระบุชื่อสินค้า", error: "name_product required" });
+        }
+        if (postId) {
+            const [dup] = await db.promise().query(
+                "SELECT id_product FROM user_prodact WHERE name_product = ? AND id_post = ? AND id_product <> ?",
+                [trimmedName, postId, id]
+            );
+            if (dup.length > 0) {
+                if (req.file && req.file.path && fs.existsSync(req.file.path)) deleteImage(req.file.path);
+                return res.status(400).json({ msg: "ชื่อนี้ถูกใช้ในโพสต์นี้แล้ว", error: "duplicate name_product in post" });
+            }
+        }
         let imagePath = null;
         if (req.file) {
             imagePath = req.file.path;
@@ -175,7 +211,7 @@ exports.edit_prodact = async (req, res) => {
         const [rows] = await db.promise().query(
             "UPDATE user_prodact SET name_product = ?, detail_product = ?, phone = ?, price = ?, images = ?, type = ? WHERE id_product = ?",
             [
-                name_product,
+                trimmedName,
                 detail_product,
                 phone,
                 price,
