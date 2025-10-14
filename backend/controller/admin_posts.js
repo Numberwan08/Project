@@ -11,6 +11,35 @@ const deleteImage = (path) => {
     });
 };
 
+// Helpers for cascading deletion of related comment images
+let _hasCommentImagesColCache = null;
+const hasCommentImagesColumn = async () => {
+    if (_hasCommentImagesColCache !== null) return _hasCommentImagesColCache;
+    try {
+        const [cols] = await db.promise().query("SHOW COLUMNS FROM comment_post LIKE 'id_images_post'");
+        _hasCommentImagesColCache = Array.isArray(cols) && cols.length > 0;
+    } catch (_) {
+        _hasCommentImagesColCache = false;
+    }
+    return _hasCommentImagesColCache;
+};
+
+const deleteImagesGroup = async (groupId) => {
+    if (!groupId) return;
+    try {
+        const [rows] = await db
+            .promise()
+            .query('SELECT images FROM images WHERE id_mages_post = ?', [groupId]);
+        for (const r of rows) {
+            const p = r?.images;
+            if (p && fs.existsSync(p)) {
+                try { fs.unlinkSync(p); } catch(_) {}
+            }
+        }
+        await db.promise().query('DELETE FROM images WHERE id_mages_post = ?', [groupId]);
+    } catch (_) {}
+};
+
 // ดึงข้อมูลสถานที่ท่องเที่ยวทั้งหมด (สำหรับผู้ใช้ทั่วไป)
 exports.get_posts = async (req, res) => {
     try {
@@ -262,6 +291,35 @@ exports.delete_post = async (req, res) => {
         if (rows[0].images && fs.existsSync(rows[0].images)) {
             deleteImage(rows[0].images);
         }
+
+        // ลบคอมเมนต์/ไลค์ที่เกี่ยวข้อง (เทียบเท่า ON DELETE CASCADE)
+        try {
+            const colExists = await hasCommentImagesColumn();
+            let commentRows = [];
+            if (colExists) {
+                const [cr] = await db
+                    .promise()
+                    .query('SELECT id_comment, images, id_images_post FROM comment_post WHERE id_post = ?', [id]);
+                commentRows = cr || [];
+            } else {
+                const [cr] = await db
+                    .promise()
+                    .query('SELECT id_comment, images FROM comment_post WHERE id_post = ?', [id]);
+                commentRows = cr || [];
+            }
+            for (const r of commentRows) {
+                if (r?.images && fs.existsSync(r.images)) {
+                    try { fs.unlinkSync(r.images); } catch(_) {}
+                }
+                if (r?.id_images_post) {
+                    await deleteImagesGroup(r.id_images_post);
+                }
+            }
+            // ลบคอมเมนต์ (reply จะโดนลบตาม FK ที่ DB ถ้ามี)
+            await db.promise().query('DELETE FROM comment_post WHERE id_post = ?', [id]);
+            // ลบไลค์ของโพสต์นี้
+            await db.promise().query('DELETE FROM like_post WHERE id_post = ?', [id]);
+        } catch (_) { /* best effort */ }
 
         // ลบข้อมูล
         const [result] = await db.promise().query("DELETE FROM admin_posts WHERE id_post = ?", [id]);

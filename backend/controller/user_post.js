@@ -642,6 +642,38 @@ exports.delete_post = async (req, res) => {
             });
         }
 
+        // Cascade-like cleanup for related records (comments, images, likes)
+        try {
+            await ensureCommentImagesSupport();
+            // 1) Clean up comment images (single + groups) for this post
+            let commentRows = [];
+            try {
+                const [cr] = await db
+                    .promise()
+                    .query("SELECT id_comment, images, id_images_post FROM comment_post WHERE id_post = ?", [id]);
+                commentRows = cr || [];
+            } catch (_) {
+                const [cr] = await db
+                    .promise()
+                    .query("SELECT id_comment, images FROM comment_post WHERE id_post = ?", [id]);
+                commentRows = cr || [];
+            }
+            for (const r of commentRows) {
+                if (r?.images && fs.existsSync(r.images)) {
+                    try { deleteImage(r.images); } catch (_) {}
+                }
+                if (r?.id_images_post) {
+                    try { await deleteImagesGroup(r.id_images_post); } catch (_) {}
+                }
+            }
+            // 2) Delete comments (replies will cascade by FK comment_reply -> comment_post)
+            await db.promise().query("DELETE FROM comment_post WHERE id_post = ?", [id]);
+            // 3) Delete likes
+            await db.promise().query("DELETE FROM like_post WHERE id_post = ?", [id]);
+            // Note: user_prodact has FK ON DELETE SET NULL; leave as per schema
+        } catch (_) { /* best effort cleanup */ }
+
+        // Delete post image file
         const imagePath = rows[0].images;
         if (imagePath && fs.existsSync(imagePath)) {
             deleteImage(imagePath);

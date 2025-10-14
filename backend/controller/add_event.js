@@ -49,6 +49,35 @@ const deleteImage =(path)=>{
     });
 };
 
+// Helpers for cascade cleanup of event comments/images
+let _hasEventImagesColCache = null;
+const hasEventImagesColumn = async () => {
+  if (_hasEventImagesColCache !== null) return _hasEventImagesColCache;
+  try {
+    const [cols] = await db.promise().query("SHOW COLUMNS FROM event_comment LIKE 'id_images_event'");
+    _hasEventImagesColCache = Array.isArray(cols) && cols.length > 0;
+  } catch (_) {
+    _hasEventImagesColCache = false;
+  }
+  return _hasEventImagesColCache;
+};
+
+const deleteEventImagesGroup = async (groupId) => {
+  if (!groupId) return;
+  try {
+    const [rows] = await db
+      .promise()
+      .query('SELECT images FROM images WHERE id_images_event = ?', [groupId]);
+    for (const r of rows) {
+      const p = r?.images;
+      if (p && fs.existsSync(p)) {
+        try { fs.unlinkSync(p); } catch(_) {}
+      }
+    }
+    await db.promise().query('DELETE FROM images WHERE id_images_event = ?', [groupId]);
+  } catch (_) {}
+};
+
 
 exports.get_event = async (req , res )=> {
     try{
@@ -316,6 +345,47 @@ exports.delete_event = async (req , res )=> {
             })
         }
 
+        // ลบคอมเมนต์ / ตอบกลับ / ไลค์ ที่เกี่ยวข้อง (เทียบเท่า ON DELETE CASCADE)
+        try {
+          const colExists = await hasEventImagesColumn();
+          // รวบรวมคอมเมนต์ของอีเวนต์นี้
+          let comments = [];
+          if (colExists) {
+            const [cm] = await db
+              .promise()
+              .query('SELECT id_comment, images, id_images_event FROM event_comment WHERE id_event = ?', [id]);
+            comments = cm || [];
+          } else {
+            const [cm] = await db
+              .promise()
+              .query('SELECT id_comment, images FROM event_comment WHERE id_event = ?', [id]);
+            comments = cm || [];
+          }
+          // ลบไฟล์รูปคอมเมนต์ + ชุดรูป
+          for (const c of comments) {
+            if (c?.images && fs.existsSync(c.images)) {
+              try { fs.unlinkSync(c.images); } catch(_) {}
+            }
+            if (c?.id_images_event) {
+              await deleteEventImagesGroup(c.id_images_event);
+            }
+          }
+          // ลบ replies ก่อน (ไม่มี FK CASCADE)
+          if (comments.length > 0) {
+            const ids = comments.map(c => c.id_comment);
+            const placeholders = ids.map(()=> '?').join(',');
+            await db.promise().query(`DELETE FROM event_comment_reply WHERE id_comment IN (${placeholders})`, ids);
+          }
+          // ลบ comments
+          await db.promise().query('DELETE FROM event_comment WHERE id_event = ?', [id]);
+          // ลบไลค์ของอีเวนต์
+          await db.promise().query('DELETE FROM like_event WHERE id_event = ?', [id]);
+          // ลบรายงานที่เกี่ยวข้องกับอีเวนต์ (ถ้ามีตารางนี้)
+          try {
+            await db.promise().query('DELETE FROM report_comment WHERE id_event = ?', [id]);
+          } catch(_) {}
+        } catch(_) { /* best effort */ }
+
         // ลบไฟล์ภาพถ้ามี
         const imagePath = rows[0].images;
         if (imagePath && fs.existsSync(imagePath)) {
@@ -343,6 +413,8 @@ exports.delete_event = async (req , res )=> {
     }
    
 } 
+
+
 exports.likes = async (req, res) => {
       const {id} = req.params;
     const {userId} = req.body;
