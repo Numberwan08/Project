@@ -7,9 +7,9 @@ const uploadReply = uploadTo('event_reply_image');
 
 const ec = require('../controller/event_comment');
 
-router.post('/event/comment/:id_event', uploadComment.single('image'), ec.add_comment);
+router.post('/event/comment/:id_event', uploadComment.array('images', 10), ec.add_comment);
 router.get('/event/comment_id/:id_event', ec.get_comments);
-router.patch('/event/comment/:id', uploadComment.single('image'), ec.edit_comment);
+router.patch('/event/comment/:id', uploadComment.array('images', 10), ec.edit_comment);
 router.delete('/event/delete_comment/:id', ec.delete_comment);
 router.post('/event/comment/:id_comment/replies', uploadReply.single('image'), ec.add_reply);
 router.get('/event/comment/:id_comment/replies', ec.get_replies);

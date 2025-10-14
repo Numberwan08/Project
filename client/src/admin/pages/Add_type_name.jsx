@@ -187,15 +187,15 @@ function Add_type_name() {
             <table className="min-w-[900px] w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-                  <th className="w-[10%] px-4 py-3 text-center font-medium text-sm">
+                  <th className=" px-4 py-3 text-center font-medium text-sm">
                     ลำดับ
                   </th>
                  
-                  <th className="w-[45%] px-4 py-3 text-left font-medium text-sm">
+                  <th className="px-4 py-3 text-left text-center font-medium text-sm">
                     ชื่อประเภท
                   </th>
-                  <th className="w-[30%]">จำนวนสถายที่ท่องเที่ยว</th>
-                  <th className="w-[25%] px-4 py-3 text-center font-medium text-sm">
+                  <th className="text-sm">จำนวนสถายที่ท่องเที่ยว</th>
+                  <th className="px-4 py-3 text-center font-medium text-sm">
                     จัดการ
                   </th>
                 </tr>
@@ -235,11 +235,11 @@ function Add_type_name() {
                       </td>
                     
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900 text-sm">
+                        <div className="font-medium  text-gray-900 text-sm">
                           {item.name_type}
                         </div>
                       </td>
-                      <td>
+                      <td className="px-4 py-3 text-center text-gray-600 text-sm">
                         {item.count_location}
                       </td>
                       <td className="px-4 py-3">

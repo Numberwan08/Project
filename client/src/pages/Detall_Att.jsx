@@ -61,6 +61,7 @@ function Detail_Att() {
   const [editReplyFile, setEditReplyFile] = useState(null);
   const [editReplyLoading, setEditReplyLoading] = useState(false);
   const [galleryModal, setGalleryModal] = useState({ open: false, images: [] });
+  const [selectedFromGallery, setSelectedFromGallery] = useState(false);
   const ratingCount = useMemo(() => {
     try {
       return (comments || []).filter((c) => Number(c?.star) > 0).length;
@@ -68,6 +69,14 @@ function Detail_Att() {
       return 0;
     }
   }, [comments]);
+
+  const handleCloseSelectedImage = () => {
+    setSelectedImage(null);
+    if (selectedFromGallery) {
+      setGalleryModal((prev) => ({ ...prev, open: true }));
+    }
+    setSelectedFromGallery(false);
+  };
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
@@ -1378,45 +1387,51 @@ function Detail_Att() {
                               </div>
                             </div>
                           </div>
-                          {Array.isArray(item.images_list) && item.images_list.length > 0 ? (
-                            (() => {
-                              const imgs = item.images_list;
-                              const display = imgs.slice(0, 4);
-                              const extra = Math.max(0, imgs.length - 4);
-                              return (
-                                <div className="mt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                  {display.map((url, idx) => (
-                                    <div key={idx} className="relative group">
-                                      <img
-                                        src={url}
-                                        alt={`comment ${idx + 1}`}
-                                        className="rounded-lg h-28 md:h-32 lg:h-36 object-cover w-full cursor-pointer"
-                                        onClick={() => setSelectedImage(url)}
-                                      />
-                                      {idx === display.length - 1 && extra > 0 && (
-                                        <button
-                                          type="button"
-                                          className="absolute inset-0 bg-black/50 text-white font-semibold text-sm md:text-base rounded-lg flex items-center justify-center opacity-100"
-                                          onClick={() => setGalleryModal({ open: true, images: imgs })}
-                                        >
-                                          ดูทั้งหมด ({imgs.length})
-                                        </button>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            item.images && (
-                              <img
-                                src={item.images}
-                                alt="comment"
-                                className="mt-2 rounded-lg max-h-32 cursor-pointer"
-                                onClick={() => setSelectedImage(item.images)}
-                              />
-                            )
-                          )}
+                          {Array.isArray(item.images_list) &&
+                          item.images_list.length > 0
+                            ? (() => {
+                                const imgs = item.images_list;
+                                const display = imgs.slice(0, 4);
+                                const extra = Math.max(0, imgs.length - 4);
+                                return (
+                                  <div className="mt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    {display.map((url, idx) => (
+                                      <div key={idx} className="relative group">
+                                        <img
+                                          src={url}
+                                          alt={`comment ${idx + 1}`}
+                                          className="rounded-lg h-28 md:h-32 lg:h-36 object-cover w-full cursor-pointer"
+                                          onClick={() => setSelectedImage(url)}
+                                        />
+                                        {idx === display.length - 1 &&
+                                          extra > 0 && (
+                                            <button
+                                              type="button"
+                                              className="absolute inset-0 bg-black/50 text-white font-semibold text-sm md:text-base rounded-lg flex items-center justify-center opacity-100"
+                                          onClick={() => {
+                                                setSelectedFromGallery(false);
+                                                setGalleryModal({
+                                                  open: true,
+                                                  images: imgs,
+                                                });
+                                              }}
+                                            >
+                                              ดูทั้งหมด ({imgs.length})
+                                            </button>
+                                          )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()
+                            : item.images && (
+                                <img
+                                  src={item.images}
+                                  alt="comment"
+                                  className="mt-2 rounded-lg max-h-32 cursor-pointer"
+                                  onClick={() => setSelectedImage(item.images)}
+                                />
+                              )}
                           {/* Edit form (inline) */}
                           {editingCommentId === item.id_comment && (
                             <form
@@ -1454,23 +1469,26 @@ function Detail_Att() {
                                 accept="image/*"
                                 multiple
                                 onChange={(e) => {
-                                  const files = Array.from(e.target.files || []);
+                                  const files = Array.from(
+                                    e.target.files || []
+                                  );
                                   setEditCommentImages(files);
                                 }}
                                 className="file-input file-input-bordered file-input-sm"
                               />
-                              {editCommentImages && editCommentImages.length > 0 && (
-                                <div className="mt-2 grid grid-cols-3 gap-2">
-                                  {editCommentImages.map((f, i) => (
-                                    <img
-                                      key={i}
-                                      src={URL.createObjectURL(f)}
-                                      alt={`ภาพใหม่ ${i + 1}`}
-                                      className="rounded-lg max-h-28 border object-cover w-full"
-                                    />
-                                  ))}
-                                </div>
-                              )}
+                              {editCommentImages &&
+                                editCommentImages.length > 0 && (
+                                  <div className="mt-2 grid grid-cols-3 gap-2">
+                                    {editCommentImages.map((f, i) => (
+                                      <img
+                                        key={i}
+                                        src={URL.createObjectURL(f)}
+                                        alt={`ภาพใหม่ ${i + 1}`}
+                                        className="rounded-lg max-h-28 border object-cover w-full"
+                                      />
+                                    ))}
+                                  </div>
+                                )}
                               <div className="flex gap-2">
                                 <button
                                   type="button"
@@ -1733,51 +1751,63 @@ function Detail_Att() {
         </div>
       ))}
       {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-4xl max-h-full">
+        <dialog open className="modal" onClose={handleCloseSelectedImage}>
+          {/* กล่องรูปภาพหลัก */}
+          <div
+            className="modal-box max-w-2xl p-3"
+            onClick={(e) => e.stopPropagation()} // ป้องกันคลิกในรูปแล้วปิด
+          >
+            {/* ปุ่มปิด */}
+            <form method="dialog">
+              <button
+                className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                aria-label="ปิด"
+                title="ปิด"
+                onClick={handleCloseSelectedImage}
+              >
+                ✕
+              </button>
+            </form>
+
+            {/* รูปภาพ */}
             <img
               src={selectedImage}
               alt="รูปขนาดใหญ่"
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="w-full max-h-[70vh] object-contain rounded-lg"
             />
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-2 transition-all duration-200"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
           </div>
-        </div>
+
+          {/* พื้นหลังเบลอ + โปร่งใส */}
+          <form
+            method="dialog"
+            className="modal-backdrop bg-white/60 backdrop-blur-sm"
+            onClick={handleCloseSelectedImage}
+          >
+            <button>close</button>
+          </form>
+        </dialog>
       )}
+
       {galleryModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4" onClick={() => setGalleryModal({ open: false, images: [] })}>
+        <dialog className="modal modal-open">
+          <div className="fixed inset-0  bg-opacity-70 flex items-center justify-center z-50 p-4" onClick={() => setGalleryModal({ open: false, images: [] })}>
           <div className="relative bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-auto p-4" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setGalleryModal({ open: false, images: [] })}
-              className="absolute top-3 right-3 btn btn-sm btn-ghost"
-            >
-              ✕
-            </button>
+            <button onClick={() => setGalleryModal({ open: false, images: [] })} className="absolute top-3 right-3 btn btn-sm btn-ghost">✕</button>
             <h3 className="text-lg font-semibold mb-3">รูปภาพทั้งหมด</h3>
             {Array.isArray(galleryModal.images) && galleryModal.images.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {galleryModal.images.map((url, i) => (
-                  <img key={i} src={url} alt={`all-${i}`} className="rounded-lg object-cover w-full h-40 cursor-pointer" onClick={() => setSelectedImage(url)} />
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`all-${i}`}
+                    className="rounded-lg object-cover w-full h-40 cursor-pointer"
+                    onClick={() => {
+                      setSelectedImage(url);
+                      setSelectedFromGallery(true);
+                      setGalleryModal((prev) => ({ ...prev, open: false }));
+                    }}
+                  />
                 ))}
               </div>
             ) : (
@@ -1785,6 +1815,8 @@ function Detail_Att() {
             )}
           </div>
         </div>
+
+        </dialog>
       )}
       {showCommentModal && (
         <div className="modal modal-open">

@@ -32,22 +32,8 @@ function Detall_Event() {
   const [commentModal, setCommentModal] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentStar, setCommentStar] = useState(0);
-  const [commentFile, setCommentFile] = useState(null);
+  const [commentImages, setCommentImages] = useState([]);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
-  // Preview URL for selected comment image
-  const commentPreviewUrl = useMemo(() => {
-    if (!commentFile) return null;
-    try {
-      return URL.createObjectURL(commentFile);
-    } catch {
-      return null;
-    }
-  }, [commentFile]);
-  useEffect(() => {
-    return () => {
-      if (commentPreviewUrl) URL.revokeObjectURL(commentPreviewUrl);
-    };
-  }, [commentPreviewUrl]);
   const [expandedReplies, setExpandedReplies] = useState({}); // id_comment -> boolean
   const [repliesMap, setRepliesMap] = useState({}); // id_comment -> replies[]
   const [replyInputs, setReplyInputs] = useState({}); // id_comment -> text
@@ -60,7 +46,7 @@ function Detall_Event() {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
   const [editCommentRating, setEditCommentRating] = useState(0);
-  const [editCommentImage, setEditCommentImage] = useState(null);
+  const [editCommentImages, setEditCommentImages] = useState([]);
   const [editLoading, setEditLoading] = useState(false);
 
   // Rating summary (from loaded comments)
@@ -89,6 +75,7 @@ function Detall_Event() {
   const [editReplyText, setEditReplyText] = useState("");
   const [editReplyFile, setEditReplyFile] = useState(null);
   const [editReplyLoading, setEditReplyLoading] = useState(false);
+  const [galleryModal, setGalleryModal] = useState({ open: false, images: [] });
 
   const userId = localStorage.getItem("userId");
   const { isReportedEventComment, isReportedEventReply, refreshMySubmitted } =
@@ -282,7 +269,7 @@ function Detall_Event() {
     setEditingCommentId(item.id_comment);
     setEditCommentText(item.comment || "");
     setEditCommentRating(Number(item.star) || 0);
-    setEditCommentImage(null);
+    setEditCommentImages([]);
   };
 
   // Edit reply
@@ -354,7 +341,7 @@ function Detall_Event() {
     setEditingCommentId(null);
     setEditCommentText("");
     setEditCommentRating(0);
-    setEditCommentImage(null);
+    setEditCommentImages([]);
   };
   const handleEditCommentSubmit = async (e, id_comment) => {
     e.preventDefault();
@@ -372,7 +359,9 @@ function Detall_Event() {
       form.append("id_user", userId);
       form.append("comment", editCommentText);
       form.append("star", editCommentRating);
-      if (editCommentImage) form.append("image", editCommentImage);
+      if (editCommentImages && editCommentImages.length > 0) {
+        for (const f of editCommentImages) form.append("images", f);
+      }
       const res = await axios.patch(
         `${import.meta.env.VITE_API}event/comment/${id_comment}`,
         form,
@@ -387,6 +376,7 @@ function Detall_Event() {
                 comment: updated?.comment ?? editCommentText,
                 star: updated?.star ?? editCommentRating,
                 images: updated?.images ?? c.images,
+                images_list: updated?.images_list ?? c.images_list,
               }
             : c
         )
@@ -486,7 +476,9 @@ function Detall_Event() {
       fd.append("userId", userId);
       fd.append("star", commentStar || 0);
       fd.append("comment", commentText || "");
-      if (commentFile) fd.append("image", commentFile);
+      if (commentImages && commentImages.length > 0) {
+        for (const f of commentImages) fd.append("images", f);
+      }
       await axios.post(`${import.meta.env.VITE_API}event/comment/${id}`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -497,7 +489,7 @@ function Detall_Event() {
       setCommentModal(false);
       setCommentText("");
       setCommentStar(0);
-      setCommentFile(null);
+      setCommentImages([]);
       const res = await axios.get(
         `${import.meta.env.VITE_API}event/comment_id/${id}`
       );
@@ -943,12 +935,44 @@ function Detall_Event() {
                             </div>
 
                             {/* รูปภาพคอมเมนต์ */}
-                            {c.images && (
-                              <img
-                                src={c.images}
-                                alt="comment"
-                                className="mt-2 rounded-lg max-h-32"
-                              />
+                            {Array.isArray(c.images_list) && c.images_list.length > 0 ? (
+                              (() => {
+                                const imgs = c.images_list;
+                                const display = imgs.slice(0, 4);
+                                const extra = Math.max(0, imgs.length - 4);
+                                return (
+                                  <div className="mt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    {display.map((url, idx) => (
+                                      <div key={idx} className="relative">
+                                        <img
+                                          src={url}
+                                          alt={`comment ${idx + 1}`}
+                                          className="rounded-lg h-28 md:h-32 lg:h-36 object-cover w-full cursor-pointer"
+                                          onClick={() => setSelectedImage(url)}
+                                        />
+                                        {idx === display.length - 1 && extra > 0 && (
+                                          <button
+                                            type="button"
+                                            className="absolute inset-0 bg-black/50 text-white font-semibold text-sm md:text-base rounded-lg flex items-center justify-center"
+                                            onClick={() => setGalleryModal({ open: true, images: imgs })}
+                                          >
+                                            ดูทั้งหมด ({imgs.length})
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()
+                            ) : (
+                              c.images && (
+                                <img
+                                  src={c.images}
+                                  alt="comment"
+                                  className="mt-2 rounded-lg max-h-32 cursor-pointer"
+                                  onClick={() => setSelectedImage(c.images)}
+                                />
+                              )
                             )}
 
                             {/* ฟอร์มแก้ไขคอมเมนต์ (inline) */}
@@ -971,19 +995,24 @@ function Detall_Event() {
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={(e) =>
-                                    setEditCommentImage(
-                                      e.target.files?.[0] || null
-                                    )
-                                  }
+                                  multiple
+                                  onChange={(e) => {
+                                    const files = Array.from(e.target.files || []);
+                                    setEditCommentImages(files);
+                                  }}
                                   className="file-input file-input-bordered file-input-sm"
                                 />
-                                {editCommentImage && (
-                                  <img
-                                    src={URL.createObjectURL(editCommentImage)}
-                                    alt="ภาพใหม่"
-                                    className="mt-2 rounded-lg max-h-32 border"
-                                  />
+                                {editCommentImages && editCommentImages.length > 0 && (
+                                  <div className="mt-2 grid grid-cols-3 gap-2">
+                                    {editCommentImages.map((f, i) => (
+                                      <img
+                                        key={i}
+                                        src={URL.createObjectURL(f)}
+                                        alt={`ภาพใหม่ ${i + 1}`}
+                                        className="rounded-lg max-h-28 border object-cover w-full"
+                                      />
+                                    ))}
+                                  </div>
                                 )}
                                 <div className="flex gap-2">
                                   <button
@@ -1489,6 +1518,28 @@ function Detall_Event() {
           </div>
         </div>
       )}
+      {galleryModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4" onClick={() => setGalleryModal({ open: false, images: [] })}>
+          <div className="relative bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-auto p-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setGalleryModal({ open: false, images: [] })}
+              className="absolute top-3 right-3 btn btn-sm btn-ghost"
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold mb-3">รูปภาพทั้งหมด</h3>
+            {Array.isArray(galleryModal.images) && galleryModal.images.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {galleryModal.images.map((url, i) => (
+                  <img key={i} src={url} alt={`all-${i}`} className="rounded-lg object-cover w-full h-40 cursor-pointer" onClick={() => setSelectedImage(url)} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">ไม่พบรูปภาพ</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {commentModal && (
         <div className="modal modal-open">
@@ -1548,26 +1599,33 @@ function Detall_Event() {
                 </label>
               </div>
 
-              {/* Image Upload */}
+              {/* Image Upload (Multiple) */}
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-medium">
-                    เพิ่มรูปภาพ (ถ้ามี)
+                    เพิ่มรูปภาพ (เลือกได้หลายรูป)
                   </span>
                 </label>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setCommentFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setCommentImages(files);
+                  }}
                   className="file-input file-input-bordered file-input-primary w-full"
                 />
-                {commentPreviewUrl && (
-                  <div className="mt-2">
-                    <img
-                      src={commentPreviewUrl}
-                      alt="ภาพตัวอย่าง"
-                      className="rounded-lg max-h-48 border"
-                    />
+                {commentImages && commentImages.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {commentImages.map((f, idx) => (
+                      <img
+                        key={idx}
+                        src={URL.createObjectURL(f)}
+                        alt={`ภาพตัวอย่าง ${idx + 1}`}
+                        className="rounded-lg max-h-32 border object-cover w-full"
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -1653,7 +1711,8 @@ function Detall_Event() {
                   type="file"
                   accept="image/*"
                   className="file-input file-input-bordered file-input-sm"
-                  onChange={(e) => setCommentFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={(e) => setCommentImages(Array.from(e.target.files || []))}
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">

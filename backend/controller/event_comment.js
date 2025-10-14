@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const dayjs = require('dayjs');
+const fs = require('fs');
 
 const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
 
@@ -37,22 +38,109 @@ const ensureTables = async () => {
   } catch (e) {}
 };
 
+// Multi-image helpers for event comments
+let _hasEventImagesColCache = null;
+const hasEventImagesColumn = async () => {
+  if (_hasEventImagesColCache !== null) return _hasEventImagesColCache;
+  try {
+    const [cols] = await db.promise().query("SHOW COLUMNS FROM event_comment LIKE 'id_images_event'");
+    _hasEventImagesColCache = Array.isArray(cols) && cols.length > 0;
+  } catch (_) {
+    _hasEventImagesColCache = false;
+  }
+  return _hasEventImagesColCache;
+};
+
+const ensureEventCommentImagesSupport = async () => {
+  await ensureTables();
+  try {
+    const exists = await hasEventImagesColumn();
+    if (!exists) {
+      await db.promise().query('ALTER TABLE event_comment ADD COLUMN id_images_event INT NULL');
+      _hasEventImagesColCache = true;
+    }
+  } catch (_) {
+    _hasEventImagesColCache = await hasEventImagesColumn();
+  }
+  try {
+    await db
+      .promise()
+      .query(
+        `CREATE TABLE IF NOT EXISTS images (
+          id_mages_post INT NULL,
+          images VARCHAR(255) NULL,
+          id_images_event INT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8`
+      );
+  } catch (_) {}
+};
+
+const getNextEventImageGroupId = async () => {
+  const [rows] = await db
+    .promise()
+    .query('SELECT COALESCE(MAX(id_images_event),0) AS max_id FROM images');
+  return Number(rows?.[0]?.max_id || 0) + 1;
+};
+
+const insertEventImagesForGroup = async (groupId, filePaths = []) => {
+  if (!filePaths || filePaths.length === 0) return;
+  const values = filePaths.map((p) => [null, p, groupId]);
+  await db
+    .promise()
+    .query('INSERT INTO images (id_mages_post, images, id_images_event) VALUES ?',[values]);
+};
+
+const deleteEventImagesGroup = async (groupId) => {
+  if (!groupId) return;
+  const [rows] = await db
+    .promise()
+    .query('SELECT images FROM images WHERE id_images_event = ?', [groupId]);
+  for (const r of rows) {
+    const p = r?.images;
+    if (p && fs.existsSync(p)) {
+      try { fs.unlinkSync(p); } catch(_) {}
+    }
+  }
+  await db.promise().query('DELETE FROM images WHERE id_images_event = ?', [groupId]);
+};
+
 // Comments
 exports.add_comment = async (req, res) => {
   try {
-    await ensureTables();
+    await ensureEventCommentImagesSupport();
     const { id_event } = req.params;
     const { userId, star, comment } = req.body;
-    const image = req.file;
+    const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
     if (!id_event || !userId) {
       return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน', error: 'ต้องระบุ id_event และ userId' });
     }
-    const [r] = await db
-      .promise()
-      .query(
-        `INSERT INTO event_comment (id_event,id_user,date_comment,images,star,comment) VALUES (?,?,?,?,?,?)`,
-        [id_event, userId, now(), image?.path || null, star || null, comment || null]
-      );
+    const colExists = await hasEventImagesColumn();
+    const filePaths = (files || []).map(f => f?.path).filter(Boolean);
+    let firstPath = null;
+    let groupId = null;
+    if (filePaths.length > 0) {
+      firstPath = filePaths[0];
+      if (colExists) {
+        groupId = await getNextEventImageGroupId();
+        await insertEventImagesForGroup(groupId, filePaths);
+      }
+    }
+    let r;
+    if (colExists) {
+      [r] = await db
+        .promise()
+        .query(
+          `INSERT INTO event_comment (id_event,id_user,date_comment,images,star,comment,id_images_event) VALUES (?,?,?,?,?,?,?)`,
+          [id_event, userId, now(), firstPath, star || null, comment || null, groupId]
+        );
+    } else {
+      [r] = await db
+        .promise()
+        .query(
+          `INSERT INTO event_comment (id_event,id_user,date_comment,images,star,comment) VALUES (?,?,?,?,?,?)`,
+          [id_event, userId, now(), firstPath, star || null, comment || null]
+        );
+    }
     if (r.affectedRows === 0) {
       return res.status(400).json({ msg: 'ไม่สามารถคอมเมนต์ได้' });
     }
@@ -64,7 +152,7 @@ exports.add_comment = async (req, res) => {
 
 exports.get_comments = async (req, res) => {
   try {
-    await ensureTables();
+    await ensureEventCommentImagesSupport();
     const { id_event } = req.params;
     const [rows] = await db
       .promise()
@@ -76,11 +164,38 @@ exports.get_comments = async (req, res) => {
          ORDER BY ec.date_comment DESC`,
         [id_event]
       );
-    const data = rows.map((row) => ({
-      ...row,
-      images: buildFileUrl(req, row.images),
-      user_image: buildFileUrl(req, row.image_profile),
-    }));
+    const colExists = await hasEventImagesColumn();
+    let groups = [];
+    if (colExists) {
+      groups = rows.map(r => r.id_images_event).filter(v => v !== undefined && v !== null);
+    }
+    let imagesByGroup = {};
+    if (groups.length > 0) {
+      try {
+        const [imgRows] = await db
+          .promise()
+          .query(
+            `SELECT id_images_event, images FROM images WHERE id_images_event IN (${groups.map(()=> '?').join(',')})`,
+            groups
+          );
+        for (const ir of imgRows) {
+          const gid = ir.id_images_event;
+          if (!imagesByGroup[gid]) imagesByGroup[gid] = [];
+          imagesByGroup[gid].push(ir.images);
+        }
+      } catch(_) {}
+    }
+    const base = `${req.protocol}://${req.headers.host}/`;
+    const toAbs = (p) => (p ? (p.startsWith('http') ? p : base + p) : null);
+    const data = rows.map((row) => {
+      const list = colExists && row.id_images_event && imagesByGroup[row.id_images_event] ? imagesByGroup[row.id_images_event].map(toAbs) : [];
+      return {
+        ...row,
+        images: row.images ? toAbs(row.images) : (list[0] || null),
+        images_list: list,
+        user_image: toAbs(row.image_profile),
+      };
+    });
     return res.status(200).json({ msg: 'ดึงความเห็นสำเร็จ', data });
   } catch (err) {
     return res.status(500).json({ msg: 'ไม่สามารถดึงความเห็นได้', error: err.message });
@@ -89,26 +204,69 @@ exports.get_comments = async (req, res) => {
 
 exports.edit_comment = async (req, res) => {
   try {
-    await ensureTables();
+    await ensureEventCommentImagesSupport();
     const { id } = req.params;
-    const { id_user, comment, star, remove_image } = req.body;
+    const { id_user, comment, star, remove_image, remove_images } = req.body;
     if (!id || !id_user) return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน' });
     const [rows] = await db.promise().query('SELECT * FROM event_comment WHERE id_comment = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ msg: 'ไม่พบความคิดเห็น' });
     const cm = rows[0];
     if (String(cm.id_user) !== String(id_user)) return res.status(403).json({ msg: 'ไม่มีสิทธิ์แก้ไข' });
+    const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+    const colExists = await hasEventImagesColumn();
     let imagePath = cm.images || null;
-    if (req.file && req.file.path) imagePath = req.file.path;
-    else if (remove_image === '1' || remove_image === 'true') imagePath = null;
-    await db
-      .promise()
-      .query('UPDATE event_comment SET comment = ?, star = ?, images = ? WHERE id_comment = ?', [
-        typeof comment === 'string' ? comment : cm.comment,
-        star ?? cm.star,
-        imagePath,
-        id,
-      ]);
-    return res.status(200).json({ msg: 'แก้ไขความคิดเห็นสำเร็จ' });
+    let groupId = colExists ? (cm.id_images_event || null) : null;
+    const wantRemoveAll = remove_images === '1' || remove_images === 'true' || remove_image === '1' || remove_image === 'true';
+    if (wantRemoveAll) {
+      if (colExists && groupId) await deleteEventImagesGroup(groupId);
+      groupId = null;
+      imagePath = null;
+    }
+    if (files && files.length > 0) {
+      const filePaths = files.map(f => f?.path).filter(Boolean);
+      if (colExists) {
+        if (groupId) await deleteEventImagesGroup(groupId);
+        else groupId = await getNextEventImageGroupId();
+        if (filePaths.length > 0) {
+          imagePath = filePaths[0];
+          await insertEventImagesForGroup(groupId, filePaths);
+        } else {
+          imagePath = null;
+        }
+      } else {
+        imagePath = filePaths[0] || null;
+      }
+    }
+    if (colExists) {
+      await db
+        .promise()
+        .query('UPDATE event_comment SET comment = ?, star = ?, images = ?, id_images_event = ? WHERE id_comment = ?', [
+          typeof comment === 'string' ? comment : cm.comment,
+          star ?? cm.star,
+          imagePath,
+          groupId,
+          id,
+        ]);
+    } else {
+      await db
+        .promise()
+        .query('UPDATE event_comment SET comment = ?, star = ?, images = ? WHERE id_comment = ?', [
+          typeof comment === 'string' ? comment : cm.comment,
+          star ?? cm.star,
+          imagePath,
+          id,
+        ]);
+    }
+    const base = `${req.protocol}://${req.headers.host}/`;
+    const toAbs = (p) => (p ? (p.startsWith('http') ? p : base + p) : null);
+    let images_list = [];
+    if (colExists && groupId) {
+      try {
+        const [imgRows] = await db.promise().query('SELECT images FROM images WHERE id_images_event = ?', [groupId]);
+        images_list = imgRows.map(r => toAbs(r.images));
+      } catch(_) {}
+    }
+    return res.status(200).json({ msg: 'แก้ไขความคิดเห็นสำเร็จ', data: { images: imagePath ? toAbs(imagePath) : (images_list[0] || null), images_list, comment: typeof comment === 'string' ? comment : cm.comment, star: star ?? cm.star } });
   } catch (err) {
     return res.status(500).json({ msg: 'ไม่สามารถแก้ไขได้', error: err.message });
   }
@@ -116,8 +274,24 @@ exports.edit_comment = async (req, res) => {
 
 exports.delete_comment = async (req, res) => {
   try {
-    await ensureTables();
+    await ensureEventCommentImagesSupport();
     const { id } = req.params;
+    // cleanup images first
+    let groupId = null;
+    let imagePath = null;
+    try {
+      const [rows] = await db.promise().query('SELECT images, id_images_event FROM event_comment WHERE id_comment = ?', [id]);
+      if (rows.length > 0) {
+        imagePath = rows[0].images || null;
+        groupId = rows[0].id_images_event || null;
+      }
+    } catch(_) {}
+    if (groupId) {
+      try { await deleteEventImagesGroup(groupId); } catch(_) {}
+    }
+    if (imagePath && fs.existsSync(imagePath)) {
+      try { fs.unlinkSync(imagePath); } catch(_) {}
+    }
     const [r] = await db.promise().query('DELETE FROM event_comment WHERE id_comment = ?', [id]);
     if (r.affectedRows === 0) return res.status(404).json({ msg: 'ไม่พบความคิดเห็น' });
     return res.status(200).json({ msg: 'ลบความคิดเห็นสำเร็จ' });
