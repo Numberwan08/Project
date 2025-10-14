@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { ThumbsUp, Search, Calendar, MapPin, Clock, User, MessageSquare } from "lucide-react";
@@ -14,6 +14,7 @@ function EventPages() {
   const [userId, setUserId] = useState(localStorage.getItem("userId"));
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
+  const [viewFilter, setViewFilter] = useState("active");
 
   useEffect(() => {
     fetchEvents();
@@ -133,6 +134,15 @@ function EventPages() {
   };
 
   const today = new Date();
+  const isActiveOrUpcoming = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return today <= end;
+  };
+  const isEnded = (endDate) => {
+    const end = new Date(endDate);
+    return today > end;
+  };
 
   const getEventStatus = (startDate, endDate) => {
     const start = new Date(startDate);
@@ -206,8 +216,18 @@ const filteredEvents = events
   });
 
 
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-  const paginatedEvents = filteredEvents.slice(
+  const viewFilteredEvents = filteredEvents.filter((item) => {
+    if (viewFilter === "active") {
+      return isActiveOrUpcoming(item.date_start, item.date_end);
+    }
+    if (viewFilter === "ended") {
+      return isEnded(item.date_end);
+    }
+    return true;
+  });
+
+  const totalPages = Math.ceil(viewFilteredEvents.length / itemsPerPage);
+  const paginatedEvents = viewFilteredEvents.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
   );
@@ -247,6 +267,40 @@ const filteredEvents = events
             </button>
           </div>
         </form>
+
+        {/* Toggle filter */}
+        <div className="flex items-center justify-center md:justify-start mb-6">
+          <div className="inline-flex bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => {
+                setViewFilter("active");
+                setPage(1);
+              }}
+              className={`px-4 py-2 text-sm font-medium transition-all ${
+                viewFilter === "active"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              กำลังจัด / เริ่มในอีก
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setViewFilter("ended");
+                setPage(1);
+              }}
+              className={`px-4 py-2 text-sm font-medium border-l border-gray-200 transition-all ${
+                viewFilter === "ended"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              สิ้นสุดแล้ว
+            </button>
+          </div>
+        </div>
 
         {/* Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
