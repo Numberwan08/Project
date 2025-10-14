@@ -265,3 +265,61 @@ exports.set_reply_status = async (req, res) => {
     return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะการตอบกลับได้', error: err.message });
   }
 };
+
+// Get all event comments by a user
+exports.get_my_event_comments = async (req, res) => {
+  try {
+    await ensureTables();
+    const { id_user } = req.params;
+    if (!id_user) return res.status(400).json({ msg: 'ต้องระบุ id_user' });
+    const [rows] = await db
+      .promise()
+      .query(
+        `SELECT ec.id_comment, ec.id_event, ec.date_comment, ec.comment, ec.images, ec.star,
+                ue.name_event AS event_name,
+                u.first_name AS user_name, u.image_profile AS user_image
+         FROM event_comment ec
+         JOIN user u ON u.id_user = ec.id_user
+         JOIN user_event ue ON ue.id_event = ec.id_event
+         WHERE ec.id_user = ? AND (ec.status IS NULL OR ec.status <> '0')
+         ORDER BY ec.date_comment DESC`,
+        [id_user]
+      );
+    const data = rows.map((r) => ({
+      ...r,
+      images: buildFileUrl(req, r.images),
+      user_image: buildFileUrl(req, r.user_image),
+    }));
+    return res.status(200).json({ msg: 'ดึงความคิดเห็นกิจกรรมของผู้ใช้สำเร็จ', data });
+  } catch (err) {
+    return res.status(500).json({ msg: 'ไม่สามารถดึงความคิดเห็นได้', error: err.message });
+  }
+};
+
+// Get all event replies by a user
+exports.get_my_event_replies = async (req, res) => {
+  try {
+    await ensureTables();
+    const { id_user } = req.params;
+    if (!id_user) return res.status(400).json({ msg: 'ต้องระบุ id_user' });
+    const [rows] = await db
+      .promise()
+      .query(
+        `SELECT r.id_reply, r.id_comment, r.reply, r.reply_date, r.user_image,
+                ec.id_event, ue.name_event AS event_name
+         FROM event_comment_reply r
+         JOIN event_comment ec ON ec.id_comment = r.id_comment
+         JOIN user_event ue ON ue.id_event = ec.id_event
+         WHERE r.id_user = ? AND (r.status IS NULL OR r.status <> '0')
+         ORDER BY r.reply_date DESC`,
+        [id_user]
+      );
+    const data = rows.map((r) => ({
+      ...r,
+      user_image: buildFileUrl(req, r.user_image),
+    }));
+    return res.status(200).json({ msg: 'ดึงการตอบกลับกิจกรรมของผู้ใช้สำเร็จ', data });
+  } catch (err) {
+    return res.status(500).json({ msg: 'ไม่สามารถดึงการตอบกลับได้', error: err.message });
+  }
+};

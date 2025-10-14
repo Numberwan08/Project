@@ -556,13 +556,6 @@ function ManagePlaces() {
                     <MapPin className="h-6 w-6" />
                     เพิ่มสถานที่ท่องเที่ยวใหม่
                   </h2>
-                  <button
-                    onClick={resetForm}
-                    className="btn btn-ghost text-white hover:bg-white hover:bg-opacity-20"
-                    type="button"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-8">
@@ -831,10 +824,17 @@ function ManagePlaces() {
                       )}
 
                       {/* Submit Button */}
-                      <div className="pt-4">
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          onClick={resetForm}
+                          className="px-4 py-2 cursor-pointer rounded-lg border text-sm "
+                          type="button"
+                        >
+                          ยกเลิก
+                        </button>
                         <button
                           type="submit"
-                          className="w-full bg-gradient-to-r from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                          className="w-40 bg-gradient-to-r cursor-pointer from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
                         >
                           เพิ่มสถานที่
                         </button>
@@ -842,7 +842,7 @@ function ManagePlaces() {
                     </div>
                   </div>
                 </form>
-              </div> 
+              </div>
             </div>
           </div>
         </dialog>
@@ -868,13 +868,6 @@ function ManagePlaces() {
                   <Edit className="h-6 w-6" />
                   แก้ไขสถานที่ท่องเที่ยว
                 </h2>
-                <button
-                  onClick={resetEditForm}
-                  className="btn btn-ghost text-white hover:bg-white hover:bg-opacity-20"
-                  type="button"
-                >
-                  <X className="h-5 w-5" />
-                </button>
               </div>
 
               {/* Form Body */}
@@ -1143,10 +1136,17 @@ function ManagePlaces() {
                     )}
 
                     {/* Submit Button */}
-                    <div className="pt-4">
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        onClick={resetEditForm}
+                        className="px-4 py-2 cursor-pointer rounded-lg border text-sm "
+                        type="button"
+                      >
+                        ยกเลิก
+                      </button>
                       <button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        className="w-50 bg-gradient-to-r cursor-pointer from-purple-500 to-purple-400 text-white py-4 px-8 rounded-xl text-xl font-bold hover:from-purple-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
                       >
                         บันทึกการแก้ไข
                       </button>
@@ -1219,7 +1219,7 @@ function ManagePlaces() {
                       ชื่อสถานที่
                     </th>
                     <th className="w-[20%] px-4 py-3 text-left font-medium text-sm">
-                      รายละเอียด
+                      คอมเมนต์/คะแนน
                     </th>
                     <th className="w-[12%] px-4 py-3 text-left font-medium text-sm">
                       วันที่โพสต์
@@ -1279,8 +1279,24 @@ function ManagePlaces() {
                             {item.name_location}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">
-                          {item.detail_location}
+                        <td className="px-4 py-3 text-gray-700 text-xs">
+                          <div className="space-y-1">
+                            <div>
+                              คอมเมนต์:
+                              <span className="ml-1 font-semibold">{item.comments || 0}</span>
+                              <span className="ml-1 text-gray-500">รายการ</span>
+                            </div>
+                            <div>
+                              คะแนนเฉลี่ย:
+                              <span className="ml-1 font-semibold">{Number(item.star || 0).toFixed(1)}</span>
+                              <span className="ml-1 text-gray-500">/ 5</span>
+                            </div>
+                            <div>
+                              สินค้า:
+                              <span className="ml-1 font-semibold">{item.products || 0}</span>
+                              <span className="ml-1 text-gray-500">รายการ</span>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           {item.date

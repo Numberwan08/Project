@@ -179,6 +179,42 @@ exports.get_comment = async (req ,res ) => {
     }
 }
 
+// Get all comments by a user (places)
+exports.get_my_comments = async (req, res) => {
+    try {
+        const { id_user } = req.params;
+        if (!id_user) {
+            return res.status(400).json({ msg: "ต้องระบุ id_user", error: "id_user required" });
+        }
+        const [rows] = await db.promise().query(`
+            SELECT 
+                cp.id_comment,
+                cp.id_post,
+                cp.date_comment,
+                cp.comment,
+                cp.images,
+                up.name_location AS post_name,
+                u.first_name AS user_name,
+                u.image_profile AS user_image
+            FROM comment_post cp
+            JOIN user_post up ON up.id_post = cp.id_post
+            JOIN user u ON u.id_user = cp.id_user
+            WHERE cp.id_user = ?
+              AND (cp.status IS NULL OR cp.status <> '0')
+            ORDER BY cp.date_comment DESC
+        `, [id_user]);
+        const data = rows.map(r => ({
+            ...r,
+            images: r.images ? `${req.protocol}://${req.headers.host}/${r.images}` : null,
+            user_image: r.user_image ? `${req.protocol}://${req.headers.host}/${r.user_image}` : null,
+        }));
+        return res.status(200).json({ msg: "ดึงความคิดเห็นของผู้ใช้สำเร็จ", data });
+    } catch (err) {
+        console.log("error get_my_comments", err);
+        return res.status(500).json({ msg: "ไม่สามารถดึงความคิดเห็นได้", error: err.message });
+    }
+}
+
 
 exports.post_att = async (req ,res ) => {
     try{

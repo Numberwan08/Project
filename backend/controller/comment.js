@@ -354,3 +354,35 @@ exports.set_reply_status = async (req, res) => {
     return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะการตอบกลับได้', error: err.message });
   }
 };
+
+// Get all replies by a user for places (posts)
+exports.get_my_replies = async (req, res) => {
+  try {
+    if (exports.ensureReplyTable) {
+      await exports.ensureReplyTable();
+    }
+    const { id_user } = req.params;
+    if (!id_user) return res.status(400).json({ msg: 'ต้องระบุ id_user' });
+    const [rows] = await db
+      .promise()
+      .query(
+        `SELECT r.id_reply, r.id_comment, r.reply, r.reply_date, r.user_image,
+                r.parent_reply_id, cp.id_post, up.name_location AS post_name
+         FROM comment_reply r
+         JOIN comment_post cp ON cp.id_comment = r.id_comment
+         JOIN user_post up ON up.id_post = cp.id_post
+         WHERE r.id_user = ?
+           AND (r.status IS NULL OR r.status <> '0')
+         ORDER BY r.reply_date DESC`,
+        [id_user]
+      );
+    const data = rows.map((r) => ({
+      ...r,
+      user_image: buildFileUrl(req, r.user_image),
+    }));
+    return res.status(200).json({ msg: 'ดึงการตอบกลับของผู้ใช้สำเร็จ', data });
+  } catch (err) {
+    console.log('error get_my_replies', err);
+    return res.status(500).json({ msg: 'ไม่สามารถดึงการตอบกลับได้', error: err.message });
+  }
+};

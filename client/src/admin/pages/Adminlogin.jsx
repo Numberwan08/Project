@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
@@ -7,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 function Adminlogin() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = e => {
@@ -63,14 +65,25 @@ function Adminlogin() {
         </div>
         <div className="mb-6">
           <label className="block mb-1 text-gray-600">Password</label>
-          <input
-            type="password"
-            name="password"
-            className="input input-bordered w-full"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              className="input input-bordered w-full pr-10"
+              value={form.password}
+              onChange={handleChange}
+              required
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute inset-y-0 right-2 my-auto p-1.5 rounded-md hover:bg-gray-100 text-gray-600"
+              aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
         <button
           type="submit"

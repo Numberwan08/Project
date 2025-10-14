@@ -313,7 +313,7 @@ const filteredEvents = events
 
                   {/* Stats & Author */}
                   <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100">
-                    <button
+                    {/* <button
                       onClick={() => handleLikeEvent(item)}
                       className="flex items-center cursor-pointer gap-1.5 group/like"
                     >
@@ -327,7 +327,7 @@ const filteredEvents = events
                       <span className="text-sm font-medium text-gray-700">
                         {item.likes}
                       </span>
-                    </button>
+                    </button> */}
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <MessageSquare className="w-4 h-4 text-purple-600" />
                       <span className="text-sm font-medium text-gray-700">

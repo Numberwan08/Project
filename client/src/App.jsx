@@ -37,6 +37,7 @@ import Add_type_name from "./admin/pages/Add_type_name";
 import ReportComment from "./admin/pages/reportcomment";
 import Report_Me from "./pages/Report_Me";
 import HistoryReport from "./pages/HistoryReport";
+import Comment_Me from "./pages/Comment_Me";
 
 function App() {
   const router = createBrowserRouter([
@@ -163,6 +164,10 @@ function App() {
         {
           path:"/menu/historyreport",
           element:<HistoryReport/>
+        },
+        {
+          path:"/menu/comment",
+          element:<Comment_Me/>
         }
       ]
     },

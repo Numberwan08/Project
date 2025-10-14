@@ -676,14 +676,14 @@ function Detall_Event() {
                               : "ไม่มีคะแนน"}
                           </h4>
                         </div>
-                        <ThumbsUp
+                        {/* <ThumbsUp
                           color={liked ? "#22c55e" : "#ef4444"}
                           onClick={() => handlelike(item)}
                           className={`cursor-pointer ${
                             liked ? "scale-110" : ""
                           }`}
                         />
-                        {item.likes}
+                        {item.likes} */}
                       </div>
                     </div>
                     <div className="flex items-center justify-between">

@@ -30,6 +30,8 @@ router.post("/post/comment/:id_post",uploadToPostImg.single("image"),comment_pos
 router.patch("/post/comment/:id", uploadToPostImg.single("image"), require('../controller/user_post').edit_comment);
 router.get("/post/comment_id/:id_post",get_comment);
 router.get("/post/comment_status/:id_comment", require('../controller/user_post').get_comment_status);
+// My comments (places)
+router.get('/post/comments/me/:id_user', require('../controller/user_post').get_my_comments);
 router.get("/post/count_comment/:id_post",count_comment);
 router.delete("/delete_comment/:id",delete_comment);
 router.get("/type_name",get_type_name);

@@ -37,6 +37,10 @@ const menuItems = [
     path: "/menu/historyreport",
   },
   {
+    label: "ประวัติความคิดเห็น",
+    path: "/menu/comment",
+  },
+  {
     label: "แก้ไขโปรไฟล์",
     path: "/menu/profile",
   },

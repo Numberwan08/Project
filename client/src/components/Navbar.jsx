@@ -77,6 +77,9 @@ const Navbar = () => {
                     <a href="/menu/historyreport">ประวัติการรายงาน</a>
                   </li>
                   <li>
+                    <a href="/menu/comment">ประวัติความคิดเห็น</a>
+                  </li>
+                  <li>
                     <a href="/menu/profile">แก้ไขโปรไฟล์</a>
                   </li>
                   <Link to="/">
