@@ -15,6 +15,8 @@ function EventPages() {
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
   const [viewFilter, setViewFilter] = useState("active");
+  const [filterStart, setFilterStart] = useState(""); // YYYY-MM-DD
+  const [filterEnd, setFilterEnd] = useState("");   // YYYY-MM-DD
 
   useEffect(() => {
     fetchEvents();
@@ -216,15 +218,34 @@ const filteredEvents = events
   });
 
 
-  const viewFilteredEvents = filteredEvents.filter((item) => {
-    if (viewFilter === "active") {
-      return isActiveOrUpcoming(item.date_start, item.date_end);
-    }
-    if (viewFilter === "ended") {
-      return isEnded(item.date_end);
-    }
-    return true;
-  });
+  const viewFilteredEvents = filteredEvents
+    .filter((item) => {
+      if (viewFilter === "active") {
+        return isActiveOrUpcoming(item.date_start, item.date_end);
+      }
+      if (viewFilter === "ended") {
+        return isEnded(item.date_end);
+      }
+      return true;
+    })
+    .filter((item) => {
+      // Date range filter (overlap with [filterStart, filterEnd])
+      if (!filterStart && !filterEnd) return true;
+      const evStart = new Date(item.date_start);
+      const evEnd = new Date(item.date_end);
+
+      if (filterStart && !filterEnd) {
+        const fs = new Date(filterStart);
+        return evEnd >= fs;
+      }
+      if (!filterStart && filterEnd) {
+        const fe = new Date(filterEnd);
+        return evStart <= fe;
+      }
+      const fs2 = new Date(filterStart);
+      const fe2 = new Date(filterEnd);
+      return evStart <= fe2 && evEnd >= fs2;
+    });
 
   const totalPages = Math.ceil(viewFilteredEvents.length / itemsPerPage);
   const paginatedEvents = viewFilteredEvents.slice(
@@ -269,7 +290,7 @@ const filteredEvents = events
         </form>
 
         {/* Toggle filter */}
-        <div className="flex items-center justify-center md:justify-start mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="inline-flex bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
             <button
               type="button"
@@ -299,6 +320,47 @@ const filteredEvents = events
             >
               สิ้นสุดแล้ว
             </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">ตั้งแต่</label>
+              <input
+                type="date"
+                value={filterStart}
+                onChange={(e) => {
+                  setFilterStart(e.target.value);
+                  setPage(1);
+                }}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                max={filterEnd || undefined}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">ถึง</label>
+              <input
+                type="date"
+                value={filterEnd}
+                onChange={(e) => {
+                  setFilterEnd(e.target.value);
+                  setPage(1);
+                }}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                min={filterStart || undefined}
+              />
+            </div>
+            {(filterStart || filterEnd) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterStart("");
+                  setFilterEnd("");
+                  setPage(1);
+                }}
+                className="text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                ล้าง
+              </button>
+            )}
           </div>
         </div>
 

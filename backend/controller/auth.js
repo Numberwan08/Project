@@ -112,6 +112,11 @@ exports.login = async (req,res) =>{
         
         const user = rows[0];
 
+        // ถ้าบัญชีถูกระงับ (status = 0) ให้แจ้งและไม่อนุญาตให้เข้าสู่ระบบ
+        if (String(user.status ?? '1') === '0') {
+            return res.status(403).json({ msg: "บัญชีของคุณถูกระงับ" });
+        }
+
         const isMatch = await bcrypt.compare(password , user.password)
 
         if(!isMatch){
@@ -196,6 +201,15 @@ exports.get_user = async (req, res) =>{
         }
         // console.log(rows);
         const user = rows[0];
+        // Block suspended users
+        if (String(user.status ?? '1') === '0') {
+            return res.status(403).json({ msg: "บัญชีของคุณถูกระงับ" });
+        }
+
+        // ถ้าบัญชีถูกระงับ (status = 0) ให้แจ้งและไม่อนุญาตให้เข้าสู่ระบบ
+        if (typeof user.status !== 'undefined' && String(user.status) === '0') {
+            return res.status(403).json({ msg: "บัญชีของคุณถูกระงับ" });
+        }
         if (user.image_profile) {
             user.image_profile = `${req.protocol}://${req.headers.host}/${user.image_profile}`;
         }
@@ -309,14 +323,48 @@ exports.delete_user = async (req, res) => {
                 error: "ไม่พบผู้ใช้งานนี้"
             });
         }
-        await db.promise().query("DELETE FROM user WHERE id_user = ?", [id]);
+        await db.promise().query("UPDATE user SET status = 0 WHERE id_user = ?", [id]);
         return res.status(200).json({
-            msg: "ลบสมาชิกสำเร็จ"
+            msg: "ระงับสมาชิกสำเร็จ"
         });
     } catch (err) {
         console.log("error delete user", err);
         return res.status(500).json({
-            msg: "ไม่สามารถลบสมาชิกได้",
+            msg: "ไม่สามารถระงับสมาชิกได้",
+            error: err.message
+        });
+    }
+}
+
+// อัปเดตสถานะผู้ใช้ (0 = ระงับ, 1 = ปลดระงับ)
+exports.update_user_status = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let { status } = req.body;
+
+        const [rows] = await db.promise().query("SELECT * FROM user WHERE id_user = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({
+                msg: "ไม่พบผู้ใช้งานนี้",
+                error: "ไม่พบผู้ใช้งานนี้"
+            });
+        }
+
+        if (typeof status === 'undefined' || status === null || status === '') {
+            const current = String(rows[0].status ?? '1');
+            status = current === '0' ? 1 : 0;
+        }
+        status = Number(status) === 0 ? 0 : 1;
+
+        await db.promise().query("UPDATE user SET status = ? WHERE id_user = ?", [status, id]);
+        return res.status(200).json({
+            msg: status === 0 ? "ระงับผู้ใช้เรียบร้อย" : "ปลดระงับผู้ใช้เรียบร้อย",
+            data: { id_user: id, status }
+        });
+    } catch (err) {
+        console.log("error update user status", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถอัปเดตสถานะผู้ใช้ได้",
             error: err.message
         });
     }

@@ -78,7 +78,7 @@ function Adminlogin() {
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
-              className="absolute inset-y-0 right-2 my-auto p-1.5 rounded-md hover:bg-gray-100 text-gray-600"
+              className="absolute z-10 inset-y-0 right-2 my-auto p-1.5 rounded-md "
               aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

@@ -9,6 +9,8 @@ import {
   Filter,
   Package,
   ShoppingBag,
+  Star,
+  StarIcon,
 } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,6 +26,7 @@ function AttractionPage() {
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const itemsPerPage = 8;
+  const [ratingStats, setRatingStats] = useState({}); 
 
   useEffect(() => {
     fetchPosts();
@@ -39,8 +42,38 @@ function AttractionPage() {
       if (userId) {
         checkLikeStatus(postsData);
       }
+      // fetch rating stats per post (avg star and count)
+      fetchRatingStats(postsData);
     } catch (error) {
       setPlaces([]);
+    }
+  };
+
+  const fetchRatingStats = async (postsData = []) => {
+    try {
+      const pairs = await Promise.all(
+        (postsData || []).map(async (p) => {
+          try {
+            const res = await axios.get(
+              `${import.meta.env.VITE_API}post/comment_id/${p.id_post}`
+            );
+            const comments = res?.data?.data || [];
+            const ratings = comments
+              .map((c) => Number(c?.star) || 0)
+              .filter((n) => n > 0);
+            if (ratings.length === 0) return [p.id_post, { avg: 0, count: 0 }];
+            const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+            return [p.id_post, { avg, count: ratings.length }];
+          } catch (_) {
+            return [p.id_post, { avg: 0, count: 0 }];
+          }
+        })
+      );
+      const obj = {};
+      for (const [id, stat] of pairs) obj[id] = stat;
+      setRatingStats(obj);
+    } catch (_) {
+      setRatingStats({});
     }
   };
 
@@ -270,6 +303,29 @@ function AttractionPage() {
                   {item.detail_location}
                 </p>
 
+                {/* Rating */}
+                {/* <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < Math.floor((item.star ?? ratingStats[item.id_post]?.avg) || 0)
+                            ? "text-yellow-400 fill-current"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {((item.star ?? ratingStats[item.id_post]?.avg) || 0).toFixed(1)}
+                  </span>
+                  <span className="text-sm text-gray-400">•</span>
+                  <span className="text-sm text-gray-600">
+                    {(ratingStats[item.id_post]?.count ?? item.comments ?? 0)} รีวิว
+                  </span>
+                </div> */}
+
                 {/* Stats */}
                 <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
                   <button
@@ -298,6 +354,13 @@ function AttractionPage() {
                     <span className="text-sm font-medium text-gray-700">
                       {item.products}
                     </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                      <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {item.star} 
+                        {/* {(ratingStats[item.id_post]?.count ?? item.comments ?? 0)} รีวิว */}
+                      </span>
                   </div>
                 </div>
 

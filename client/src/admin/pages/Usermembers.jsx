@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { Trash, Users, Search, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Ban, RotateCcw, Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -47,14 +47,26 @@ function Usermember() {
     setPage(1);
   }, [searchTerm]);
 
-  const handleDeleteUser = async (id_user) => {
-    if (!window.confirm("คุณต้องการลบสมาชิกนี้ใช่หรือไม่?")) return;
+  const handleToggleStatus = async (user) => {
+    const targetStatus = Number(user.status) === 0 ? 1 : 0;
+    const confirmMsg = targetStatus === 0 ? "ยืนยันระงับผู้ใช้นี้?" : "ยืนยันปลดระงับผู้ใช้นี้?";
+    if (!window.confirm(confirmMsg)) return;
     try {
-      await axios.delete(import.meta.env.VITE_API + `deleteuser/${id_user}`);
-      setPost((prev) => prev.filter((user) => user.id_user !== id_user));
-      toast.success("ลบสมาชิกสำเร็จ", { position: "top-center", autoClose: 500 });
+      const res = await axios.patch(
+        import.meta.env.VITE_API + `user/status/${user.id_user}`,
+        { status: targetStatus }
+      );
+      setPost((prev) =>
+        prev.map((u) =>
+          u.id_user === user.id_user ? { ...u, status: targetStatus } : u
+        )
+      );
+      toast.success(res?.data?.msg || "อัปเดตสถานะสำเร็จ", {
+        position: "top-center",
+        autoClose: 800,
+      });
     } catch (err) {
-      toast.error("เกิดข้อผิดพลาดในการลบสมาชิก", { position: "top-center", autoClose: 500 });
+      toast.error("อัปเดตสถานะไม่สำเร็จ", { position: "top-center", autoClose: 1000 });
     }
   };
 
@@ -102,9 +114,8 @@ function Usermember() {
                   <th className="px-6 py-4 text-left text-sm font-semibold">
                     ชื่อ-นามสกุล
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">
-                    อีเมล
-                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">อีเมล</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">สถานะ</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold">
                     จัดการ
                   </th>
@@ -130,23 +141,39 @@ function Usermember() {
                           {item.first_name} {item.last_name}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {item.Email}
+                      <td className="px-6 py-4 text-sm text-gray-600">{item.Email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                          Number(item.status) === 0
+                            ? "bg-red-100 text-red-700"
+                            : "bg-green-100 text-green-700"
+                        }`}>
+                          {Number(item.status) === 0 ? "ระงับ" : "ใช้งาน"}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
-                          title="ลบสมาชิก"
-                          onClick={() => handleDeleteUser(item.id_user)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs ${
+                            Number(item.status) === 0
+                              ? "bg-green-500 hover:bg-green-600 text-white"
+                              : "bg-red-500 hover:bg-red-600 text-white"
+                          }`}
+                          title={Number(item.status) === 0 ? "ปลดระงับ" : "ระงับ"}
+                          onClick={() => handleToggleStatus(item)}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {Number(item.status) === 0 ? (
+                            <RotateCcw className="w-4 h-4" />
+                          ) : (
+                            <Ban className="w-4 h-4" />
+                          )}
+                          {Number(item.status) === 0 ? "ปลดระงับ" : "ระงับ"}
                         </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center">
+                    <td colSpan="6" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <Users className="w-12 h-12 text-gray-300" />
                         <p className="text-gray-500">ไม่พบข้อมูลสมาชิก</p>
