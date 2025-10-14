@@ -1714,14 +1714,12 @@ function Detail_Att() {
                           to={`/detall_att/${place.id_post}`}
                           className="group flex items-start gap-4 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
                         >
-                          {/* รูปด้านซ้าย */}
                           <div className="relative flex-shrink-0 w-36 h-24 bg-gray-100 overflow-hidden rounded-lg">
                             <img
                               src={place.images}
                               alt={place.name_location}
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
-                            {/* Badge ระยะทาง */}
                             <div className="absolute bottom-1 right-1">
                               <span className="bg-white/90 text-gray-700 text-[11px] px-2 py-0.5 rounded-full shadow">
                                 {place.distance.toFixed(1)} กม.
@@ -1729,7 +1727,6 @@ function Detail_Att() {
                             </div>
                           </div>
 
-                          {/* ข้อมูลด้านขวา */}
                           <div className="flex-1">
                             <p className="text-sm font-semibold text-gray-900">
                               {place.name_location}
@@ -1752,12 +1749,12 @@ function Detail_Att() {
       ))}
       {selectedImage && (
         <dialog open className="modal" onClose={handleCloseSelectedImage}>
-          {/* กล่องรูปภาพหลัก */}
+      
           <div
             className="modal-box max-w-2xl p-3"
             onClick={(e) => e.stopPropagation()} // ป้องกันคลิกในรูปแล้วปิด
           >
-            {/* ปุ่มปิด */}
+
             <form method="dialog">
               <button
                 className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
@@ -1769,15 +1766,13 @@ function Detail_Att() {
               </button>
             </form>
 
-            {/* รูปภาพ */}
             <img
               src={selectedImage}
               alt="รูปขนาดใหญ่"
               className="w-full max-h-[70vh] object-contain rounded-lg"
             />
           </div>
-
-          {/* พื้นหลังเบลอ + โปร่งใส */}
+ 
           <form
             method="dialog"
             className="modal-backdrop bg-white/60 backdrop-blur-sm"
