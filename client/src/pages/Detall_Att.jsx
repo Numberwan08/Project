@@ -1187,13 +1187,13 @@ function Detail_Att() {
                         ปิด
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 max-h-96 overflow-y-auto">
                       {allProducts.length > 0 ? (
                         allProducts.map((product, idx) => (
                           <div
                             key={idx}
                             id={`product-${product.id_product}`}
-                            className={`m-5 bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow ${
+                            className={`m-5 bg-gray-50 rounded-lg p-1 hover:shadow-md transition-shadow ${
                               String(highlightProductId) ===
                               String(product.id_product)
                                 ? "ring-4 ring-yellow-400 animate-pulse"
@@ -1557,9 +1557,7 @@ function Detail_Att() {
                                 <input
                                   type="text"
                                   className="input input-sm input-bordered flex-1"
-                                  placeholder={`ตอบกลับ ${
-                                    item.first_name || ""
-                                  }...`}
+                                  placeholder="ตอบกลับ.."
                                   value={replyInputs[item.id_comment] || ""}
                                   onChange={(e) =>
                                     setReplyInputs((prev) => ({
@@ -1568,7 +1566,7 @@ function Detail_Att() {
                                     }))
                                   }
                                 />
-                                <input
+                                {/* <input
                                   type="file"
                                   accept="image/*"
                                   className="file-input file-input-bordered file-input-sm"
@@ -1579,7 +1577,7 @@ function Detail_Att() {
                                         e.target.files?.[0] || null,
                                     }))
                                   }
-                                />
+                                /> */}
                                 <button
                                   type="submit"
                                   className="btn btn-sm btn-primary cursor-pointer"

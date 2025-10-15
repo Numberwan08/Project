@@ -683,7 +683,7 @@ function Detall_Event() {
                       <h1 className="text-3xl lg:text-4xl font-bold text-gray-800">
                         {item.name_event}
                       </h1>
-                      <div className="flex items-center space-x-3">
+                      {/* <div className="flex items-center space-x-3">
                         <div className="flex items-center bg-yellow-100 px-3 py-1 rounded-full">
                           <h4 className="text-sm font-semibold text-yellow-800 whitespace-nowrap">
                             คะแนน{" "}
@@ -692,15 +692,15 @@ function Detall_Event() {
                               : "ไม่มีคะแนน"}
                           </h4>
                         </div>
-                        {/* <ThumbsUp
+                        <ThumbsUp
                           color={liked ? "#22c55e" : "#ef4444"}
                           onClick={() => handlelike(item)}
                           className={`cursor-pointer ${
                             liked ? "scale-110" : ""
                           }`}
                         />
-                        {item.likes} */}
-                      </div>
+                        {item.likes}
+                      </div> */}
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
@@ -1279,7 +1279,7 @@ function Detall_Event() {
                                       }))
                                     }
                                   />
-                                  <input
+                                  {/* <input
                                     type="file"
                                     className="file-input file-input-bordered file-input-sm"
                                     accept="image/*"
@@ -1290,7 +1290,7 @@ function Detall_Event() {
                                           e.target.files?.[0] || null,
                                       }))
                                     }
-                                  />
+                                  /> */}
                                   <button
                                     className="btn btn-sm btn-primary cursor-pointer"
                                     onClick={() => submitReply(c.id_comment)}
@@ -1655,7 +1655,7 @@ function Detall_Event() {
               </div>
 
               {/* Rating Section */}
-              <div className="form-control">
+              {/* <div className="form-control">
                 <label className="label">
                   <span className="label-text font-medium">ให้คะแนน</span>
                 </label>
@@ -1676,7 +1676,7 @@ function Detall_Event() {
                     คะแนน: {commentStar || 0}/5
                   </span>
                 </label>
-              </div>
+              </div> */}
 
               {/* Image Upload (Multiple) */}
               <div className="form-control">
