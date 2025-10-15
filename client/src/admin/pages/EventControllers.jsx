@@ -733,7 +733,7 @@ function EventControllers() {
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
                             >
                               <FileText className="h-3.5 w-3.5" />
-                              ดูโพสต์
+                              โพสต์
                             </a>
                             <button
                               onClick={() => openEdit(item)}

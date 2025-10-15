@@ -260,6 +260,34 @@ function Detall_Event() {
     // eslint-disable-next-line
   }, [id]);
 
+  // Prefetch replies for visible comments so counts show immediately
+  useEffect(() => {
+    try {
+      const start = (commentPage - 1) * COMMENTS_PER_PAGE;
+      const end = commentPage * COMMENTS_PER_PAGE;
+      const visible = (comments || []).slice(start, end);
+      visible.forEach((c) => {
+        if (!repliesMap[c.id_comment]) {
+          fetchReplies(c.id_comment);
+        }
+      });
+    } catch (_) {}
+    // We intentionally omit repliesMap from deps to avoid extra loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comments, commentPage, COMMENTS_PER_PAGE]);
+
+  // If a comment gets expanded via state (e.g., deep-link), ensure its replies are loaded
+  useEffect(() => {
+    try {
+      Object.entries(expandedReplies || {}).forEach(([cid, isOpen]) => {
+        if (isOpen && !repliesMap[cid]) {
+          fetchReplies(cid);
+        }
+      });
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedReplies]);
+
   // Relative time formatter
   const timeAgo = (date) => {
     if (!date) return "";
@@ -939,7 +967,7 @@ function Detall_Event() {
                                     )}
 
                                   {/* คะแนน */}
-                                  <div className="flex items-center space-x-1 ml-2">
+                                  {/* <div className="flex items-center space-x-1 ml-2">
                                     <svg
                                       xmlns="http://www.w3.org/2000/svg"
                                       fill="currentColor"
@@ -951,7 +979,7 @@ function Detall_Event() {
                                     <span className="text-sm font-medium text-gray-700">
                                       {c.star}
                                     </span>
-                                  </div>
+                                  </div> */}
                                 </div>
 
                                 {/* เนื้อความคอมเมนต์ */}
@@ -1090,7 +1118,7 @@ function Detall_Event() {
                                   : "ดูการตอบกลับ"}
                               </button>
                               {(repliesMap[c.id_comment] || []).length > 0 && (
-                                <span className="ml-2 text-xs text-purple-500">
+                                <span className="ml-2 text-sm text-purple-500 ">
                                   ({(repliesMap[c.id_comment] || []).length})
                                 </span>
                               )}

@@ -142,7 +142,7 @@ function ProductControllers() {
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
-                            เปิดโพสต์
+                            โพสต์
                           </a>
                           <button
                             onClick={() => handleDelete(item.id_product)}
