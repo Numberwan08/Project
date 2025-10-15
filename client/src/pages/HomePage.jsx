@@ -14,7 +14,12 @@ function HomePage() {
   const [likedEvents, setLikedEvents] = useState(new Set());
   const [userId, setUserId] = useState(localStorage.getItem("userId"));
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportSummary, setReportSummary] = useState({ pending_count: 0, resolved_count: 0, pending_examples: [], resolved_examples: [] });
+  const [reportSummary, setReportSummary] = useState({
+    pending_count: 0,
+    resolved_count: 0,
+    pending_examples: [],
+    resolved_examples: [],
+  });
 
   useEffect(() => {
     fetchData();
@@ -24,8 +29,12 @@ function HomePage() {
     setLoading(true);
     try {
       const [placesRes, eventsRes, productsRes] = await Promise.all([
-        axios.get(import.meta.env.VITE_API + "post").catch(() => ({ data: { data: [] } })),
-        axios.get(import.meta.env.VITE_API + "event").catch(() => ({ data: { data: [] } })),
+        axios
+          .get(import.meta.env.VITE_API + "post")
+          .catch(() => ({ data: { data: [] } })),
+        axios
+          .get(import.meta.env.VITE_API + "event")
+          .catch(() => ({ data: { data: [] } })),
         // axios.get(import.meta.env.VITE_API + "product").catch(() => ({ data: { data: [] } })),
       ]);
 
@@ -39,9 +48,9 @@ function HomePage() {
         try {
           const s = ev?.date_start ? new Date(ev.date_start) : null;
           const e = ev?.date_end ? new Date(ev.date_end) : null;
-          if (e && !isNaN(e)) return now <= e; 
-          if (s && !isNaN(s)) return now <= s; 
-          return false; 
+          if (e && !isNaN(e)) return now <= e;
+          if (s && !isNaN(s)) return now <= s;
+          return false;
         } catch {
           return false;
         }
@@ -61,29 +70,39 @@ function HomePage() {
   // Check for login report notifications (set by Login page)
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('loginReports');
+      const raw = localStorage.getItem("loginReports");
       if (raw) {
         const rep = JSON.parse(raw);
         const pc = Number(rep?.pending_count || 0);
         const rc = Number(rep?.resolved_count || 0);
-        const pList = Array.isArray(rep?.pending_examples) ? rep.pending_examples : [];
-        const rList = Array.isArray(rep?.resolved_examples) ? rep.resolved_examples : [];
-        const latestP = pList.reduce((m, x) => Math.max(m, Number(x?.id_report_comment || 0)), 0);
-        const latestR = rList.reduce((m, x) => Math.max(m, Number(x?.id_report_comment || 0)), 0);
+        const pList = Array.isArray(rep?.pending_examples)
+          ? rep.pending_examples
+          : [];
+        const rList = Array.isArray(rep?.resolved_examples)
+          ? rep.resolved_examples
+          : [];
+        const latestP = pList.reduce(
+          (m, x) => Math.max(m, Number(x?.id_report_comment || 0)),
+          0
+        );
+        const latestR = rList.reduce(
+          (m, x) => Math.max(m, Number(x?.id_report_comment || 0)),
+          0
+        );
         const sig = `${pc}|${rc}|${latestP}|${latestR}`;
-        const prevSig = localStorage.getItem('lastReportSeenSig') || '';
+        const prevSig = localStorage.getItem("lastReportSeenSig") || "";
 
         setReportSummary({
           pending_count: pc,
           resolved_count: rc,
           pending_examples: pList,
-          resolved_examples: rList
+          resolved_examples: rList,
         });
         if ((pc > 0 || rc > 0) && sig !== prevSig) {
           setShowReportModal(true);
-          localStorage.setItem('lastReportSeenSig', sig);
+          localStorage.setItem("lastReportSeenSig", sig);
         }
-        localStorage.removeItem('loginReports');
+        localStorage.removeItem("loginReports");
       }
     } catch (_) {}
   }, []);
@@ -95,7 +114,9 @@ function HomePage() {
     for (const post of placesData) {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API}post/likes/check/${post.id_post}/${userId}`
+          `${import.meta.env.VITE_API}post/likes/check/${
+            post.id_post
+          }/${userId}`
         );
         if (res.data.liked) {
           likedPostsSet.add(post.id_post);
@@ -104,11 +125,13 @@ function HomePage() {
         console.log("Error checking post like status:", error);
       }
     }
-    
+
     for (const event of eventsData) {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API}event/likes/check/${event.id_event}/${userId}`
+          `${import.meta.env.VITE_API}event/likes/check/${
+            event.id_event
+          }/${userId}`
         );
         if (res.data.liked) {
           likedEventsSet.add(event.id_event);
@@ -133,32 +156,36 @@ function HomePage() {
 
     try {
       const isLiked = likedPosts.has(item.id_post);
-      
+
       if (isLiked) {
         await axios.delete(
           `${import.meta.env.VITE_API}post/likes/${item.id_post}/${userId}`
         );
-        setLikedPosts(prev => {
+        setLikedPosts((prev) => {
           const newSet = new Set(prev);
           newSet.delete(item.id_post);
           return newSet;
         });
-        setPlaces(prev => prev.map(place => 
-          place.id_post === item.id_post 
-            ? { ...place, likes: place.likes - 1 }
-            : place
-        ));
+        setPlaces((prev) =>
+          prev.map((place) =>
+            place.id_post === item.id_post
+              ? { ...place, likes: place.likes - 1 }
+              : place
+          )
+        );
       } else {
         await axios.post(
           `${import.meta.env.VITE_API}post/likes/${item.id_post}`,
           { userId }
         );
-        setLikedPosts(prev => new Set([...prev, item.id_post]));
-        setPlaces(prev => prev.map(place => 
-          place.id_post === item.id_post 
-            ? { ...place, likes: place.likes + 1 }
-            : place
-        ));
+        setLikedPosts((prev) => new Set([...prev, item.id_post]));
+        setPlaces((prev) =>
+          prev.map((place) =>
+            place.id_post === item.id_post
+              ? { ...place, likes: place.likes + 1 }
+              : place
+          )
+        );
       }
     } catch (error) {
       console.log("Error toggling post like:", error);
@@ -180,32 +207,36 @@ function HomePage() {
 
     try {
       const isLiked = likedEvents.has(item.id_event);
-      
+
       if (isLiked) {
         await axios.delete(
           `${import.meta.env.VITE_API}event/likes/${item.id_event}/${userId}`
         );
-        setLikedEvents(prev => {
+        setLikedEvents((prev) => {
           const newSet = new Set(prev);
           newSet.delete(item.id_event);
           return newSet;
         });
-        setEvents(prev => prev.map(event => 
-          event.id_event === item.id_event 
-            ? { ...event, likes: event.likes - 1 }
-            : event
-        ));
+        setEvents((prev) =>
+          prev.map((event) =>
+            event.id_event === item.id_event
+              ? { ...event, likes: event.likes - 1 }
+              : event
+          )
+        );
       } else {
         await axios.post(
           `${import.meta.env.VITE_API}event/likes/${item.id_event}`,
           { userId }
         );
-        setLikedEvents(prev => new Set([...prev, item.id_event]));
-        setEvents(prev => prev.map(event => 
-          event.id_event === item.id_event 
-            ? { ...event, likes: event.likes + 1 }
-            : event
-        ));
+        setLikedEvents((prev) => new Set([...prev, item.id_event]));
+        setEvents((prev) =>
+          prev.map((event) =>
+            event.id_event === item.id_event
+              ? { ...event, likes: event.likes + 1 }
+              : event
+          )
+        );
       }
     } catch (error) {
       console.log("Error toggling event like:", error);
@@ -279,10 +310,26 @@ function HomePage() {
                 </div>
 
                 <div className="p-6">
-                  <div className="flex justify-between items-center w-full">
+                  <div className="flex justify-between items-start gap-4">
+                    <h3
+                      className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors flex-1 truncate max-w-[300px]"
+                      title={item.name_location}
+                    >
+                      {item.name_location}
+                    </h3>
+                    <div className="flex-shrink-0">
+                      <h4 className="text-sm font-medium text-gray-600 whitespace-nowrap">
+                        คะแนน {item.star > 0 ? item.star : "0"}
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center w-full mb-4">
                     <div className="flex items-center gap-1">
-                      <ThumbsUp 
-                        color={likedPosts.has(item.id_post) ? "#22c55e" : "#9900FF"} 
+                      <ThumbsUp
+                        color={
+                          likedPosts.has(item.id_post) ? "#22c55e" : "#9900FF"
+                        }
                         className="cursor-pointer transition-transform hover:scale-110"
                         onClick={() => handleLikePost(item)}
                       />
@@ -294,16 +341,6 @@ function HomePage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start gap-4">
-                    <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-purple-600 transition-colors flex-1 truncate max-w-[300px]" title={item.name_location}>
-                      {item.name_location}
-                    </h3>
-                    <div className="flex-shrink-0">
-                      <h4 className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                        คะแนน {item.star > 0 ? item.star : "0"}
-                      </h4>
-                    </div>
-                  </div>
                   <Link to={`/detall_att/${item.id_post}`}>
                     <button className="w-full bg-gradient-to-r cursor-pointer from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                       ดูรายละเอียด
@@ -352,7 +389,10 @@ function HomePage() {
                       </div>
                       <div>โพสต์โดย: {item.first_name}</div> */}
                     </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors flex-1 truncate max-w-[300px]" title={item.name_event}>
+                    <h3
+                      className="text-lg font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors flex-1 truncate max-w-[300px]"
+                      title={item.name_event}
+                    >
                       {item.name_event}
                     </h3>
                     <Link to={`/detall_event/${item.id_event}`}>
@@ -376,7 +416,7 @@ function HomePage() {
           </div>
 
           {/* ใช้ flex แทน grid */}
-           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {recommendLeft.map((item, idx) => (
               <div
                 key={item.id_post || item.id_event || idx}

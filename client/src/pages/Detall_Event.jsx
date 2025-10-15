@@ -140,25 +140,58 @@ function Detall_Event() {
         })
       );
 
-      const now = new Date();
-      const isOngoingOrUpcoming = (s, e) => {
-        try {
-          const start = s ? new Date(s) : null;
-          const end = e ? new Date(e) : null;
-          if (end && !isNaN(end.getTime())) {
-            return end >= now; // not ended yet
+      // Start with enriched list
+      let list = detailed || [];
+
+      // Include previous event (from) if provided in query, so user can navigate back
+      try {
+        const params = new URLSearchParams(location.search || "");
+        const fromId = params.get("from");
+        if (fromId && String(fromId) !== String(id)) {
+          const exists = list.some((ev) => String(ev.id_event) === String(fromId));
+          if (!exists) {
+            const r2 = await axios.get(
+              import.meta.env.VITE_API + `get_event/${fromId}`
+            );
+            const info = (r2?.data?.data && r2.data.data[0]) || null;
+            if (info) {
+              list = [
+                {
+                  id_event: info.id_event,
+                  name_event: info.name_event,
+                  detail_event: info.detail_event,
+                  latitude: info.latitude,
+                  longitude: info.longitude,
+                  images: info.images,
+                  date_start: info.date_start,
+                  date_end: info.date_end,
+                  distance: undefined,
+                },
+                ...list,
+              ];
+            }
           }
-          // if end unknown, keep it
+        }
+      } catch (_) {}
+
+      // Filter out ended events; keep only ongoing or upcoming.
+      // Always keep the previous (from) event if present for back‑navigation context.
+      const now = new Date();
+      const params2 = new URLSearchParams(location.search || "");
+      const fromId2 = params2.get("from");
+      list = (list || []).filter((ev) => {
+        try {
+          if (fromId2 && String(ev.id_event) === String(fromId2)) return true;
+          const end = ev.date_end ? new Date(ev.date_end) : null;
+          if (end && !isNaN(end.getTime())) return end >= now;
+          // If no end, assume not ended yet
           return true;
         } catch {
           return true;
         }
-      };
+      });
 
-      const filtered = (detailed || []).filter((ev) =>
-        isOngoingOrUpcoming(ev.date_start, ev.date_end)
-      );
-      setNerabyEvent(filtered);
+      setNerabyEvent(list);
     } catch (err) {
       console.log("error get nearby event", err);
       setNerabyEvent([]);
@@ -656,10 +689,13 @@ function Detall_Event() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       {data.map((item, index) => {
-        const daysUntil = getDaysUntilEvent(item.date_start);
-        const isUpcoming = daysUntil > 0;
-        const isToday = daysUntil === 0;
-        const isPast = daysUntil < 0;
+        const nowTs = new Date();
+        const s = item?.date_start ? new Date(item.date_start) : null;
+        const e = item?.date_end ? new Date(item.date_end) : null;
+        const isOngoing = !!(s && !isNaN(s) && nowTs >= s && (!e || nowTs <= e));
+        const isUpcoming = !!(s && !isNaN(s) && nowTs < s);
+        const isToday = !!(s && !isNaN(s) && s.toDateString() === nowTs.toDateString());
+        const daysUntil = isUpcoming ? Math.ceil((s - nowTs) / (1000 * 60 * 60 * 24)) : 0;
 
         return (
           <div key={index} className="max-w-7xl mx-auto px-4 py-8">
@@ -682,6 +718,11 @@ function Detall_Event() {
                       </span>
                     </div>
                     <div className="absolute top-4 right-4">
+                      {isOngoing && (
+                        <span className="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full shadow-lg">
+                          กำลังจัด
+                        </span>
+                      )}
                       {isUpcoming && (
                         <span className="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full shadow-lg">
                           เหลืออีก {daysUntil} วัน
@@ -692,11 +733,7 @@ function Detall_Event() {
                           วันนี้!
                         </span>
                       )}
-                      {isPast && (
-                        <span className="px-3 py-1 bg-gray-500 text-white text-sm font-semibold rounded-full shadow-lg">
-                          สิ้นสุดแล้ว
-                        </span>
-                      )}
+                      {/* ไม่แสดงสถานะสิ้นสุดแล้ว ตามคำขอ */}
                     </div>
                     <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
                       คลิกเพื่อดูขนาดใหญ่
@@ -733,9 +770,9 @@ function Detall_Event() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="text-sm text-gray-500">
-                          {isUpcoming && `เหลืออีก ${daysUntil} วัน`}
-                          {isToday && "วันนี้!"}
-                          {isPast && "สิ้นสุดแล้ว"}
+                          {isOngoing && "กำลังจัด"}
+                          {!isOngoing && isUpcoming && `เหลืออีก ${daysUntil} วัน`}
+                          {!isOngoing && isToday && "วันนี้!"}
                         </div>
                       </div>
                     </div>
@@ -1491,7 +1528,6 @@ function Detall_Event() {
                   <h2 className="text-xl font-bold text-gray-800 mb-4">
                     กิจกรรมใกล้เคียง
                   </h2>
-
                   {nearbyEvent.length > 0 ? (
                     <div className="flex flex-col gap-5">
                       {nearbyEvent.map((place) => {
@@ -1508,7 +1544,7 @@ function Detall_Event() {
                         return (
                           <Link
                             key={place.id_event}
-                            to={`/detall_event/${place.id_event}`}
+                            to={`/detall_event/${place.id_event}?from=${id}`}
                             className="group flex items-start gap-4 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white"
                           >
                             {/* รูปด้านซ้าย */}
@@ -1519,13 +1555,15 @@ function Detall_Event() {
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                               />
                               {/* Badge ระยะทาง */}
-                              <div className="absolute bottom-1 right-1">
-                                <span className="bg-white/90 text-gray-700 text-[11px] px-2 py-0.5 rounded-full shadow">
-                                  {Number(place.distance || 0).toFixed(1)} กม.
-                                </span>
-                              </div>
+                              {place.distance !== undefined && place.distance !== null && (
+                                <div className="absolute bottom-1 right-1">
+                                  <span className="bg-white/90 text-gray-700 text-[11px] px-2 py-0.5 rounded-full shadow">
+                                    {Number(place.distance).toFixed(1)} กม.
+                                  </span>
+                                </div>
+                              )}
+                              
                             </div>
-
                             {/* ข้อมูลด้านขวา */}
                             <div className="flex-1">
                               <p className="text-sm font-semibold text-gray-900">

@@ -6,6 +6,7 @@ const NotificationsContext = createContext();
 export const NotificationsProvider = ({ children }) => {
   const [reports, setReports] = useState({ pending_count: 0, resolved_count: 0, pending: [], resolved: [] });
   const [replies, setReplies] = useState({ posts: [], events: [] });
+  const [myReports, setMyReports] = useState({ pending: [], resolved: [] });
   const [loading, setLoading] = useState(false);
 
   const userId = useMemo(() => {
@@ -29,14 +30,20 @@ export const NotificationsProvider = ({ children }) => {
       });
 
       // Replies to my comments (places)
-      const [rp1, rp2] = await Promise.all([
+      const [rp1, rp2, myRep] = await Promise.all([
         axios.get(`${import.meta.env.VITE_API}comment/replies/to_me/${userId}`),
         axios.get(`${import.meta.env.VITE_API}event/replies/to_me/${userId}`),
+        axios.get(`${import.meta.env.VITE_API}report/my/${userId}`),
       ]);
       setReplies({
         posts: Array.isArray(rp1?.data?.data) ? rp1.data.data : [],
         events: Array.isArray(rp2?.data?.data) ? rp2.data.data : [],
       });
+      // My submitted reports (we will notify when resolved)
+      const myList = Array.isArray(myRep?.data?.data) ? myRep.data.data : [];
+      const myPending = myList.filter((x) => Number(x.status) === 1);
+      const myResolved = myList.filter((x) => Number(x.status) === 0);
+      setMyReports({ pending: myPending, resolved: myResolved });
     } catch (e) {
       // ignore
     } finally {
@@ -49,7 +56,7 @@ export const NotificationsProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const totalCount = (reports?.pending_count || 0) + (replies?.posts?.length || 0) + (replies?.events?.length || 0);
+  const totalCount = (reports?.pending_count || 0) + (replies?.posts?.length || 0) + (replies?.events?.length || 0) + (myReports?.resolved?.length || 0);
 
   // Allow consumers to persist seen signature to avoid duplicate UI
   const signature = useMemo(() => {
@@ -61,13 +68,18 @@ export const NotificationsProvider = ({ children }) => {
       ...(replies?.posts?.map((x) => Number(x.id_reply || 0)) || [0]),
       ...(replies?.events?.map((x) => Number(x.id_reply || 0)) || [0])
     );
-    return `${reports?.pending_count || 0}|${reports?.resolved_count || 0}|${latestRep}|${latestRpl}`;
-  }, [reports, replies]);
+    const latestMyRep = Math.max(
+      ...(myReports?.pending?.map((x) => Number(x.id_report_comment || 0)) || [0]),
+      ...(myReports?.resolved?.map((x) => Number(x.id_report_comment || 0)) || [0])
+    );
+    return `${reports?.pending_count || 0}|${reports?.resolved_count || 0}|${latestRep}|${latestRpl}|${latestMyRep}`;
+  }, [reports, replies, myReports]);
 
   const value = {
     loading,
     reports,
     replies,
+    myReports,
     refresh,
     totalCount,
     signature,
@@ -79,4 +91,3 @@ export const NotificationsProvider = ({ children }) => {
 };
 
 export const useNotifications = () => useContext(NotificationsContext);
-

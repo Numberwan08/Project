@@ -168,7 +168,7 @@ function HistoryReport() {
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <ToastContainer />
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full mx-auto">
         <div className="mb-5 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">ประวัติการรายงาน</h1>
           <div className="inline-flex rounded-lg border overflow-hidden">
@@ -254,19 +254,19 @@ function HistoryReport() {
               </table>
             </div>
 
-            <div className="flex items-center justify-center gap-3 px-4 py-4 border-t bg-gray-50">
+            <div className="flex items-center  pt-2bg-gray-50 justify-center px-4 py-3 border-t border-gray-200 flex items-center">
               <button
-                className="px-3 py-1 rounded cursor-pointer bg-base-200 hover:bg-base-300 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
                 ก่อนหน้า
               </button>
-              <div className="px-2">
-                หน้า {page} / {Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE))}
+              <div className="px-2 mx-2">
+                 {page} / {Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE))}
               </div>
               <button
-                className="px-3 py-1 rounded cursor-pointer bg-primary text-white disabled:opacity-50"
+                className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
                 onClick={() => setPage((p) => Math.min(Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1, p + 1))}
                 disabled={page >= (Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1)}
               >

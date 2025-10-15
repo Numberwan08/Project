@@ -79,7 +79,7 @@ function Usermember() {
           <div className="flex flex-col items-start gap-4">
             {/* ส่วนหัว */}
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">จัดการสมาชิก</h1>
+              <h1 className="text-2xl font-bold text-gray-800">จัดการจำนวนผู้ใช้งาน</h1>
               <p className="text-sm text-gray-500">
                 รายการสมาชิกทั้งหมด {filteredUsers.length} คน
               </p>

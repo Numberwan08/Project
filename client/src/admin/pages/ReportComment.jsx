@@ -180,7 +180,7 @@ function ReportComment() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-1">
-            จัดการการรายงานความคิดเห็น
+            รายงานความคิดเห็น
           </h1>
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">รวมรายงานตามคอมเมนต์/รีพลาย</p>

@@ -512,15 +512,18 @@ exports.nearby_event = async (req, res) => {
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c;
         }
-        const nearby = places.map(place => ({
-            ...place,
-            distance: getDistance(
-                parseFloat(current.latitude),
-                parseFloat(current.longitude),
-                parseFloat(place.latitude),
-                parseFloat(place.longitude)
-            )
-        })).sort((a, b) => a.distance - b.distance).slice(0, 3);
+  let limit = Number(req.query && req.query.limit) || 10;
+  limit = Math.max(1, Math.min(10, limit));
+
+  const nearby = places.map(place => ({
+      ...place,
+      distance: getDistance(
+          parseFloat(current.latitude),
+          parseFloat(current.longitude),
+          parseFloat(place.latitude),
+          parseFloat(place.longitude)
+      )
+  })).sort((a, b) => a.distance - b.distance).slice(0, limit);
         return res.status(200).json({ data: nearby });
     } catch (err) {
         console.log("error nearby", err);

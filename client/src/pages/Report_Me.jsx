@@ -177,7 +177,7 @@ function Report_Me() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
+    <div className="w-full mx-auto p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">ประวัติการถูกรายงาน</h1>
         <div className="inline-flex rounded-lg border overflow-hidden">
@@ -339,26 +339,28 @@ function Report_Me() {
             );
           })}
 
-          <div className="flex items-center justify-between pt-2">
-            <button
+          <div className="flex items-center  pt-2bg-gray-50 justify-center px-4 py-3 border-t border-gray-200 flex items-center">
+            <div className="flex items-center gap-2">
+              <button
               type="button"
-              className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
+              className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
               ก่อนหน้า
             </button>
-            <div className="text-sm text-gray-600">
-              หน้า {page} / {totalPages}
+            <div className="px-2">
+        {page} / {totalPages}
             </div>
             <button
               type="button"
-              className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
+              className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
               ถัดไป
             </button>
+            </div>
           </div>
         </div>
       ) : (

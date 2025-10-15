@@ -136,7 +136,7 @@ function Show_Product() {
             </div>
             <div className="bg-purple-50 px-4 py-2 rounded-lg">
               <span className="text-purple-600 font-semibold">
-                หน้า {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
+                {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
               </span>
             </div>
           </div>
@@ -418,9 +418,9 @@ function Show_Product() {
 
           {/* Pagination Controls (เหมือน Show_Event) */}
           {postData.length > 0 && (
-            <div className="flex items-center justify-center gap-3 px-4 py-4 border-t bg-gray-50">
+            <div className="flex items-center  pt-2bg-gray-50 justify-center px-4 py-3 border-t border-gray-200 flex items-center">
               <button
-                className="px-3 py-1 rounded cursor-pointer bg-base-200 hover:bg-base-300 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
@@ -430,7 +430,7 @@ function Show_Product() {
                 หน้า {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
               </span>
               <button
-                className="px-3 py-1 rounded cursor-pointer bg-primary text-white disabled:opacity-50"
+                className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
                 onClick={() =>
                   setPage((p) =>
                     Math.min(Math.ceil(postData.length / ITEMS_PER_PAGE) || 1, p + 1)

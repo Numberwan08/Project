@@ -161,7 +161,7 @@ function Add_type_name() {
           <div className="flex">
             <div>
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            จัดการประเภทสถานที่
+            ประเภทสถานที่
           </h1>
           <p className="text-sm text-gray-600">
             เพิ่ม แก้ไข และลบประเภทสถานที่ของคุณ

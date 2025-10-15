@@ -1,18 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
-import { ExternalLink, MessageSquare, CalendarDays } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { ExternalLink, MessageSquare, CalendarDays } from "lucide-react";
 
 function Comment_Me() {
   const api = import.meta.env.VITE_API;
-  const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+  const userId =
+    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
   const [loading, setLoading] = useState(true);
   const [postComments, setPostComments] = useState([]); // places
   const [eventComments, setEventComments] = useState([]);
   const [postReplies, setPostReplies] = useState([]);
   const [eventReplies, setEventReplies] = useState([]);
-  const [sourceFilter, setSourceFilter] = useState('post'); // 'post' | 'event'
-  const [typeFilter, setTypeFilter] = useState('comment'); // 'comment' | 'reply'
+  const [sourceFilter, setSourceFilter] = useState("post"); // 'post' | 'event'
+  const [typeFilter, setTypeFilter] = useState("comment"); // 'comment' | 'reply'
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
@@ -49,10 +50,21 @@ function Comment_Me() {
   }, [sourceFilter, typeFilter]);
 
   const activeList = useMemo(() => {
-    if (sourceFilter === 'event') return typeFilter === 'reply' ? eventReplies : eventComments;
-    return typeFilter === 'reply' ? postReplies : postComments;
-  }, [sourceFilter, typeFilter, eventComments, postComments, eventReplies, postReplies]);
-  const totalPages = Math.max(1, Math.ceil((activeList?.length || 0) / ITEMS_PER_PAGE));
+    if (sourceFilter === "event")
+      return typeFilter === "reply" ? eventReplies : eventComments;
+    return typeFilter === "reply" ? postReplies : postComments;
+  }, [
+    sourceFilter,
+    typeFilter,
+    eventComments,
+    postComments,
+    eventReplies,
+    postReplies,
+  ]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil((activeList?.length || 0) / ITEMS_PER_PAGE)
+  );
   const paged = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return (activeList || []).slice(start, start + ITEMS_PER_PAGE);
@@ -60,47 +72,62 @@ function Comment_Me() {
 
   const buildLink = (item) => {
     try {
-      if (sourceFilter === 'event') {
-        if (typeFilter === 'reply') {
-          if (!item?.id_event || !item?.id_comment || !item?.id_reply) return '#';
+      if (sourceFilter === "event") {
+        if (typeFilter === "reply") {
+          if (!item?.id_event || !item?.id_comment || !item?.id_reply)
+            return "#";
           return `/detall_event/${item.id_event}?highlightComment=${item.id_comment}&highlightReply=${item.id_reply}&suppressHiddenToast=1`;
         }
-        if (!item?.id_event || !item?.id_comment) return '#';
+        if (!item?.id_event || !item?.id_comment) return "#";
         return `/detall_event/${item.id_event}?highlightComment=${item.id_comment}&suppressHiddenToast=1`;
       }
-      if (typeFilter === 'reply') {
-        if (!item?.id_post || !item?.id_comment || !item?.id_reply) return '#';
+      if (typeFilter === "reply") {
+        if (!item?.id_post || !item?.id_comment || !item?.id_reply) return "#";
         return `/detall_att/${item.id_post}?highlightComment=${item.id_comment}&highlightReply=${item.id_reply}&suppressHiddenToast=1`;
       }
-      if (!item?.id_post || !item?.id_comment) return '#';
+      if (!item?.id_post || !item?.id_comment) return "#";
       return `/detall_att/${item.id_post}?highlightComment=${item.id_comment}&suppressHiddenToast=1`;
     } catch {
-      return '#';
+      return "#";
     }
   };
 
   const formatDate = (d) => {
-    if (!d) return '-';
+    if (!d) return "-";
     const dt = new Date(d);
-    return dt.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return dt.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4">
+    <div className="w-full mx-auto p-4">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">ความคิดเห็นของฉัน</h1>
+        <h1 className="text-2xl font-bold">ประวัติความคิดเห็น</h1>
         <div className="inline-flex rounded-lg border overflow-hidden">
           <button
             type="button"
-            className={`px-3 py-1.5 text-sm ${sourceFilter === 'post' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
-            onClick={() => setSourceFilter('post')}
+            className={`px-3 py-1.5 text-sm ${
+              sourceFilter === "post"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700"
+            }`}
+            onClick={() => setSourceFilter("post")}
           >
             สถานที่
           </button>
           <button
             type="button"
-            className={`px-3 py-1.5 text-sm border-l ${sourceFilter === 'event' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
-            onClick={() => setSourceFilter('event')}
+            className={`px-3 py-1.5 text-sm border-l ${
+              sourceFilter === "event"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700"
+            }`}
+            onClick={() => setSourceFilter("event")}
           >
             กิจกรรม
           </button>
@@ -108,15 +135,23 @@ function Comment_Me() {
         <div className="inline-flex rounded-lg border overflow-hidden ml-2">
           <button
             type="button"
-            className={`px-3 py-1.5 text-sm ${typeFilter === 'comment' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700'}`}
-            onClick={() => setTypeFilter('comment')}
+            className={`px-3 py-1.5 text-sm ${
+              typeFilter === "comment"
+                ? "bg-purple-600 text-white"
+                : "bg-white text-gray-700"
+            }`}
+            onClick={() => setTypeFilter("comment")}
           >
             ความคิดเห็น
           </button>
           <button
             type="button"
-            className={`px-3 py-1.5 text-sm border-l ${typeFilter === 'reply' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700'}`}
-            onClick={() => setTypeFilter('reply')}
+            className={`px-3 py-1.5 text-sm border-l ${
+              typeFilter === "reply"
+                ? "bg-purple-600 text-white"
+                : "bg-white text-gray-700"
+            }`}
+            onClick={() => setTypeFilter("reply")}
           >
             ตอบกลับ
           </button>
@@ -128,38 +163,63 @@ function Comment_Me() {
           <table className="min-w-[800px] w-full">
             <thead>
               <tr className="bg-gray-50 text-gray-700">
-                <th className="px-4 py-3 text-left text-sm font-medium w-[36%]">สถานที่/กิจกรรม</th>
-                <th className="px-4 py-3 text-left text-sm font-medium w-[44%]">{typeFilter === 'reply' ? 'ตอบกลับ' : 'ความคิดเห็น'}</th>
-                <th className="px-4 py-3 text-left text-sm font-medium w-[20%]">การดำเนินการ</th>
+                <th className="px-4 py-3 text-left text-sm font-medium w-[36%]">
+                  สถานที่/กิจกรรม
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-medium w-[44%]">
+                  {typeFilter === "reply" ? "ตอบกลับ" : "ความคิดเห็น"}
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-medium w-[20%]">
+                  การดำเนินการ
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="py-12 text-center text-gray-500">กำลังโหลด...</td>
+                  <td colSpan={3} className="py-12 text-center text-gray-500">
+                    กำลังโหลด...
+                  </td>
                 </tr>
               ) : (paged || []).length === 0 ? (
                 <tr>
                   <td colSpan={3} className="py-12">
-                    <div className="text-center text-gray-400">ยังไม่มีความคิดเห็น</div>
+                    <div className="text-center text-gray-400">
+                      ยังไม่มีความคิดเห็น
+                    </div>
                   </td>
                 </tr>
               ) : (
                 paged.map((item) => (
-                  <tr key={`${sourceFilter}-${typeFilter}-${item.id_comment || item.id_reply}`} className="hover:bg-purple-50/60">
+                  <tr
+                    key={`${sourceFilter}-${typeFilter}-${
+                      item.id_comment || item.id_reply
+                    }`}
+                    className="hover:bg-purple-50/60"
+                  >
                     <td className="px-4 py-3 align-top">
                       <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                        {sourceFilter === 'event' ? (
+                        {sourceFilter === "event" ? (
                           <CalendarDays className="w-4 h-4 text-purple-600" />
                         ) : (
                           <MessageSquare className="w-4 h-4 text-purple-600" />
                         )}
-                        <span className="truncate">{sourceFilter === 'event' ? (item.event_name || '-') : (item.post_name || '-')}</span>
+                        <span className="truncate">
+                          {sourceFilter === "event"
+                            ? item.event_name || "-"
+                            : item.post_name || "-"}
+                        </span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">{formatDate(item.date_comment)}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatDate(item.date_comment)}
+                      </div>
                     </td>
                     <td className="px-4 py-3 align-top">
-                      <div className="text-sm text-gray-800 whitespace-pre-wrap break-words">{typeFilter === 'reply' ? (item.reply || '-') : (item.comment || '-')}</div>
+                      <div className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                        {typeFilter === "reply"
+                          ? item.reply || "-"
+                          : item.comment || "-"}
+                      </div>
                     </td>
                     <td className="px-4 py-3 align-top">
                       <a
@@ -179,16 +239,18 @@ function Comment_Me() {
         </div>
 
         {/* Pagination */}
-        <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-xs text-gray-600">
+        <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex items-center justify-center">
+          {/* <div className="text-xs text-gray-600">
             {(activeList?.length || 0) > 0 ? (
               <>
-                แสดง {(page - 1) * ITEMS_PER_PAGE + 1} - {Math.min(page * ITEMS_PER_PAGE, activeList.length)} จากทั้งหมด {activeList.length} รายการ
+                แสดง {(page - 1) * ITEMS_PER_PAGE + 1} -{" "}
+                {Math.min(page * ITEMS_PER_PAGE, activeList.length)} จากทั้งหมด{" "}
+                {activeList.length} รายการ
               </>
             ) : (
               <>ไม่มีรายการ</>
             )}
-          </div>
+          </div> */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -197,7 +259,9 @@ function Comment_Me() {
             >
               ก่อนหน้า
             </button>
-            <span className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg">{page} / {totalPages}</span>
+            <span className="px-2">
+              {page} / {totalPages}
+            </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}

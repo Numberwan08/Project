@@ -25,7 +25,7 @@ const menuItems = [
 
 const Navbar = () => {
   const { isLogin, logout, name } = useAuth();
-  const { reports, replies, refresh } = useNotifications();
+  const { reports, replies, refresh, myReports } = useNotifications();
   const [openNotif, setOpenNotif] = useState(false);
   const [notifLimit, setNotifLimit] = useState(10);
   const [seenKeysTick, setSeenKeysTick] = useState(0);
@@ -121,10 +121,23 @@ const Navbar = () => {
         color: "blue",
       });
     });
+    // My submitted reports resolved -> notify when handled
+    (myReports?.resolved || []).forEach((it) => {
+      const ts = it.created_at ? Date.parse(it.created_at) : 0;
+      items.push({
+        key: `mrs-${it.id_report_comment}`,
+        type: "my-report-resolved",
+        label: "รายงานดำเนินการเสร็จสิ้น",
+        text: it.reason || "",
+        href: "/menu/historyreport",
+        ts,
+        color: "green",
+      });
+    });
     // Sort newest first
     items.sort((a, b) => b.ts - a.ts);
     return items;
-  }, [reports, replies]);
+  }, [reports, replies, myReports]);
 
   // Seen handling
   const seenSet = useMemo(() => {
