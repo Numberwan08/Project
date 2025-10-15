@@ -1,4 +1,4 @@
-﻿const db = require('../config/db');
+const db = require('../config/db'); 
 const dayjs = require('dayjs');
 
 const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
@@ -75,7 +75,7 @@ exports.createReportForComment = async (req, res) => {
     const { id_comment, id_post, id_user, reason, details } = req.body;
 
     if (!id_comment || !id_post || !id_user || !reason) {
-      return res.status(400).json({ msg: 'เธเนเธญเธกเธนเธฅเนเธกเนเธเธฃเธเธ–เนเธงเธ', error: 'เธ•เนเธญเธเธฃเธฐเธเธธ id_comment, id_post, id_user, reason' });
+      return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน', error: 'ต้องระบุ id_comment, id_post, id_user, reason' });
     }
 
     // Prevent duplicate report by the same user for the same comment
@@ -83,17 +83,17 @@ exports.createReportForComment = async (req, res) => {
       .promise()
       .query('SELECT id_report_comment FROM report_comment WHERE id_user = ? AND id_commnet = ? LIMIT 1', [id_user, id_comment]);
     if (dup.length > 0) {
-      return res.status(409).json({ msg: 'เธเธธเธ“เนเธ”เนเธฃเธฒเธขเธเธฒเธเธเธงเธฒเธกเธเธดเธ”เน€เธซเนเธเธเธตเนเนเธฅเนเธง' });
+      return res.status(409).json({ msg: 'คุณได้รายงานความคิดเห็นนี้แล้ว' });
     }
 
     // find target user (comment owner)
     const owner = await findCommentOwner(id_comment);
     if (!owner) {
-      return res.status(404).json({ msg: 'เนเธกเนเธเธเธเธงเธฒเธกเธเธดเธ”เน€เธซเนเธเธ—เธตเนเธเธฐเธฃเธฒเธขเธเธฒเธ' });
+      return res.status(404).json({ msg: 'ไม่พบความคิดเห็นที่จะรายงาน' });
     }
     // Disallow reporting own comment
     if (String(owner.id_user) === String(id_user)) {
-      return res.status(400).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฃเธฒเธขเธเธฒเธเธเธงเธฒเธกเธเธดเธ”เน€เธซเนเธเธเธญเธเธ•เธเน€เธญเธเนเธ”เน' });
+      return res.status(400).json({ msg: 'ไม่สามารถรายงานความคิดเห็นของตนเองได้' });
     }
 
     const [result] = await db
@@ -105,12 +105,12 @@ exports.createReportForComment = async (req, res) => {
       );
 
     return res.status(201).json({
-      msg: 'เธชเนเธเธฃเธฒเธขเธเธฒเธเธเธงเธฒเธกเธเธดเธ”เน€เธซเนเธเธชเธณเน€เธฃเนเธ',
+      msg: 'ส่งรายงานความคิดเห็นสำเร็จ',
       data: { id_report_comment: result.insertId }
     });
   } catch (err) {
     console.log('createReportForComment error:', err);
-    return res.status(500).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเนเธเธฃเธฒเธขเธเธฒเธเนเธ”เน', error: err.message });
+    return res.status(500).json({ msg: 'ไม่สามารถส่งรายงานได้', error: err.message });
   }
 };
 
@@ -119,12 +119,12 @@ exports.createReportForReply = async (req, res) => {
     await ensureReportTable();
     const { id_reply, id_comment, id_post, id_user, reason, details } = req.body;
     if (!id_reply || !id_comment || !id_post || !id_user || !reason) {
-      return res.status(400).json({ msg: 'เธเนเธญเธกเธนเธฅเนเธกเนเธเธฃเธเธ–เนเธงเธ', error: 'เธ•เนเธญเธเธฃเธฐเธเธธ id_reply, id_comment, id_post, id_user, reason' });
+      return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน', error: 'ต้องระบุ id_reply, id_comment, id_post, id_user, reason' });
     }
 
     const owner = await findReplyOwner(id_reply);
     if (!owner || String(owner.id_comment) !== String(id_comment)) {
-      return res.status(404).json({ msg: 'เนเธกเนเธเธเธเธฒเธฃเธ•เธญเธเธเธฅเธฑเธเธ—เธตเนเธเธฐเธฃเธฒเธขเธเธฒเธ' });
+      return res.status(404).json({ msg: 'ไม่พบการตอบกลับที่จะรายงาน' });
     }
 
     const [result] = await db
@@ -136,12 +136,12 @@ exports.createReportForReply = async (req, res) => {
       );
 
     return res.status(201).json({
-      msg: 'เธชเนเธเธฃเธฒเธขเธเธฒเธเธเธฒเธฃเธ•เธญเธเธเธฅเธฑเธเธชเธณเน€เธฃเนเธ',
+      msg: 'ส่งรายงานการตอบกลับสำเร็จ',
       data: { id_report_comment: result.insertId }
     });
   } catch (err) {
     console.log('createReportForReply error:', err);
-    return res.status(500).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธชเนเธเธฃเธฒเธขเธเธฒเธเนเธ”เน', error: err.message });
+    return res.status(500).json({ msg: 'ไม่สามารถส่งรายงานได้', error: err.message });
   }
 };
 
@@ -152,22 +152,22 @@ exports.createEventReportForComment = async (req, res) => {
     const { id_event_comment, id_event, id_user, reason, details } = req.body;
 
     if (!id_event_comment || !id_event || !id_user || !reason) {
-      return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน', error: 'ต้องระบุ id_event_comment, id_event, id_user, reason' });
+      return res.status(400).json({ msg: '���������ú��ǹ', error: '��ͧ�к� id_event_comment, id_event, id_user, reason' });
     }
 
     const [dup] = await db
       .promise()
       .query('SELECT id_report_comment FROM report_comment WHERE id_user = ? AND id_event_comment = ? LIMIT 1', [id_user, id_event_comment]);
     if (dup.length > 0) {
-      return res.status(409).json({ msg: 'คุณได้รายงานความคิดเห็นนี้แล้ว' });
+      return res.status(409).json({ msg: '�س����§ҹ�����Դ��繹������' });
     }
 
     const owner = await findEventCommentOwner(id_event_comment);
     if (!owner) {
-      return res.status(404).json({ msg: 'ไม่พบความคิดเห็นที่จะรายงาน' });
+      return res.status(404).json({ msg: '��辺�����Դ��繷�����§ҹ' });
     }
     if (String(owner.id_user) === String(id_user)) {
-      return res.status(400).json({ msg: 'ไม่สามารถรายงานความคิดเห็นของตนเองได้' });
+      return res.status(400).json({ msg: '�������ö��§ҹ�����Դ��繢ͧ���ͧ��' });
     }
 
     const [result] = await db
@@ -178,10 +178,10 @@ exports.createEventReportForComment = async (req, res) => {
         [id_event_comment, id_event, id_user, details || null, reason, 1, owner.id_user || null, now()]
       );
 
-    return res.status(201).json({ msg: 'ส่งรายงานความคิดเห็นสำเร็จ', data: { id_report_comment: result.insertId } });
+    return res.status(201).json({ msg: '����§ҹ�����Դ��������', data: { id_report_comment: result.insertId } });
   } catch (err) {
     console.log('createEventReportForComment error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถส่งรายงานได้', error: err.message });
+    return res.status(500).json({ msg: '�������ö����§ҹ��', error: err.message });
   }
 };
 
@@ -191,12 +191,12 @@ exports.createEventReportForReply = async (req, res) => {
     await ensureReportTable();
     const { id_event_reply, id_event_comment, id_event, id_user, reason, details } = req.body;
     if (!id_event_reply || !id_event_comment || !id_event || !id_user || !reason) {
-      return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน', error: 'ต้องระบุ id_event_reply, id_event_comment, id_event, id_user, reason' });
+      return res.status(400).json({ msg: '���������ú��ǹ', error: '��ͧ�к� id_event_reply, id_event_comment, id_event, id_user, reason' });
     }
 
     const owner = await findEventReplyOwner(id_event_reply);
     if (!owner || String(owner.id_comment) !== String(id_event_comment)) {
-      return res.status(404).json({ msg: 'ไม่พบการตอบกลับที่จะรายงาน' });
+      return res.status(404).json({ msg: '��辺��õͺ��Ѻ������§ҹ' });
     }
 
     const [result] = await db
@@ -207,10 +207,10 @@ exports.createEventReportForReply = async (req, res) => {
         [id_event_reply, id_event_comment, id_event, id_user, details || null, reason, 1, owner.id_user || null, now()]
       );
 
-    return res.status(201).json({ msg: 'ส่งรายงานการตอบกลับสำเร็จ', data: { id_report_comment: result.insertId } });
+    return res.status(201).json({ msg: '����§ҹ��õͺ��Ѻ�����', data: { id_report_comment: result.insertId } });
   } catch (err) {
     console.log('createEventReportForReply error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถส่งรายงานได้', error: err.message });
+    return res.status(500).json({ msg: '�������ö����§ҹ��', error: err.message });
   }
 };
 
@@ -253,10 +253,10 @@ exports.getAllReports = async (req, res) => {
          ORDER BY rc.created_at DESC, rc.id_report_comment DESC`
       );
 
-    return res.status(200).json({ msg: 'เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเธชเธณเน€เธฃเนเธ', data: rows || [] });
+    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานสำเร็จ', data: rows || [] });
   } catch (err) {
     console.log('getAllReports error:', err);
-    return res.status(500).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเนเธ”เน', error: err.message });
+    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานได้', error: err.message });
   }
 };
 
@@ -304,10 +304,10 @@ exports.getReportsForUser = async (req, res) => {
          ORDER BY rc.created_at DESC, rc.id_report_comment DESC`,
         [userId]
       );
-    return res.status(200).json({ msg: 'เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเธเธญเธเธเธฑเธเธชเธณเน€เธฃเนเธ', data: rows || [] });
+    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานของฉันสำเร็จ', data: rows || [] });
   } catch (err) {
     console.log('getReportsForUser error:', err);
-    return res.status(500).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเนเธ”เน', error: err.message });
+    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานได้', error: err.message });
   }
 };
 
@@ -317,18 +317,18 @@ exports.updateReportStatus = async (req, res) => {
     const { id } = req.params;
     let { status } = req.body;
     if (status === undefined || status === null) {
-      return res.status(400).json({ msg: 'เธ•เนเธญเธเธฃเธฐเธเธธเธชเธ–เธฒเธเธฐ', error: 'status required' });
+      return res.status(400).json({ msg: 'ต้องระบุสถานะ', error: 'status required' });
     }
     status = Number(status);
     if (status !== 0 && status !== 1) {
-      return res.status(400).json({ msg: 'เธชเธ–เธฒเธเธฐเนเธกเนเธ–เธนเธเธ•เนเธญเธ', error: 'status must be 0 or 1' });
+      return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง', error: 'status must be 0 or 1' });
     }
 
     // Get report
     const [rows] = await db
       .promise()
       .query('SELECT * FROM report_comment WHERE id_report_comment = ?', [id]);
-    if (rows.length === 0) return res.status(404).json({ msg: 'เนเธกเนเธเธเธฃเธฒเธขเธเธฒเธ' });
+    if (rows.length === 0) return res.status(404).json({ msg: 'ไม่พบรายงาน' });
     const rc = rows[0];
 
     // Update report status
@@ -357,10 +357,10 @@ exports.updateReportStatus = async (req, res) => {
         .query('UPDATE event_comment_reply SET status = ? WHERE id_reply = ?', [status === 0 ? '0' : '1', rc.id_event_reply]);
     }
 
-    return res.status(200).json({ msg: 'เธญเธฑเธเน€เธ”เธ•เธชเธ–เธฒเธเธฐเธฃเธฒเธขเธเธฒเธเธชเธณเน€เธฃเนเธ' });
+    return res.status(200).json({ msg: 'อัปเดตสถานะรายงานสำเร็จ' });
   } catch (err) {
     console.log('updateReportStatus error:', err);
-    return res.status(500).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธญเธฑเธเน€เธ”เธ•เธชเธ–เธฒเธเธฐเธฃเธฒเธขเธเธฒเธเนเธ”เน', error: err.message });
+    return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะรายงานได้', error: err.message });
   }
 };
 
@@ -390,10 +390,10 @@ exports.getReportsByReporter = async (req, res) => {
          ORDER BY rc.created_at DESC, rc.id_report_comment DESC`,
         [userId]
       );
-    return res.status(200).json({ msg: 'เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเธ—เธตเนเธเธฑเธเธชเนเธเธชเธณเน€เธฃเนเธ', data: rows || [] });
+    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานที่ฉันส่งสำเร็จ', data: rows || [] });
   } catch (err) {
     console.log('getReportsByReporter error:', err);
-    return res.status(500).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเธเธญเธเธเธฑเธเนเธ”เน', error: err.message });
+    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานของฉันได้', error: err.message });
   }
 };
 
@@ -443,12 +443,14 @@ exports.getHistoryReport = async (req, res) => {
       );
 
     if (rows.length === 0) {
-      return res.status(404).json({ msg: 'เนเธกเนเธเธเธฃเธฒเธขเธเธฒเธ' });
+      return res.status(404).json({ msg: 'ไม่พบรายงาน' });
     }
 
-    return res.status(200).json({ msg: 'เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเธ—เธตเนเธเธฑเธเธชเนเธเธชเธณเน€เธฃเนเธ', data: rows });
+    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานที่ฉันส่งสำเร็จ', data: rows });
   } catch (err) {
     console.log("getHistoryReport error:" , err);
-    return res.status(500).json({ msg: 'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ”เธถเธเธเนเธญเธกเธนเธฅเธฃเธฒเธขเธเธฒเธเธเธญเธเธเธฑเธเนเธ”เน', error: err.message });
+    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานของฉันได้', error: err.message });
   }
 }
+
+

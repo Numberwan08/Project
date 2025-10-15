@@ -3,6 +3,7 @@ require("dayjs/locale/th");
 dayjs.locale("th");
 
 const db = require("../config/db");
+const { getIO } = require("../socket");
 
 const getFormattedNow = () => dayjs().format("YYYY-MM-DD HH:mm:ss");
 
@@ -118,6 +119,21 @@ exports.add_reply = async (req, res) => {
         error: "ไม่สามารถบันทึกข้อมูลการตอบกลับได้"
       });
     }
+    // Emit realtime event to notify owner of original comment
+    try {
+      const ownerId = parentRows[0]?.id_user;
+      const io = getIO();
+      if (io && ownerId) {
+        io.emit('new-reply', {
+          scope: 'post',
+          id_comment,
+          id_reply: insertResult.insertId,
+          target_user_id: ownerId,
+          reply_user_id: id_user,
+          reply_date: getFormattedNow(),
+        });
+      }
+    } catch (_) {}
 
     return res.status(201).json({
       msg: "ตอบกลับความคิดเห็นสำเร็จ",

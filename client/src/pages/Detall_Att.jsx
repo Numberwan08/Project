@@ -58,8 +58,10 @@ function Detail_Att() {
   const [editLoading, setEditLoading] = useState(false);
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [editReplyText, setEditReplyText] = useState("");
+  const [editReplyTexts, setEditReplyTexts] = useState({}); // id_reply -> text
   const [editReplyFile, setEditReplyFile] = useState(null);
   const [editReplyLoading, setEditReplyLoading] = useState(false);
+  const editReplyRefs = useRef({});
   const [galleryModal, setGalleryModal] = useState({ open: false, images: [] });
   const [selectedFromGallery, setSelectedFromGallery] = useState(false);
   const ratingCount = useMemo(() => {
@@ -203,8 +205,24 @@ function Detail_Att() {
                 <textarea
                   className="w-full p-2 border rounded"
                   rows={2}
-                  value={editReplyText}
-                  onChange={(e) => setEditReplyText(e.target.value)}
+                  autoFocus
+                  ref={(el) => {
+                    if (el) editReplyRefs.current[rep.id_reply] = el;
+                  }}
+                  value={editReplyTexts[rep.id_reply] ?? editReplyText}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setEditReplyText(v);
+                    setEditReplyTexts((m) => ({ ...m, [rep.id_reply]: v }));
+                    // Force caret to end to avoid cursor jumping to front
+                    requestAnimationFrame(() => {
+                      const el = editReplyRefs.current[rep.id_reply];
+                      if (el) {
+                        const l = el.value.length;
+                        try { el.setSelectionRange(l, l); } catch {}
+                      }
+                    });
+                  }}
                 />
                 <div className="flex items-center gap-4">
                   <input
@@ -421,18 +439,18 @@ function Detail_Att() {
       setReportSubmitting(true);
       if (reportTarget.type === "comment") {
         await axios.post(`${import.meta.env.VITE_API}report/comment`, {
-          id_comment: reportTarget.id_comment,
-          id_post: id,
-          id_user: userId,
+          id_comment: Number(reportTarget.id_comment),
+          id_post: Number(id),
+          id_user: Number(userId),
           reason: reportReason,
           details: reportDetails,
         });
       } else {
         await axios.post(`${import.meta.env.VITE_API}report/reply`, {
-          id_reply: reportTarget.id_reply,
-          id_comment: reportTarget.id_comment,
-          id_post: id,
-          id_user: userId,
+          id_reply: Number(reportTarget.id_reply),
+          id_comment: Number(reportTarget.id_comment),
+          id_post: Number(id),
+          id_user: Number(userId),
           reason: reportReason,
           details: reportDetails,
         });
@@ -595,6 +613,7 @@ function Detail_Att() {
   const openEditReply = (rep) => {
     setEditingReplyId(rep.id_reply);
     setEditReplyText(rep.reply || "");
+    setEditReplyTexts((m) => ({ ...m, [rep.id_reply]: rep.reply || "" }));
     setEditReplyFile(null);
   };
 
@@ -608,11 +627,12 @@ function Detail_Att() {
     e.preventDefault();
     if (!userId) return;
     const id_comment = rep.id_comment;
+    const id_reply = rep.id_reply;
     try {
       setEditReplyLoading(true);
       const form = new FormData();
       form.append("id_user", userId);
-      form.append("reply", editReplyText);
+      form.append("reply", (editReplyTexts[id_reply] ?? editReplyText) || "");
       if (editReplyFile) form.append("image", editReplyFile);
 
       await axios.patch(
@@ -629,6 +649,11 @@ function Detail_Att() {
         autoClose: 800,
       });
       cancelEditReply();
+      setEditReplyTexts((m) => {
+        const n = { ...m };
+        delete n[id_reply];
+        return n;
+      });
     } catch (err) {
       console.log("Error edit reply:", err);
       toast.error("ไม่สามารถแก้ไขการตอบกลับได้", {

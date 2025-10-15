@@ -4,6 +4,8 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { readdirSync } = require("fs");
 const path = require("path");
+const http = require("http");
+const { setIO } = require("./socket");
 
 dotenv.config();
 
@@ -13,6 +15,15 @@ const port = process.env.PORT || 3000;
 
 app.use(morgan("dev"));
 app.use(cors());
+// Basic rate limiting for posting comments/replies (mitigate spam)
+try {
+  const rateLimit = require('express-rate-limit');
+  const limiter = rateLimit({ windowMs: 60 * 1000, max: 120 });
+  // apply only to API routes that accept content
+  app.use('/api/comment', limiter);
+  app.use('/api/event', limiter);
+  app.use('/api/report', limiter);
+} catch (_) {}
 app.use(express.json());
 app.use("/public", express.static(path.join(__dirname, "public")));
 
@@ -34,6 +45,31 @@ readdirSync(routesDir).forEach((name) => {
   }
 });
 
-app.listen(port, () => {
+// Create HTTP server and attach Socket.IO
+const server = http.createServer(app);
+try {
+  const { Server } = require("socket.io");
+  const io = new Server(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST", "PATCH", "DELETE"],
+    },
+  });
+  setIO(io);
+  io.on("connection", (socket) => {
+    if (process.env.NODE_ENV !== "test") {
+      console.log("Socket connected:", socket.id);
+    }
+    socket.on("disconnect", () => {
+      if (process.env.NODE_ENV !== "test") {
+        console.log("Socket disconnected:", socket.id);
+      }
+    });
+  });
+} catch (e) {
+  console.error("Socket.io failed to initialize:", e.message);
+}
+
+server.listen(port, () => {
   console.log(`Sever is runnind on port http://localhost:${port}`);
 });

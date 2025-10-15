@@ -3,6 +3,7 @@ const dayjs = require('dayjs');
 const fs = require('fs');
 
 const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
+const { getIO } = require('../socket');
 
 const buildFileUrl = (req, filePath) => {
   if (!filePath) return null;
@@ -327,6 +328,22 @@ exports.add_reply = async (req, res) => {
         [id_comment, id_user, reply, now(), file?.path || null, parentReplyIdToUse]
       );
     if (ins.affectedRows === 0) return res.status(400).json({ msg: 'ไม่สามารถตอบกลับได้' });
+    // Emit realtime event to notify owner of the source comment
+    try {
+      const [pr2] = await db.promise().query('SELECT id_user FROM event_comment WHERE id_comment = ?', [id_comment]);
+      const targetUser = pr2 && pr2[0] ? pr2[0].id_user : null;
+      const io = getIO();
+      if (io && targetUser) {
+        io.emit('new-reply', {
+          scope: 'event',
+          id_comment,
+          id_reply: ins.insertId,
+          target_user_id: targetUser,
+          reply_user_id: id_user,
+          reply_date: now(),
+        });
+      }
+    } catch (_) {}
     return res.status(201).json({ msg: 'ตอบกลับสำเร็จ' });
   } catch (err) {
     return res.status(500).json({ msg: 'ไม่สามารถตอบกลับได้', error: err.message });

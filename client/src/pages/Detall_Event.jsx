@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -7,6 +7,7 @@ import L from "leaflet";
 import { ThumbsUp } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useReport } from "../context/ReportContext";
+import dayjs from 'dayjs';
 
 // Fix for default markers in React Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -73,8 +74,10 @@ function Detall_Event() {
   // Edit/Delete reply (event)
   const [editingReplyId, setEditingReplyId] = useState(null);
   const [editReplyText, setEditReplyText] = useState("");
+  const [editReplyTexts, setEditReplyTexts] = useState({});
   const [editReplyFile, setEditReplyFile] = useState(null);
   const [editReplyLoading, setEditReplyLoading] = useState(false);
+  const editReplyRefs = useRef({});
   const [galleryModal, setGalleryModal] = useState({ open: false, images: [] });
   const [selectedFromGallery, setSelectedFromGallery] = useState(false);
 
@@ -361,6 +364,7 @@ function Detall_Event() {
   const openEditReply = (rep) => {
     setEditingReplyId(rep.id_reply);
     setEditReplyText(rep.reply || "");
+    setEditReplyTexts((m) => ({ ...m, [rep.id_reply]: rep.reply || "" }));
     setEditReplyFile(null);
   };
   const cancelEditReply = () => {
@@ -375,7 +379,7 @@ function Detall_Event() {
       setEditReplyLoading(true);
       const form = new FormData();
       form.append("id_user", userId);
-      form.append("reply", editReplyText);
+      form.append("reply", (editReplyTexts[id_reply] ?? editReplyText) || "");
       if (editReplyFile) form.append("image", editReplyFile);
       await axios.patch(
         `${
@@ -386,6 +390,11 @@ function Detall_Event() {
       );
       await fetchReplies(id_comment);
       cancelEditReply();
+      setEditReplyTexts((m) => {
+        const n = { ...m };
+        delete n[id_reply];
+        return n;
+      });
       toast.success("แก้ไขการตอบกลับสำเร็จ", {
         position: "top-center",
         autoClose: 800,
@@ -532,6 +541,39 @@ function Detall_Event() {
     return diffDays;
   };
 
+  const addToCalendar = (item) => {
+    try {
+      const start = item?.date_start ? dayjs(item.date_start) : null;
+      const end = item?.date_end ? dayjs(item.date_end) : start?.add(2, 'hour');
+      const dt = (d) => d ? d.utc().format('YYYYMMDD[T]HHmmss[Z]') : '';
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Chiang Rai//Event//TH',
+        'BEGIN:VEVENT',
+        `UID:${item.id_event}@chiangrai`,
+        start ? `DTSTART:${dt(start)}` : '',
+        end ? `DTEND:${dt(end)}` : '',
+        `SUMMARY:${(item.name_event || '').replace(/\n/g, ' ')}`,
+        `DESCRIPTION:${(item.detail_event || '').replace(/\n/g, ' ')}`,
+        `LOCATION:${(item.location_event || '').replace(/\n/g, ' ')}`,
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].filter(Boolean).join('\r\n');
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${item.name_event || 'event'}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (_) {
+      toast.error('ไม่สามารถสร้างไฟล์ปฏิทินได้', { position: 'top-center', autoClose: 1000 });
+    }
+  };
+
   const fetchReplies = async (id_comment) => {
     try {
       const res = await axios.get(
@@ -641,18 +683,18 @@ function Detall_Event() {
       setReportSubmitting(true);
       if (reportTarget.type === "comment") {
         await axios.post(`${import.meta.env.VITE_API}report/event-comment`, {
-          id_event_comment: reportTarget.id_comment,
-          id_event: id,
-          id_user: userId,
+          id_event_comment: Number(reportTarget.id_comment),
+          id_event: Number(id),
+          id_user: Number(userId),
           reason: reportReason,
           details: reportDetails,
         });
       } else {
         await axios.post(`${import.meta.env.VITE_API}report/event-reply`, {
-          id_event_reply: reportTarget.id_reply,
-          id_event_comment: reportTarget.id_comment,
-          id_event: id,
-          id_user: userId,
+          id_event_reply: Number(reportTarget.id_reply),
+          id_event_comment: Number(reportTarget.id_comment),
+          id_event: Number(id),
+          id_user: Number(userId),
           reason: reportReason,
           details: reportDetails,
         });
@@ -664,7 +706,8 @@ function Detall_Event() {
       setShowReport(false);
       await refreshMySubmitted();
     } catch (err) {
-      toast.error("ส่งรายงานไม่สำเร็จ", {
+      const msg = err?.response?.data?.msg || "ส่งรายงานไม่สำเร็จ";
+      toast.error(msg, {
         position: "top-center",
         autoClose: 1200,
       });
@@ -717,7 +760,7 @@ function Detall_Event() {
                         กิจกรรม
                       </span>
                     </div>
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-4 right-4 space-y-2 text-right">
                       {isOngoing && (
                         <span className="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full shadow-lg">
                           กำลังจัด
@@ -734,6 +777,14 @@ function Detall_Event() {
                         </span>
                       )}
                       {/* ไม่แสดงสถานะสิ้นสุดแล้ว ตามคำขอ */}
+                      <div>
+                        <button
+                          className="mt-2 text-xs bg-white/80 hover:bg-white text-gray-800 px-3 py-1 rounded-full shadow"
+                          onClick={() => addToCalendar(item)}
+                        >
+                          เพิ่มลงปฏิทิน
+                        </button>
+                      </div>
                     </div>
                     <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
                       คลิกเพื่อดูขนาดใหญ่
@@ -1268,10 +1319,21 @@ function Detall_Event() {
                                         <textarea
                                           className="w-full p-2 border rounded-lg text-sm"
                                           rows={3}
-                                          value={editReplyText}
-                                          onChange={(e) =>
-                                            setEditReplyText(e.target.value)
-                                          }
+                                          autoFocus
+                                          ref={(el) => { if (el) editReplyRefs.current[r.id_reply] = el; }}
+                                          value={editReplyTexts[r.id_reply] ?? editReplyText}
+                                          onChange={(e) => {
+                                            const v = e.target.value;
+                                            setEditReplyText(v);
+                                            setEditReplyTexts((m) => ({ ...m, [r.id_reply]: v }));
+                                            requestAnimationFrame(() => {
+                                              const el = editReplyRefs.current[r.id_reply];
+                                              if (el) {
+                                                const l = el.value.length;
+                                                try { el.setSelectionRange(l, l); } catch {}
+                                              }
+                                            });
+                                          }}
                                           placeholder="แก้ไขการตอบกลับของคุณ"
                                           required
                                         />

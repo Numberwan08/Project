@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useRealtime } from './RealtimeContext';
 
 const NotificationsContext = createContext();
 
@@ -12,6 +14,7 @@ export const NotificationsProvider = ({ children }) => {
   const userId = useMemo(() => {
     try { return localStorage.getItem('userId'); } catch { return null; }
   }, []);
+  const realtime = useRealtime();
 
   const refresh = async () => {
     if (!userId) return;
@@ -55,6 +58,33 @@ export const NotificationsProvider = ({ children }) => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  // Realtime: listen for updates and refresh when relevant
+  useEffect(() => {
+    if (!realtime || !realtime.on) return;
+    const onReport = (payload) => {
+      if (!payload) return;
+      if (String(payload.reporter_id || '') === String(userId || '')) {
+        refresh();
+        toast.success('รายงานดำเนินการเสร็จสิ้น', { position: 'top-center', autoClose: 1500 });
+      }
+    };
+    const onReply = (payload) => {
+      if (!payload) return;
+      if (String(payload.target_user_id || '') === String(userId || '')) {
+        refresh();
+      }
+    };
+    realtime.on('report-status-updated', onReport);
+    realtime.on('new-reply', onReply);
+    return () => {
+      try {
+        realtime.off('report-status-updated', onReport);
+        realtime.off('new-reply', onReply);
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtime, userId]);
 
   const totalCount = (reports?.pending_count || 0) + (replies?.posts?.length || 0) + (replies?.events?.length || 0) + (myReports?.resolved?.length || 0);
 
