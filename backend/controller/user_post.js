@@ -6,6 +6,12 @@ const db = require('../config/db');
 const fs = require('fs');
 const { log } = require("console");
 const commentController = require('./comment');
+let getIO;
+try {
+  ({ getIO } = require('../socket'));
+} catch (_) {
+  getIO = () => null;
+}
 const deleteImage =(path)=>{
     fs.unlink(path,(err)=>{
         if(err){
@@ -887,9 +893,27 @@ exports.set_comment_status = async (req, res) => {
         if (status !== 0 && status !== 1) {
             return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง ต้องเป็น 0 หรือ 1' });
         }
-        const [chk] = await db.promise().query('SELECT id_comment FROM comment_post WHERE id_comment = ?', [id_comment]);
+        const [chk] = await db.promise().query('SELECT id_comment, id_user, id_post FROM comment_post WHERE id_comment = ?', [id_comment]);
         if (chk.length === 0) return res.status(404).json({ msg: 'ไม่พบความคิดเห็น' });
+        const ownerId = chk[0].id_user;
+        const id_post = chk[0].id_post;
         await db.promise().query('UPDATE comment_post SET status = ? WHERE id_comment = ?', [String(status), id_comment]);
+        // Realtime notify when admin hides (status=0)
+        if (status === 0) {
+            try {
+                const io = getIO();
+                if (io && ownerId) {
+                    io.emit('comment-hidden', {
+                        scope: 'post',
+                        id_comment: Number(id_comment),
+                        id_post: Number(id_post || 0),
+                        target_user_id: Number(ownerId),
+                        status: 0,
+                        created_at: getFormattedNow(),
+                    });
+                }
+            } catch (_) {}
+        }
         return res.status(200).json({ msg: 'อัปเดตสถานะความคิดเห็นสำเร็จ' });
     } catch (err) {
         console.log('set_comment_status error', err);

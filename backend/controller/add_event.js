@@ -2,20 +2,15 @@
 const db = require("../config/db");
 const fs = require('fs');
 
-// Normalize various date-time inputs to MySQL DATETIME 'YYYY-MM-DD HH:mm:ss'
 const toMysqlDatetime = (val) => {
   try {
     if (!val) return null;
-    // Handle strings like '2025-05-29T10:00' or ISO '...Z'
     let d = new Date(val);
     if (isNaN(d.getTime())) {
-      // Fallback: simple replacements
       let s = String(val).replace('T', ' ').replace('Z', '');
       // Append seconds if missing
       if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) s += ':00';
-      // Remove milliseconds and timezone offset if any
       s = s.replace(/\.\d+$/, '');
-      // If still invalid, return null
       d = new Date(s);
       if (isNaN(d.getTime())) return null;
     }

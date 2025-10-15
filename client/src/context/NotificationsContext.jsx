@@ -75,12 +75,21 @@ export const NotificationsProvider = ({ children }) => {
         refresh();
       }
     };
+    const onCommentHidden = (payload) => {
+      if (!payload) return;
+      if (String(payload.target_user_id || '') === String(userId || '')) {
+        toast.info('ความคิดเห็นของคุณถูกลบแล้ว', { position: 'top-center', autoClose: 1500 });
+        refresh();
+      }
+    };
     realtime.on('report-status-updated', onReport);
     realtime.on('new-reply', onReply);
+    realtime.on('comment-hidden', onCommentHidden);
     return () => {
       try {
         realtime.off('report-status-updated', onReport);
         realtime.off('new-reply', onReply);
+        realtime.off('comment-hidden', onCommentHidden);
       } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

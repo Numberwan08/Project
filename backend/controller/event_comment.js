@@ -430,9 +430,27 @@ exports.set_comment_status = async (req, res) => {
     if (!id_comment) return res.status(400).json({ msg: 'ต้องระบุ id_comment' });
     status = Number(status);
     if (status !== 0 && status !== 1) return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง ต้องเป็น 0 หรือ 1' });
-    const [chk] = await db.promise().query('SELECT id_comment FROM event_comment WHERE id_comment = ?', [id_comment]);
+    const [chk] = await db.promise().query('SELECT id_comment, id_user, id_event FROM event_comment WHERE id_comment = ?', [id_comment]);
     if (chk.length === 0) return res.status(404).json({ msg: 'ไม่พบความคิดเห็น' });
     await db.promise().query('UPDATE event_comment SET status = ? WHERE id_comment = ?', [String(status), id_comment]);
+    if (status === 0) {
+      // Emit to the owner that comment hidden
+      try {
+        const ownerId = chk[0].id_user;
+        const id_event = chk[0].id_event;
+        const io = getIO();
+        if (io && ownerId) {
+          io.emit('comment-hidden', {
+            scope: 'event',
+            id_comment: Number(id_comment),
+            id_event: Number(id_event || 0),
+            target_user_id: Number(ownerId),
+            status: 0,
+            created_at: now(),
+          });
+        }
+      } catch (_) {}
+    }
     return res.status(200).json({ msg: 'อัปเดตสถานะความคิดเห็นสำเร็จ' });
   } catch (err) {
     return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะความคิดเห็นได้', error: err.message });

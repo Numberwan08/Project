@@ -1,9 +1,14 @@
-const db = require('../config/db'); 
+const db = require('../config/db');
+let getIO;
+try {
+  ({ getIO } = require('../socket'));
+} catch (_) {
+  getIO = () => null;
+}
 const dayjs = require('dayjs');
 
 const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
 
-// Ensure report_comment table has needed columns
 const ensureReportTable = async () => {
   try {
     await db
@@ -25,16 +30,13 @@ const ensureReportTable = async () => {
     try {
       await db.promise().query(sql);
     } catch (e) {
-      // ignore if already exists or not supported
     }
   };
 
-  // Add reason, status, target_user_id, created_at if missing
   await addCol("ALTER TABLE report_comment ADD COLUMN reason VARCHAR(255) NULL");
   await addCol("ALTER TABLE report_comment ADD COLUMN status TINYINT(1) NULL DEFAULT 1");
   await addCol("ALTER TABLE report_comment ADD COLUMN target_user_id INT NULL");
   await addCol("ALTER TABLE report_comment ADD COLUMN created_at DATETIME NULL");
-  // Event-related columns (safe-add)
   await addCol("ALTER TABLE report_comment ADD COLUMN id_event_comment INT NULL");
   await addCol("ALTER TABLE report_comment ADD COLUMN id_event_reply INT NULL");
   await addCol("ALTER TABLE report_comment ADD COLUMN id_event INT NULL");
@@ -357,6 +359,29 @@ exports.updateReportStatus = async (req, res) => {
         .query('UPDATE event_comment_reply SET status = ? WHERE id_reply = ?', [status === 0 ? '0' : '1', rc.id_event_reply]);
     }
 
+    // If hidden by admin due to report, notify the owner realtime
+    if (status === 0) {
+      try {
+        const io = getIO && getIO();
+        if (io && rc.target_user_id) {
+          const isEvent = !!(rc.id_event_comment || rc.id_event_reply);
+          const isReply = !!(rc.id_reply || rc.id_event_reply);
+          const payload = {
+            scope: isEvent ? 'event' : 'post',
+            type: isReply ? 'reply' : 'comment',
+            id_comment: rc.id_commnet || rc.id_event_comment || null,
+            id_reply: rc.id_reply || rc.id_event_reply || null,
+            id_post: rc.id_post || null,
+            id_event: rc.id_event || null,
+            target_user_id: rc.target_user_id,
+            status: 0,
+            created_at: now(),
+          };
+          io.emit('comment-hidden', payload);
+        }
+      } catch (_) {}
+    }
+
     return res.status(200).json({ msg: 'อัปเดตสถานะรายงานสำเร็จ' });
   } catch (err) {
     console.log('updateReportStatus error:', err);
@@ -452,5 +477,3 @@ exports.getHistoryReport = async (req, res) => {
     return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานของฉันได้', error: err.message });
   }
 }
-
-
