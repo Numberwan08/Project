@@ -433,7 +433,7 @@ function HomePage() {
         </section>
 
         {/* Report Notifications Modal */}
-        {showReportModal && (
+        {/* {showReportModal && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowReportModal(false)}>
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-5" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between mb-3">
@@ -484,7 +484,7 @@ function HomePage() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       <style jsx>{`

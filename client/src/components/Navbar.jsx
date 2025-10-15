@@ -29,6 +29,7 @@ const Navbar = () => {
   const [openNotif, setOpenNotif] = useState(false);
   const [notifLimit, setNotifLimit] = useState(10);
   const [seenKeysTick, setSeenKeysTick] = useState(0);
+  const [notifTab, setNotifTab] = useState("all"); // all | unread
   const location = useLocation();
 
   const makeReplyLink = (r, isEvent = false) => {
@@ -136,9 +137,20 @@ const Navbar = () => {
     }
   }, [seenKeysTick]);
 
+  // Deleted handling (local only)
+  const deletedSet = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("notifDeletedKeys");
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(arr);
+    } catch {
+      return new Set();
+    }
+  }, [seenKeysTick]);
+
   const unseenCount = useMemo(
-    () => notifItems.filter((n) => !seenSet.has(n.key)).length,
-    [notifItems, seenSet]
+    () => notifItems.filter((n) => !seenSet.has(n.key) && !deletedSet.has(n.key)).length,
+    [notifItems, seenSet, deletedSet]
   );
 
   const markSeen = (key) => {
@@ -150,6 +162,47 @@ const Navbar = () => {
       setSeenKeysTick((t) => t + 1);
     } catch {}
   };
+
+  const markAllSeen = () => {
+    try {
+      const raw = localStorage.getItem("notifSeenKeys");
+      const arr = raw ? JSON.parse(raw) : [];
+      const set = new Set(arr);
+      effectiveItems.forEach((n) => {
+        if (!set.has(n.key)) set.add(n.key);
+      });
+      localStorage.setItem("notifSeenKeys", JSON.stringify(Array.from(set)));
+      setSeenKeysTick((t) => t + 1);
+    } catch {}
+  };
+
+  const deleteNotif = (key) => {
+    try {
+      const raw = localStorage.getItem("notifDeletedKeys");
+      const arr = raw ? JSON.parse(raw) : [];
+      if (!arr.includes(key)) arr.push(key);
+      localStorage.setItem("notifDeletedKeys", JSON.stringify(arr));
+      setSeenKeysTick((t) => t + 1);
+    } catch {}
+  };
+
+  const clearAllDeleted = () => {
+    try {
+      localStorage.removeItem("notifDeletedKeys");
+      setSeenKeysTick((t) => t + 1);
+    } catch {}
+  };
+
+  // Items for display: remove deleted, then filter by tab
+  const effectiveItems = useMemo(
+    () => notifItems.filter((n) => !deletedSet.has(n.key)),
+    [notifItems, deletedSet]
+  );
+  const displayItems = useMemo(() => {
+    const base = effectiveItems;
+    if (notifTab === "unread") return base.filter((n) => !seenSet.has(n.key));
+    return base;
+  }, [effectiveItems, notifTab, seenSet]);
 
   return (
     <nav className="bg-white shadow-md py-4 px-6 fixed top-0 left-0 w-full z-50">
@@ -194,26 +247,55 @@ const Navbar = () => {
                   )}
                 </button>
                 {openNotif && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border z-50">
+                  <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white shadow-lg rounded-lg border z-50">
                     <div className="p-3 border-b flex items-center justify-between">
                       <span className="font-semibold text-gray-800">
                         การแจ้งเตือน
                       </span>
-                      <button
-                        className="text-xs text-gray-500 hover:underline"
-                        onClick={() => setOpenNotif(false)}
-                      >
-                        ปิด
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className={`text-xs px-2 py-1 rounded cursor-pointer ${
+                            notifTab === "all"
+                              ? "bg-gray-800 text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                          onClick={() => setNotifTab("all")}
+                        >
+                          ทั้งหมด
+                        </button>
+                        <button
+                          className={`text-xs px-2 py-1 rounded cursor-pointer  ${
+                            notifTab === "unread"
+                              ? "bg-gray-800 text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                          onClick={() => setNotifTab("unread")}
+                        >
+                          ยังไม่ได้อ่าน
+                        </button>
+                        {unseenCount > 0 && (
+                          <button
+                            className="text-xs text-blue-600  text-gray-600 hover:bg-gray-100 py-2 px-1 rounded-md cursor-pointer"
+                            onClick={markAllSeen}
+                            title="ทำเป็นอ่านทั้งหมด"
+                          >
+                            อ่านทั้งหมด
+                          </button>
+                        )}
+                        <button
+                          className="text-xs text-gray-500 cursor-pointer hover:bg-gray-100 py-2 px-1 rounded-md"
+                          onClick={() => setOpenNotif(false)}
+                        >
+                          ปิด
+                        </button>
+                      </div>
                     </div>
                     <div className="max-h-96 overflow-y-auto p-3 space-y-2 text-sm">
-                      {notifItems.length > 0 ? (
-                        notifItems.slice(0, notifLimit).map((n) => (
-                          <a
+                      {displayItems.length > 0 ? (
+                        displayItems.slice(0, notifLimit).map((n) => (
+                          <div
                             key={n.key}
-                            href={n.href}
-                            onClick={() => markSeen(n.key)}
-                            className={`block p-2 rounded hover:opacity-90 ${
+                            className={`relative p-2 rounded hover:opacity-90 ${
                               seenSet.has(n.key)
                                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                 : n.color === "yellow"
@@ -221,7 +303,12 @@ const Navbar = () => {
                                 : "bg-blue-50 hover:bg-blue-100 text-blue-800"
                             }`}
                           >
-                            <div className="font-medium">{n.label}</div>
+                            <a
+                              href={n.href}
+                              onClick={() => markSeen(n.key)}
+                              className="block"
+                            >
+                              <div className="font-medium">{n.label}</div>
                             {/* For reports on reply: use detail_report + reporter */}
                             {n.type.startsWith("report") && (
                               <div className="mt-1 text-xs">
@@ -279,20 +366,42 @@ const Navbar = () => {
                                 )}
                               </div>
                             )}
-                          </a>
+                            </a>
+                            <button
+                              className="absolute top-2 right-2 text-xs text-red-600 hover:underline"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                deleteNotif(n.key);
+                              }}
+                              title="ลบการแจ้งเตือนนี้"
+                            >
+                              ลบ
+                            </button>
+                          </div>
                         ))
                       ) : (
                         <div className="text-gray-600">
                           ยังไม่มีการแจ้งเตือน
                         </div>
                       )}
-                      {notifItems.length > notifLimit && (
+                      {displayItems.length > notifLimit && (
                         <div className="pt-1 text-center">
                           <button
                             className="text-blue-600 hover:underline text-sm cursor-pointer"
                             onClick={() => setNotifLimit((l) => l + 10)}
                           >
                             แสดงก่อนหน้านี้
+                          </button>
+                        </div>
+                      )}
+                      {deletedSet.size > 0 && (
+                        <div className="pt-2 text-center">
+                          <button
+                            className="text-gray-500 hover:underline text-xs"
+                            onClick={clearAllDeleted}
+                          >
+                            เรียกคืนการลบทั้งหมด
                           </button>
                         </div>
                       )}

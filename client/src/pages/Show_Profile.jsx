@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 
 const toAbs = (p) => {
@@ -26,6 +27,7 @@ const toAbs = (p) => {
 
 function Show_Profile() {
   const { id } = useParams();
+  const { userId: authUserId, setName } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
@@ -34,12 +36,27 @@ function Show_Profile() {
   const PAGE_SIZE = 9;
   const userId = useMemo(() => {
     try {
-      return localStorage.getItem("userId");
+      return authUserId || localStorage.getItem("userId");
     } catch {
       return null;
     }
-  }, []);
+  }, [authUserId]);
   const [selectedImage, setSelectedImage] = useState(null);
+
+  // Own-profile edit state
+  const isOwner = useMemo(
+    () => String(userId || "") === String(id || ""),
+    [userId, id]
+  );
+  const [profileEditMode, setProfileEditMode] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    first_name: "",
+    last_name: "",
+    Email: "",
+  });
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profilePreviewUrl, setProfilePreviewUrl] = useState(null);
+  const [profileSaving, setProfileSaving] = useState(false);
 
   // Edit product state
   const [editingProductId, setEditingProductId] = useState(null);
@@ -71,6 +88,13 @@ function Show_Profile() {
         if (mounted) {
           setUser(u ? { ...u, image_profile: toAbs(u.image_profile) } : null);
           setProducts(pdata);
+          if (isOwner && u) {
+            setProfileForm({
+              first_name: u.first_name || "",
+              last_name: u.last_name || "",
+              Email: u.Email || "",
+            });
+          }
         }
       } catch (e) {
         if (mounted) setError("ไม่สามารถโหลดข้อมูลได้");
@@ -82,7 +106,7 @@ function Show_Profile() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, isOwner]);
 
   // Reset page when products change
   useEffect(() => {
@@ -182,6 +206,76 @@ function Show_Profile() {
     }
   };
 
+  // Profile edit helpers
+  useEffect(() => {
+    return () => {
+      if (profilePreviewUrl) URL.revokeObjectURL(profilePreviewUrl);
+    };
+  }, [profilePreviewUrl]);
+
+  const onPickProfileImage = (file) => {
+    if (!file) {
+      setProfileImageFile(null);
+      setProfilePreviewUrl(null);
+      return;
+    }
+    setProfileImageFile(file);
+    const url = URL.createObjectURL(file);
+    setProfilePreviewUrl(url);
+    setProfileEditMode(true);
+  };
+
+  const cancelProfileEdit = () => {
+    setProfileEditMode(false);
+    setProfileImageFile(null);
+    if (profilePreviewUrl) URL.revokeObjectURL(profilePreviewUrl);
+    setProfilePreviewUrl(null);
+    if (user) {
+      setProfileForm({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        Email: user.Email || "",
+      });
+    }
+  };
+
+  const saveProfile = async () => {
+    try {
+      setProfileSaving(true);
+      const fd = new FormData();
+      fd.append("first_name", (profileForm.first_name || "").trim());
+      fd.append("last_name", (profileForm.last_name || "").trim());
+      fd.append("Email", (profileForm.Email || user?.Email || "").trim());
+      if (profileImageFile) fd.append("image_profile", profileImageFile);
+      const res = await axios.patch(
+        `${import.meta.env.VITE_API}editprofile/${userId}`,
+        fd,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      const updated = res?.data?.data || null;
+      if (updated) {
+        const up = { ...updated };
+        setUser(up);
+        setProfileForm({
+          first_name: up.first_name || "",
+          last_name: up.last_name || "",
+          Email: up.Email || "",
+        });
+        if (setName && up.first_name) setName(up.first_name);
+      }
+      setProfileEditMode(false);
+      setProfileImageFile(null);
+      if (profilePreviewUrl) URL.revokeObjectURL(profilePreviewUrl);
+      setProfilePreviewUrl(null);
+      alert("บันทึกโปรไฟล์สำเร็จ");
+    } catch (err) {
+      console.error("save profile error", err);
+      alert("ไม่สามารถบันทึกโปรไฟล์ได้");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -200,33 +294,127 @@ function Show_Profile() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-<div className="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-          <div className="relative flex flex-col items-center text-center gap-4">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white/50 shadow-2xl bg-white/20 flex items-center justify-center">
-                {user?.image_profile ? (
-                  <img
-                    src={user.image_profile}
-                    alt="avatar"
-                    className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-300"
-                    onClick={() => setSelectedImage(user.image_profile)}
+      <div className="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 relative overflow-hidden">
+        {/* overlay เบา ๆ */}
+        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
+
+        {/* Action (ขวาบน) */}
+        <div className="absolute top-4 right-4 z-10">
+          {isOwner && (
+            <>
+              {!profileEditMode ? (
+                <button
+                  className="px-3 py-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-all text-sm"
+                  onClick={() => setProfileEditMode(true)}
+                >
+                  แก้ไขชื่อ/รูป
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    className="px-3 py-1.5 rounded-lg bg-emerald-400/90 text-white hover:bg-emerald-400 transition-all text-sm disabled:opacity-50"
+                    onClick={saveProfile}
+                    disabled={profileSaving}
+                  >
+                    {profileSaving ? "กำลังบันทึก..." : "บันทึก"}
+                  </button>
+                  <button
+                    className="px-3 py-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-all text-sm"
+                    onClick={cancelProfileEdit}
+                    disabled={profileSaving}
+                  >
+                    ยกเลิก
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* เนื้อหา */}
+        <div className="relative flex flex-col items-center text-center gap-4 z-0">
+          {/* Avatar */}
+          <div className="relative">
+            <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white/50 shadow-2xl bg-white/20 flex items-center justify-center group">
+              {profilePreviewUrl || user?.image_profile ? (
+                <img
+                  src={profilePreviewUrl || user.image_profile}
+                  alt="avatar"
+                  className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-300"
+                  onClick={() =>
+                    setSelectedImage(profilePreviewUrl || user.image_profile)
+                  }
+                />
+              ) : (
+                <svg
+                  className="w-16 h-16 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              )}
+
+              {/* เปลี่ยนรูป: โชว์เมื่อ hover หรืออยู่โหมดแก้ไข */}
+              {isOwner && (
+                <label
+                  className={`absolute bottom-2 right-2 bg-black/50 text-white text-[12px] px-2 py-1 rounded cursor-pointer transition-opacity
+              ${
+                profileEditMode
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100"
+              }`}
+                >
+                  เปลี่ยนรูป
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) =>
+                      onPickProfileImage(e.target.files?.[0] || null)
+                    }
                   />
-                ) : (
-                  <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
-                )}
-              </div>
-            </div>
-            <div>
-              <h2 className="text-3xl font-bold text-white mb-1">
-                {user?.first_name || "ผู้ใช้"} {user?.last_name || ""}
-              </h2>
-              <p className="text-purple-100">สมาชิก</p>
+                </label>
+              )}
             </div>
           </div>
+
+          {/* ชื่อ/บทบาท */}
+          <div className="space-y-1">
+            {!profileEditMode ? (
+              <>
+                <h2 className="text-3xl font-bold text-white">
+                  {user?.first_name || "ผู้ใช้"} {user?.last_name || ""}
+                </h2>
+                <p className="text-purple-100">สมาชิก</p>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <input
+                  type="text"
+                  value={profileForm.first_name}
+                  onChange={(e) =>
+                    setProfileForm((f) => ({
+                      ...f,
+                      first_name: e.target.value,
+                    }))
+                  }
+                  className="px-3 py-2 rounded bg-white/90 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  placeholder="ชื่อ"
+                />
+                {/* ถ้าจะเปิดนามสกุลภายหลัง ค่อยปลดคอมเมนต์บล็อกนี้ */}
+                {/* <input
+            type="text"
+            value={profileForm.last_name}
+            onChange={(e) => setProfileForm((f) => ({ ...f, last_name: e.target.value }))}
+            className="px-3 py-2 rounded bg-white/90 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300"
+            placeholder="นามสกุล"
+          /> */}
+              </div>
+            )}
+          </div>
         </div>
+      </div>
 
       <div className="mt-6 bg-gray-100 rounded-xl shadow p-5">
         <div className="flex items-center justify-between mb-3">
