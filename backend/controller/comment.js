@@ -386,3 +386,38 @@ exports.get_my_replies = async (req, res) => {
     return res.status(500).json({ msg: 'ไม่สามารถดึงการตอบกลับได้', error: err.message });
   }
 };
+
+// Replies to my comments (places)
+exports.get_replies_to_me = async (req, res) => {
+  try {
+    const { id_user } = req.params;
+    if (!id_user) return res.status(400).json({ msg: 'ต้องระบุ id_user' });
+    const [rows] = await db
+      .promise()
+      .query(
+        `SELECT r.id_reply, r.id_comment, r.reply, r.reply_date, r.user_image,
+                u.first_name AS reply_user_name,
+                cp.comment AS comment_text,
+                cp.id_post, up.name_location AS post_name
+         FROM comment_reply r
+         JOIN comment_post cp ON cp.id_comment = r.id_comment
+         JOIN user_post up ON up.id_post = cp.id_post
+         JOIN user u ON u.id_user = r.id_user
+         WHERE cp.id_user = ?
+           AND (r.status IS NULL OR r.status <> '0')
+           AND (cp.status IS NULL OR cp.status <> '0')
+         ORDER BY r.reply_date DESC
+         LIMIT 50`,
+        [id_user]
+      );
+    const data = rows.map((row) => ({
+      ...row,
+      reply_date: row.reply_date ? dayjs(row.reply_date).toISOString() : null,
+      user_image: buildFileUrl(req, row.user_image),
+    }));
+    return res.status(200).json({ msg: 'ดึงการตอบกลับมายังคอมเมนต์ของฉันสำเร็จ', data });
+  } catch (err) {
+    console.log('get_replies_to_me error', err);
+    return res.status(500).json({ msg: 'ไม่สามารถดึงการตอบกลับได้', error: err.message });
+  }
+};

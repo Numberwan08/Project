@@ -497,3 +497,38 @@ exports.get_my_event_replies = async (req, res) => {
     return res.status(500).json({ msg: 'ไม่สามารถดึงการตอบกลับได้', error: err.message });
   }
 };
+
+// Replies to my event comments
+exports.get_event_replies_to_me = async (req, res) => {
+  try {
+    await ensureTables();
+    const { id_user } = req.params;
+    if (!id_user) return res.status(400).json({ msg: 'ต้องระบุ id_user' });
+    const [rows] = await db
+      .promise()
+      .query(
+        `SELECT r.id_reply, r.id_comment, r.reply, r.reply_date, r.user_image,
+                u.first_name AS reply_user_name,
+                ec.comment AS comment_text,
+                ec.id_event, ue.name_event AS event_name
+         FROM event_comment_reply r
+         JOIN event_comment ec ON ec.id_comment = r.id_comment
+         JOIN user_event ue ON ue.id_event = ec.id_event
+         JOIN user u ON u.id_user = r.id_user
+         WHERE ec.id_user = ?
+           AND (r.status IS NULL OR r.status <> '0')
+           AND (ec.status IS NULL OR ec.status <> '0')
+         ORDER BY r.reply_date DESC
+         LIMIT 50`,
+        [id_user]
+      );
+    const data = rows.map((row) => ({
+      ...row,
+      reply_date: row.reply_date ? dayjs(row.reply_date).toISOString() : null,
+      user_image: buildFileUrl(req, row.user_image),
+    }));
+    return res.status(200).json({ msg: 'ดึงการตอบกลับมายังคอมเมนต์กิจกรรมของฉันสำเร็จ', data });
+  } catch (err) {
+    return res.status(500).json({ msg: 'ไม่สามารถดึงการตอบกลับได้', error: err.message });
+  }
+};

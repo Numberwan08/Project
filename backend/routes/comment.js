@@ -10,5 +10,6 @@ router.patch('/comment/:id_comment/replies/:id_reply', uploadToReply.single('ima
 router.delete('/comment/:id_comment/replies/:id_reply', commentController.delete_reply);
 // My replies (places)
 router.get('/comment/replies/me/:id_user', commentController.get_my_replies);
+router.get('/comment/replies/to_me/:id_user', commentController.get_replies_to_me);
 
 module.exports = router;

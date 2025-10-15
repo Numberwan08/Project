@@ -130,13 +130,84 @@ exports.login = async (req,res) =>{
                 first_name:user.first_name,
             },"token",{ expiresIn : "1h"});
 
+            // Extra: fetch report notifications for this user (comments/replies reported against them)
+            let pending_count = 0;
+            let resolved_count = 0;
+            let pending_examples = [];
+            let resolved_examples = [];
+            try {
+                
+                const [[pRow]] = await db
+                    .promise()
+                    .query('SELECT COUNT(*) AS c FROM report_comment WHERE target_user_id = ? AND status = 1', [user.id_user]);
+                const [[rRow]] = await db
+                    .promise()
+                    .query('SELECT COUNT(*) AS c FROM report_comment WHERE target_user_id = ? AND status = 0', [user.id_user]);
+                pending_count = Number(pRow?.c || 0);
+                resolved_count = Number(rRow?.c || 0);
+
+                const [pList] = await db
+                    .promise()
+                    .query(
+                        `SELECT 
+                            id_report_comment,
+                            id_commnet AS id_comment,
+                            id_reply,
+                            id_post,
+                            id_event_comment,
+                            id_event_reply,
+                            id_event,
+                            reason,
+                            status,
+                            created_at,
+                            CASE WHEN id_event_comment IS NOT NULL OR id_event_reply IS NOT NULL THEN 'event' ELSE 'post' END AS source,
+                            CASE WHEN id_reply IS NOT NULL OR id_event_reply IS NOT NULL THEN 'reply' ELSE 'comment' END AS entity_type
+                         FROM report_comment
+                         WHERE target_user_id = ? AND status = 1
+                         ORDER BY created_at DESC, id_report_comment DESC
+                         LIMIT 5`,
+                        [user.id_user]
+                    );
+                const [rList] = await db
+                    .promise()
+                    .query(
+                        `SELECT 
+                            id_report_comment,
+                            id_commnet AS id_comment,
+                            id_reply,
+                            id_post,
+                            id_event_comment,
+                            id_event_reply,
+                            id_event,
+                            reason,
+                            status,
+                            created_at,
+                            CASE WHEN id_event_comment IS NOT NULL OR id_event_reply IS NOT NULL THEN 'event' ELSE 'post' END AS source,
+                            CASE WHEN id_reply IS NOT NULL OR id_event_reply IS NOT NULL THEN 'reply' ELSE 'comment' END AS entity_type
+                         FROM report_comment
+                         WHERE target_user_id = ? AND status = 0
+                         ORDER BY created_at DESC, id_report_comment DESC
+                         LIMIT 5`,
+                        [user.id_user]
+                    );
+                pending_examples = pList || [];
+                resolved_examples = rList || [];
+            } catch (_) {}
+
             res.status(200).json({
                 msg : "เข้าสู่ระบบสำเร็จ",
-                token, data:{
-                    
+                token,
+                data: {
                     first_name : user.first_name,
                     id_user : user.id_user,
-
+                },
+                notifications: {
+                    reports: {
+                        pending_count,
+                        resolved_count,
+                        pending_examples,
+                        resolved_examples
+                    }
                 }
             });
 

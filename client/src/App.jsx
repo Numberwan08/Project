@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
 import { ReportProvider } from "./context/ReportContext";
+import { NotificationsProvider } from "./context/NotificationsContext";
 import Detall_Event from "./pages/Detall_Event";
 import Detall_Prodact from "./pages/Detall_Prodact";
 import Detall_Att from "./pages/Detall_Att";
@@ -188,7 +189,9 @@ function App() {
   return (
     <AuthProvider>
       <ReportProvider>
-        <RouterProvider router={router} />
+        <NotificationsProvider>
+          <RouterProvider router={router} />
+        </NotificationsProvider>
       </ReportProvider>
     </AuthProvider>
   );

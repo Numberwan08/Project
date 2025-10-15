@@ -21,5 +21,6 @@ router.patch('/event/reply_status/:id_reply', ec.set_reply_status);
 router.get('/event/comments/me/:id_user', ec.get_my_event_comments);
 // My event replies
 router.get('/event/replies/me/:id_user', ec.get_my_event_replies);
+router.get('/event/replies/to_me/:id_user', ec.get_event_replies_to_me);
 
 module.exports = router;

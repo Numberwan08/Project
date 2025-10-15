@@ -13,6 +13,8 @@ function HomePage() {
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [likedEvents, setLikedEvents] = useState(new Set());
   const [userId, setUserId] = useState(localStorage.getItem("userId"));
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportSummary, setReportSummary] = useState({ pending_count: 0, resolved_count: 0, pending_examples: [], resolved_examples: [] });
 
   useEffect(() => {
     fetchData();
@@ -55,6 +57,36 @@ function HomePage() {
       setLoading(false);
     }
   };
+
+  // Check for login report notifications (set by Login page)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('loginReports');
+      if (raw) {
+        const rep = JSON.parse(raw);
+        const pc = Number(rep?.pending_count || 0);
+        const rc = Number(rep?.resolved_count || 0);
+        const pList = Array.isArray(rep?.pending_examples) ? rep.pending_examples : [];
+        const rList = Array.isArray(rep?.resolved_examples) ? rep.resolved_examples : [];
+        const latestP = pList.reduce((m, x) => Math.max(m, Number(x?.id_report_comment || 0)), 0);
+        const latestR = rList.reduce((m, x) => Math.max(m, Number(x?.id_report_comment || 0)), 0);
+        const sig = `${pc}|${rc}|${latestP}|${latestR}`;
+        const prevSig = localStorage.getItem('lastReportSeenSig') || '';
+
+        setReportSummary({
+          pending_count: pc,
+          resolved_count: rc,
+          pending_examples: pList,
+          resolved_examples: rList
+        });
+        if ((pc > 0 || rc > 0) && sig !== prevSig) {
+          setShowReportModal(true);
+          localStorage.setItem('lastReportSeenSig', sig);
+        }
+        localStorage.removeItem('loginReports');
+      }
+    } catch (_) {}
+  }, []);
 
   const checkLikeStatus = async (placesData, eventsData) => {
     const likedPostsSet = new Set();
@@ -399,6 +431,60 @@ function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Report Notifications Modal */}
+        {showReportModal && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowReportModal(false)}>
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-5" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-800">การแจ้งเตือนการรายงาน</h3>
+                <button className="btn btn-sm btn-ghost" onClick={() => setShowReportModal(false)}>✕</button>
+              </div>
+              <div className="space-y-2 text-sm">
+                {reportSummary.pending_count > 0 && (
+                  <div className="p-3 rounded bg-yellow-50 text-yellow-800">
+                    คุณถูกแจ้งรายงาน {reportSummary.pending_count} รายการ อยู่ระหว่างตรวจสอบ
+                  </div>
+                )}
+                {reportSummary.resolved_count > 0 && (
+                  <div className="p-3 rounded bg-green-50 text-green-800">
+                    รายงานได้รับการดำเนินการแล้ว {reportSummary.resolved_count} รายการ
+                  </div>
+                )}
+                {(reportSummary.pending_examples?.length > 0 || reportSummary.resolved_examples?.length > 0) && (
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {reportSummary.pending_examples?.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-1">ระหว่างตรวจสอบ</h4>
+                        <ul className="list-disc ml-5 space-y-1">
+                          {reportSummary.pending_examples.slice(0,3).map((r) => (
+                            <li key={`p-${r.id_report_comment}`} className="text-gray-600">{r.source === 'event' ? 'อีเวนต์' : 'โพสต์'} • {r.entity_type === 'reply' ? 'ตอบกลับ' : 'คอมเมนต์'} • เหตุผล: {r.reason}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {reportSummary.resolved_examples?.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-1">ดำเนินการแล้ว</h4>
+                        <ul className="list-disc ml-5 space-y-1">
+                          {reportSummary.resolved_examples.slice(0,3).map((r) => (
+                            <li key={`r-${r.id_report_comment}`} className="text-gray-600">{r.source === 'event' ? 'อีเวนต์' : 'โพสต์'} • {r.entity_type === 'reply' ? 'ตอบกลับ' : 'คอมเมนต์'} • เหตุผล: {r.reason}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <Link to="/menu/historyreport">
+                  <button className="px-4 py-2 rounded bg-purple-600 text-white cursor-pointer">ดูประวัติรายงาน</button>
+                </Link>
+                <button className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 cursor-pointer" onClick={() => setShowReportModal(false)}>ปิด</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <style jsx>{`

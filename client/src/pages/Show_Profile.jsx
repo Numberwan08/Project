@@ -200,31 +200,33 @@ function Show_Profile() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="min-h-[30vh] flex items-center justify-center">
-        <div className="bg-gray-100 rounded-2xl shadow-md border border-gray-100 px-6 py-5">
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="relative w-24 h-24 rounded-full overflow-hidden ring-4 ring-purple-50 bg-purple-100 flex items-center justify-center shadow-sm">
-              {user?.image_profile ? (
-                <img
-                  src={user.image_profile}
-                  alt="avatar"
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => setSelectedImage(user.image_profile)}
-                />
-              ) : (
-                <span className="text-purple-600 font-medium text-sm">
-                  No Image
-                </span>
-              )}
+<div className="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+          <div className="relative flex flex-col items-center text-center gap-4">
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white/50 shadow-2xl bg-white/20 flex items-center justify-center">
+                {user?.image_profile ? (
+                  <img
+                    src={user.image_profile}
+                    alt="avatar"
+                    className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-300"
+                    onClick={() => setSelectedImage(user.image_profile)}
+                  />
+                ) : (
+                  <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                )}
+              </div>
             </div>
-
-            {/* ชื่อสมาชิก */}
-            <h4 className="text-xl font-semibold text-gray-800">
-              {user?.first_name || "ผู้ใช้"} {user?.last_name || ""}
-            </h4>
+            <div>
+              <h2 className="text-3xl font-bold text-white mb-1">
+                {user?.first_name || "ผู้ใช้"} {user?.last_name || ""}
+              </h2>
+              <p className="text-purple-100">สมาชิก</p>
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="mt-6 bg-gray-100 rounded-xl shadow p-5">
         <div className="flex items-center justify-between mb-3">

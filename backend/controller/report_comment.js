@@ -283,11 +283,23 @@ exports.getReportsForUser = async (req, res) => {
            rc.created_at,
            up.name_location AS post_name,
            ue.name_event AS event_name,
+           ucm.first_name AS comment_owner_name,
+           urm.first_name AS reply_owner_name,
+           uecm.first_name AS event_comment_owner_name,
+           uerm.first_name AS event_reply_owner_name,
            CASE WHEN rc.id_event_comment IS NOT NULL OR rc.id_event_reply IS NOT NULL THEN 'event' ELSE 'post' END AS source
          FROM report_comment rc
          LEFT JOIN user ru ON ru.id_user = rc.id_user
          LEFT JOIN user_post up ON up.id_post = rc.id_post
          LEFT JOIN user_event ue ON ue.id_event = rc.id_event
+         LEFT JOIN comment_post cpm ON cpm.id_comment = rc.id_commnet
+         LEFT JOIN user ucm ON ucm.id_user = cpm.id_user
+         LEFT JOIN comment_reply rpl ON rpl.id_reply = rc.id_reply
+         LEFT JOIN user urm ON urm.id_user = rpl.id_user
+         LEFT JOIN event_comment ecm ON ecm.id_comment = rc.id_event_comment
+         LEFT JOIN user uecm ON uecm.id_user = ecm.id_user
+         LEFT JOIN event_comment_reply er ON er.id_reply = rc.id_event_reply
+         LEFT JOIN user uerm ON uerm.id_user = er.id_user
          WHERE rc.target_user_id = ?
          ORDER BY rc.created_at DESC, rc.id_report_comment DESC`,
         [userId]

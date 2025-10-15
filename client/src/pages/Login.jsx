@@ -32,6 +32,13 @@ function Login() {
         progress: undefined,
         theme: "colored",
       });
+      // Store notifications from login for HomePage modal
+      try {
+        const reports = res?.data?.notifications?.reports;
+        if (reports && (Number(reports.pending_count || 0) > 0 || Number(reports.resolved_count || 0) > 0)) {
+          localStorage.setItem("loginReports", JSON.stringify(reports));
+        }
+      } catch (_) {}
       login();
       setTimeout(() => {
         navigate("/");
