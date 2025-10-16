@@ -29,7 +29,8 @@ const menuItems = [
 
 const Navbar = () => {
   const { isLogin, logout, name, userId } = useAuth();
-  const { reports, replies, refresh, myReports, follows } = useNotifications();
+  const { reports, replies, refresh, myReports, follows, unseenCount } =
+    useNotifications();
   const realtime = useRealtime();
   const [openNotif, setOpenNotif] = useState(false);
   const [notifLimit, setNotifLimit] = useState(10);
@@ -66,15 +67,18 @@ const Navbar = () => {
   // Realtime: follow notifications
   useEffect(() => {
     if (!isLogin || !userId || !realtime?.on || !realtime?.off) return;
-    console.debug('[navbar] subscribing follow-new for user', userId);
+    console.debug("[navbar] subscribing follow-new for user", userId);
     const handler = async (payload) => {
       try {
-        console.debug('[navbar] follow-new received', payload);
-        if (!payload || String(payload.target_user_id) !== String(userId)) return;
+        console.debug("[navbar] follow-new received", payload);
+        if (!payload || String(payload.target_user_id) !== String(userId))
+          return;
         const fid = payload.follower_id;
         let followerName = "สมาชิก";
         try {
-          const res = await axios.get(`${import.meta.env.VITE_API}profile/${fid}`);
+          const res = await axios.get(
+            `${import.meta.env.VITE_API}profile/${fid}`
+          );
           followerName = res?.data?.data?.first_name || followerName;
         } catch {}
         const href = `/showprofile/${fid}`;
@@ -87,9 +91,11 @@ const Navbar = () => {
         );
       } catch {}
     };
-    realtime.on('follow-new', handler);
+    realtime.on("follow-new", handler);
     return () => {
-      try { realtime.off('follow-new', handler); } catch {}
+      try {
+        realtime.off("follow-new", handler);
+      } catch {}
     };
   }, [isLogin, userId, realtime]);
 
@@ -175,7 +181,7 @@ const Navbar = () => {
       items.push({
         key: f.key || `fol-${ts}-${f.follower_id}`,
         type: "follow-new",
-        label: `${f.first_name || 'สมาชิก'} กำลังติดตามคุณ`,
+        label: `${f.first_name || "สมาชิก"} กำลังติดตามคุณ`,
         href: `/showprofile/${f.follower_id}`,
         ts,
         color: "green",
@@ -186,72 +192,76 @@ const Navbar = () => {
     return items;
   }, [reports, replies, myReports, follows]);
 
+  // Storage keys scoped per user to avoid cross-account leakage
+  const seenStorageKey = useMemo(
+    () => (userId ? `notifSeenKeys:${userId}` : "notifSeenKeys:guest"),
+    [userId]
+  );
+  const deletedStorageKey = useMemo(
+    () => (userId ? `notifDeletedKeys:${userId}` : "notifDeletedKeys:guest"),
+    [userId]
+  );
+
   // Seen handling
   const seenSet = useMemo(() => {
     try {
-      const raw = localStorage.getItem("notifSeenKeys");
+      const raw = localStorage.getItem(seenStorageKey);
       const arr = raw ? JSON.parse(raw) : [];
-      return new Set(arr);
+      return new Set(Array.isArray(arr) ? arr : []);
     } catch {
       return new Set();
     }
-  }, [seenKeysTick]);
+  }, [seenKeysTick, seenStorageKey]);
 
   // Deleted handling (local only)
   const deletedSet = useMemo(() => {
     try {
-      const raw = localStorage.getItem("notifDeletedKeys");
+      const raw = localStorage.getItem(deletedStorageKey);
       const arr = raw ? JSON.parse(raw) : [];
-      return new Set(arr);
+      return new Set(Array.isArray(arr) ? arr : []);
     } catch {
       return new Set();
     }
-  }, [seenKeysTick]);
+  }, [seenKeysTick, deletedStorageKey]);
 
-  const unseenCount = useMemo(() => {
-    try {
-      return notifItems.filter((n) => !seenSet.has(n.key) && !deletedSet.has(n.key)).length;
-    } catch {
-      return 0;
-    }
-  }, [notifItems, seenSet, deletedSet]);
+  // ใช้ unseenCount จาก context ไม่ต้องคำนวณเอง
 
   const markSeen = (key) => {
     try {
-      const raw = localStorage.getItem("notifSeenKeys");
+      const raw = localStorage.getItem(seenStorageKey);
       const arr = raw ? JSON.parse(raw) : [];
       if (!arr.includes(key)) arr.push(key);
-      localStorage.setItem("notifSeenKeys", JSON.stringify(arr));
+      localStorage.setItem(seenStorageKey, JSON.stringify(arr));
       setSeenKeysTick((t) => t + 1);
     } catch {}
   };
 
   const markAllSeen = () => {
     try {
-      const raw = localStorage.getItem("notifSeenKeys");
+      const raw = localStorage.getItem(seenStorageKey);
       const arr = raw ? JSON.parse(raw) : [];
       const set = new Set(arr);
       effectiveItems.forEach((n) => {
         if (!set.has(n.key)) set.add(n.key);
       });
-      localStorage.setItem("notifSeenKeys", JSON.stringify(Array.from(set)));
+      localStorage.setItem(seenStorageKey, JSON.stringify(Array.from(set)));
       setSeenKeysTick((t) => t + 1);
     } catch {}
   };
 
   const deleteNotif = (key) => {
     try {
-      const raw = localStorage.getItem("notifDeletedKeys");
+      const raw = localStorage.getItem(deletedStorageKey);
       const arr = raw ? JSON.parse(raw) : [];
       if (!arr.includes(key)) arr.push(key);
-      localStorage.setItem("notifDeletedKeys", JSON.stringify(arr));
+      localStorage.setItem(deletedStorageKey, JSON.stringify(arr));
       setSeenKeysTick((t) => t + 1);
     } catch {}
   };
 
   const clearAllDeleted = () => {
     try {
-      localStorage.removeItem("notifDeletedKeys");
+      localStorage.removeItem(deletedStorageKey);
       setSeenKeysTick((t) => t + 1);
     } catch {}
   };
@@ -271,7 +281,7 @@ const Navbar = () => {
     <nav className="bg-white shadow-md py-4 px-6 fixed top-0 left-0 w-full z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="text-2xl font-bold text-blue-600">Chiang Rai</div>
-        <ul className=" flex justify-between space-x-6">
+        <ul className="flex justify-between space-x-6">
           {menuItems.map((item, index) => (
             <li key={index}>
               <Link
@@ -280,8 +290,7 @@ const Navbar = () => {
                   location.pathname === item.path
                     ? "text-purple-800 font-bold bg-purple-100 px-3 py-1 rounded"
                     : ""
-                }`}
-              >
+                }`}>
                 {item.label}
               </Link>
             </li>
@@ -296,12 +305,12 @@ const Navbar = () => {
                   className="relative p-2 rounded-full hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setOpenNotif((o) => !o);
+                    // รีเฟรชเหมือนเดิมเพื่อดึงข้อมูลล่าสุดเมื่อเปิดเมนู
                     refresh();
                     setNotifLimit(10);
                   }}
                   aria-label="การแจ้งเตือน"
-                  title="การแจ้งเตือน"
-                >
+                  title="การแจ้งเตือน">
                   <Bell className="w-5 h-5 text-gray-700" />
                   {unseenCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
@@ -322,8 +331,7 @@ const Navbar = () => {
                               ? "bg-gray-800 text-white"
                               : "text-gray-600 hover:bg-gray-100"
                           }`}
-                          onClick={() => setNotifTab("all")}
-                        >
+                          onClick={() => setNotifTab("all")}>
                           ทั้งหมด
                         </button>
                         <button
@@ -332,23 +340,20 @@ const Navbar = () => {
                               ? "bg-gray-800 text-white"
                               : "text-gray-600 hover:bg-gray-100"
                           }`}
-                          onClick={() => setNotifTab("unread")}
-                        >
+                          onClick={() => setNotifTab("unread")}>
                           ยังไม่ได้อ่าน
                         </button>
                         {unseenCount > 0 && (
                           <button
                             className="text-xs text-blue-600  text-gray-600 hover:bg-gray-100 py-2 px-1 rounded-md cursor-pointer"
                             onClick={markAllSeen}
-                            title="ทำเป็นอ่านทั้งหมด"
-                          >
+                            title="ทำเป็นอ่านทั้งหมด">
                             อ่านทั้งหมด
                           </button>
                         )}
                         <button
                           className="text-xs text-gray-500 cursor-pointer hover:bg-gray-100 py-2 px-1 rounded-md"
-                          onClick={() => setOpenNotif(false)}
-                        >
+                          onClick={() => setOpenNotif(false)}>
                           ปิด
                         </button>
                       </div>
@@ -364,71 +369,76 @@ const Navbar = () => {
                                 : n.color === "yellow"
                                 ? "bg-yellow-50 hover:bg-yellow-100 text-yellow-800"
                                 : "bg-blue-50 hover:bg-blue-100 text-blue-800"
-                            }`}
-                          >
+                            }`}>
                             <a
                               href={n.href}
                               onClick={() => markSeen(n.key)}
-                              className="block"
-                            >
+                              className="block">
                               <div className="font-medium">{n.label}</div>
-                            {/* For reports on reply: use detail_report + reporter */}
-                            {n.type.startsWith("report") && (
-                              <div className="mt-1 text-xs">
-                                {/* <div>{n.text ? `รายละเอียด: ${n.text}` : ''}</div> */}
-                                <div>
-                                  ผู้รายงาน:{" "}
-                                  {reports?.pending?.find(
-                                    (x) => `rc-${x.id_report_comment}` === n.key
-                                  )?.reporter_name ||
-                                    reports?.resolved?.find(
+                              {/* For reports on reply: use detail_report + reporter */}
+                              {n.type.startsWith("report") && (
+                                <div className="mt-1 text-xs">
+                                  {/* <duseNotificationsiv>{n.text ? `รายละเอียด: ${n.text}` : ''}</duseNotificationsiv> */}
+                                  <div>
+                                    ผู้รายงาน:{" "}
+                                    {reports?.pending?.find(
                                       (x) =>
                                         `rc-${x.id_report_comment}` === n.key
                                     )?.reporter_name ||
-                                    "-"}
+                                      reports?.resolved?.find(
+                                        (x) =>
+                                          `rc-${x.id_report_comment}` === n.key
+                                      )?.reporter_name ||
+                                      "-"}
+                                  </div>
+                                  {/* For comments, show comment owner name */}
+                                  {(() => {
+                                    const it =
+                                      reports?.pending?.find(
+                                        (x) =>
+                                          `rc-${x.id_report_comment}` === n.key
+                                      ) ||
+                                      reports?.resolved?.find(
+                                        (x) =>
+                                          `rc-${x.id_report_comment}` === n.key
+                                      );
+                                    if (!it) return null;
+                                    const cname =
+                                      it.comment_owner_name ||
+                                      it.event_comment_owner_name ||
+                                      null;
+                                    return cname ? (
+                                      <div className="mt-1">
+                                        ผู้คอมเมนต์: {cname}
+                                      </div>
+                                    ) : null;
+                                  })()}
                                 </div>
-                                {/* For comments, show comment owner name */}
-                                {(() => {
-                                  const it =
-                                    reports?.pending?.find(
-                                      (x) =>
-                                        `rc-${x.id_report_comment}` === n.key
-                                    ) ||
-                                    reports?.resolved?.find(
-                                      (x) =>
-                                        `rc-${x.id_report_comment}` === n.key
-                                    );
-                                  if (!it) return null;
-                                  const cname =
-                                    it.comment_owner_name ||
-                                    it.event_comment_owner_name ||
-                                    null;
-                                  return cname ? (
-                                    <div className="mt-1">
-                                      ผู้คอมเมนต์: {cname}
+                              )}
+                              {/* For replies list, show reply user, original comment, and reply text */}
+                              {n.type.startsWith("reply") && (
+                                <div className="mt-1 text-xs space-y-1">
+                                  {n.reply_user_name && (
+                                    <div>ผู้ตอบ: {n.reply_user_name}</div>
+                                  )}
+                                  {n.comment_text && (
+                                    <div className="flex">
+                                      คอมเมนต์:{" "}
+                                      <span className="line-clamp-2 ml-1">
+                                        {n.comment_text}
+                                      </span>
                                     </div>
-                                  ) : null;
-                                })()}
-                              </div>
-                            )}
-                            {/* For replies list, show reply user, original comment, and reply text */}
-                            {n.type.startsWith("reply") && (
-                              <div className="mt-1 text-xs space-y-1">
-                                {n.reply_user_name && (
-                                  <div>ผู้ตอบ: {n.reply_user_name}</div>
-                                )}
-                                {n.comment_text && (
-                                  <div className="flex">
-                                    คอมเมนต์:   <span className="line-clamp-2 ml-1">{n.comment_text}</span>
-                                  </div>
-                                )}
-                                {n.text && (
-                                  <div className="flex">
-                                    ตอบกลับ:   <span className="line-clamp-2 ml-1">{n.text}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                                  )}
+                                  {n.text && (
+                                    <div className="flex">
+                                      ตอบกลับ:{" "}
+                                      <span className="line-clamp-2 ml-1">
+                                        {n.text}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </a>
                             <button
                               className="absolute top-2 right-2 text-xs text-red-600 hover:underline"
@@ -437,8 +447,7 @@ const Navbar = () => {
                                 e.stopPropagation();
                                 deleteNotif(n.key);
                               }}
-                              title="ลบการแจ้งเตือนนี้"
-                            >
+                              title="ลบการแจ้งเตือนนี้">
                               ลบ
                             </button>
                           </div>
@@ -452,8 +461,7 @@ const Navbar = () => {
                         <div className="pt-1 text-center">
                           <button
                             className="text-blue-600 hover:underline text-sm cursor-pointer"
-                            onClick={() => setNotifLimit((l) => l + 10)}
-                          >
+                            onClick={() => setNotifLimit((l) => l + 10)}>
                             แสดงก่อนหน้านี้
                           </button>
                         </div>
@@ -462,8 +470,7 @@ const Navbar = () => {
                         <div className="pt-2 text-center">
                           <button
                             className="text-gray-500 hover:underline text-xs"
-                            onClick={clearAllDeleted}
-                          >
+                            onClick={clearAllDeleted}>
                             เรียกคืนการลบทั้งหมด
                           </button>
                         </div>
@@ -479,8 +486,7 @@ const Navbar = () => {
                 </div>
                 <ul
                   tabIndex={0}
-                  className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
-                >
+                  className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
                   {/* <li>
                     <a href="/menu/menu_att">เพิ่มสถานที่</a>
                   </li> */}
@@ -509,8 +515,7 @@ const Navbar = () => {
                   <Link to="/">
                     <li
                       onClick={() => logout()}
-                      className="bg-red-100 text-red-600 hover:bg-red-200 rounded-md px-2 py-1 font-semibold cursor-pointer"
-                    >
+                      className="bg-red-100 text-red-600 hover:bg-red-200 rounded-md px-2 py-1 font-semibold cursor-pointer">
                       ออกจากระบบ
                     </li>
                   </Link>
@@ -522,16 +527,14 @@ const Navbar = () => {
               <button>
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-blue-500 transition duration-200 font-medium"
-                >
+                  className="text-gray-700 hover:text-blue-500 transition duration-200 font-medium">
                   เข้าสู่ระบบ
                 </Link>
               </button>
               <button>
                 <Link
                   to="/register"
-                  className="text-gray-700 hover:text-blue-500 transition duration-200 font-medium"
-                >
+                  className="text-gray-700 hover:text-blue-500 transition duration-200 font-medium">
                   สมัครสมาชิก
                 </Link>
               </button>

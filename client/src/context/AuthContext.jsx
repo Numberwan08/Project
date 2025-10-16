@@ -22,9 +22,11 @@ export const AuthProvider = ({ children }) => {
     setIsLogin(false);
     setName("");
     setUserId("");
-    localStorage.removeItem("isLogin","name","userId");
-    // localStorage.removeItem("name");
-    // localStorage.removeItem("userId");
+    try {
+      localStorage.removeItem("isLogin");
+      localStorage.removeItem("name");
+      localStorage.removeItem("userId");
+    } catch {}
   };
 
   useEffect(() => {
