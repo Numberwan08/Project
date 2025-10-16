@@ -254,19 +254,24 @@ export const NotificationsProvider = ({ children }) => {
       } catch {}
     };
     realtime.on("new-reply", onNewReply);
+    const onCommentHidden = (payload) => {
+      try {
+        if (!payload || String(payload.target_user_id || "") !== String(userId || "")) return;
+        refresh();
+      } catch {}
+    };
+    realtime.on("comment-hidden", onCommentHidden);
     return () => {
       // ... realtime.off calls
       try {
         realtime.off("follow-new", onFollowNew);
         realtime.off("report-new", onReportNew);
         realtime.off("new-reply", onNewReply);
+        realtime.off("comment-hidden", onCommentHidden);
       } catch {}
     };
   }, [realtime, userId]);
 
-  // ... (โค้ดส่วน totalCount และ signature เหมือนเดิม)
-
-  // Calculate unseen notifications count (reports + replies + follows) and update reactively
   const unseenCount = useMemo(() => {
     if (!userId) return 0;
     let seenKeys = [];
@@ -286,7 +291,7 @@ export const NotificationsProvider = ({ children }) => {
       notifKeys.push(`rc-${it.id_report_comment}`)
     );
     (reports?.resolved || []).forEach((it) =>
-      notifKeys.push(`rc-${it.id_report_comment}`)
+      notifKeys.push(`rcs-${it.id_report_comment}`)
     );
     (replies?.posts || []).forEach((r) =>
       notifKeys.push(`rplp-${r.id_reply}`)

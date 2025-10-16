@@ -121,7 +121,7 @@ const Navbar = () => {
     (reports?.resolved || []).forEach((it) => {
       const ts = it.created_at ? Date.parse(it.created_at) : 0;
       items.push({
-        key: `rc-${it.id_report_comment}`,
+        key: `rcs-${it.id_report_comment}`,
         type: "report-resolved",
         label:
           it.id_reply || it.id_event_reply
@@ -376,23 +376,8 @@ const Navbar = () => {
                               onClick={() => markSeen(n.key)}
                               className="block">
                               <div className="font-medium">{n.label}</div>
-                              {/* For reports on reply: use detail_report + reporter */}
                               {n.type.startsWith("report") && (
                                 <div className="mt-1 text-xs">
-                                  {/* <duseNotificationsiv>{n.text ? `รายละเอียด: ${n.text}` : ''}</duseNotificationsiv> */}
-                                  <div>
-                                    ผู้รายงาน:{" "}
-                                    {reports?.pending?.find(
-                                      (x) =>
-                                        `rc-${x.id_report_comment}` === n.key
-                                    )?.reporter_name ||
-                                      reports?.resolved?.find(
-                                        (x) =>
-                                          `rc-${x.id_report_comment}` === n.key
-                                      )?.reporter_name ||
-                                      "-"}
-                                  </div>
-                                  {/* For comments, show comment owner name */}
                                   {(() => {
                                     const it =
                                       reports?.pending?.find(
@@ -416,7 +401,6 @@ const Navbar = () => {
                                   })()}
                                 </div>
                               )}
-                              {/* For replies list, show reply user, original comment, and reply text */}
                               {n.type.startsWith("reply") && (
                                 <div className="mt-1 text-xs space-y-1">
                                   {n.reply_user_name && (
@@ -467,7 +451,7 @@ const Navbar = () => {
                           </button>
                         </div>
                       )}
-                      {deletedSet.size > 0 && (
+                      {/* {deletedSet.size > 0 && (
                         <div className="pt-2 text-center">
                           <button
                             className="text-gray-500 hover:underline text-xs"
@@ -475,7 +459,7 @@ const Navbar = () => {
                             เรียกคืนการลบทั้งหมด
                           </button>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 )}
