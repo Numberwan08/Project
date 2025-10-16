@@ -29,7 +29,7 @@ exports.ensureReplyTable = async () => {
           id_comment INT NOT NULL,
           id_user INT NOT NULL,
           reply TEXT NOT NULL,
-          reply_date DATETIME DEFAULT NULL,
+          reply_date DATETIM  E DEFAULT NULL,
           user_image VARCHAR(255) DEFAULT NULL,
           parent_reply_id INT NULL,
           PRIMARY KEY (id_reply)

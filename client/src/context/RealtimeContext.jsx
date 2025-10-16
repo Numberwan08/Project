@@ -7,21 +7,6 @@ export const RealtimeProvider = ({ children }) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    let socket;
-    try {
-      const base = import.meta.env.VITE_API;
-      const origin = base ? new URL(base).origin : window.location.origin;
-      const { io } = require('socket.io-client');
-      socket = io(origin, { transports: ['websocket', 'polling'] });
-      socketRef.current = socket;
-      socket.on('connect', () => setConnected(true));
-      socket.on('disconnect', () => setConnected(false));
-    } catch (e) {
-      // ignore
-    }
-    return () => {
-      try { socketRef.current?.disconnect(); } catch {}
-    };
   }, []);
 
   const value = useMemo(() => ({
@@ -36,4 +21,3 @@ export const RealtimeProvider = ({ children }) => {
 };
 
 export const useRealtime = () => useContext(RealtimeContext);
-

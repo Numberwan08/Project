@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext';
+import { useRealtime } from '../context/RealtimeContext';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -7,6 +9,7 @@ import { User, Mail, Edit3, Save, X, Loader, Eye, EyeOff, Lock } from 'lucide-re
 
 function Editprofile() {
   const { userId, setName } = useAuth();
+  const realtime = useRealtime?.() || null;
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState({
@@ -30,6 +33,54 @@ function Editprofile() {
     newPassword: '',
   });
   const [previewUrl, setPreviewUrl] = useState(null);
+  // Inline edit mode like Show_Profile
+  const [profileEditMode, setProfileEditMode] = useState(false);
+  const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+  // Followers/Following counts and list modal (like Show_Profile)
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [listModalOpen, setListModalOpen] = useState(false);
+  const [listModalType, setListModalType] = useState('followers');
+  const [listModalLoading, setListModalLoading] = useState(false);
+  const [listModalItems, setListModalItems] = useState([]);
+
+  const toAbs = (p) => {
+    try {
+      if (!p) return null;
+      const norm = String(p).replace(/\\\\/g, '/');
+      if (/^https?:\/\//i.test(norm)) return norm;
+      let origin = '';
+      try {
+        const api = import.meta.env.VITE_API;
+        if (api) {
+          const u = new URL(api);
+          origin = u.origin;
+        } else if (typeof window !== 'undefined' && window.location) {
+          origin = window.location.origin;
+        }
+      } catch (_) {}
+      if (!origin) return norm;
+      return `${origin}/${norm.replace(/^\/+/, '')}`;
+    } catch (_) {
+      return p;
+    }
+  };
+
+  const formatThaiDate = (dateString) => {
+    try {
+      if (!dateString) return '-';
+      const d = new Date(dateString);
+      return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (_) {
+      return '-';
+    }
+  };
+  const sexLabel = (sx) => {
+    const v = String(sx || '').toLowerCase();
+    if (v === 'm') return 'ชาย';
+    if (v === 'f') return 'หญิง';
+    return '-';
+  };
 
   useEffect(() => {
     if (imageFile) {
@@ -44,11 +95,12 @@ function Editprofile() {
     try {
       setLoading(true);
       const res = await axios.get(import.meta.env.VITE_API + `profile/${userId}`);
-      setData(res.data.data);
+      const rec = res.data?.data || {};
+      setData({ ...rec, image_profile: toAbs(rec.image_profile) });
       setEditData({
-        first_name: res.data.data.first_name || '',
-        last_name: res.data.data.last_name || '',
-        Email: res.data.data.Email || ''
+        first_name: rec.first_name || '',
+        last_name: rec.last_name || '',
+        Email: rec.Email || ''
       });
     } catch (err) {
       console.log("error get user", err);
@@ -176,6 +228,118 @@ function Editprofile() {
     }
   }, [userId]);
 
+  // Realtime: increment followers if someone starts following me while I'm on this page
+  useEffect(() => {
+    if (!realtime?.on || !realtime?.off) return;
+    const handler = (payload) => {
+      try {
+        if (!payload) return;
+        if (String(payload.target_user_id) === String(userId)) {
+          setFollowersCount((c) => c + 1);
+        }
+      } catch {}
+    };
+    realtime.on('follow-new', handler);
+    return () => {
+      try { realtime.off('follow-new', handler); } catch {}
+    };
+  }, [realtime, userId]);
+
+  // Load follower/following counts for current user
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      try {
+        if (!userId) return;
+        const [resFollowers, resFollowing] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API}social/followers/${userId}`),
+          axios.get(`${import.meta.env.VITE_API}social/following/${userId}`),
+        ]);
+        const flw = Array.isArray(resFollowers?.data?.data) ? resFollowers.data.data : [];
+        const flg = Array.isArray(resFollowing?.data?.data) ? resFollowing.data.data : [];
+        if (active) {
+          setFollowersCount(flw.length);
+          setFollowingCount(flg.length);
+        }
+      } catch (_) {}
+    };
+    run();
+    return () => { active = false; };
+  }, [userId]);
+
+  const openListModal = async (type) => {
+    try {
+      if (!userId) return;
+      setListModalType(type);
+      setListModalOpen(true);
+      setListModalLoading(true);
+      const url = type === 'followers'
+        ? `${import.meta.env.VITE_API}social/followers/${userId}`
+        : `${import.meta.env.VITE_API}social/following/${userId}`;
+      const res = await axios.get(url);
+      const arr = Array.isArray(res?.data?.data) ? res.data.data : [];
+      setListModalItems(arr.map((u) => ({
+        id_user: u.id_user,
+        first_name: u.first_name || 'ผู้ใช้',
+        image_profile: toAbs(u.image_profile),
+      })));
+    } catch (_) {
+      setListModalItems([]);
+    } finally {
+      setListModalLoading(false);
+    }
+  };
+
+  const onPickProfileImage = (file) => {
+    if (!file) {
+      setImageFile(null);
+      return;
+    }
+    setImageFile(file);
+    setProfileEditMode(true);
+  };
+
+  const cancelProfileEdit = () => {
+    setProfileEditMode(false);
+    setImageFile(null);
+    setEditData({
+      first_name: data.first_name || '',
+      last_name: data.last_name || '',
+      Email: data.Email || '',
+    });
+  };
+
+  const saveProfile = async () => {
+    try {
+      setIsUpdating(true);
+      const formData = new FormData();
+      formData.append('first_name', (editData.first_name || '').trim());
+      formData.append('last_name', (editData.last_name || '').trim());
+      formData.append('Email', (editData.Email || data?.Email || '').trim());
+      if (imageFile) formData.append('image_profile', imageFile);
+
+      const res = await axios.patch(
+        import.meta.env.VITE_API + `editprofile/${userId}`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      const updated = res?.data?.data || null;
+      if (updated) {
+        const up = { ...updated };
+        setData({ ...up, image_profile: toAbs(up.image_profile) });
+        setEditData({ first_name: up.first_name || '', last_name: up.last_name || '', Email: up.Email || '' });
+        if (setName && up.first_name) setName(up.first_name);
+      }
+      setProfileEditMode(false);
+      setImageFile(null);
+      toast.success('แก้ไขโปรไฟล์สำเร็จ', { position: 'top-center', autoClose: 1500 });
+    } catch (err) {
+      toast.error('ไม่สามารถบันทึกโปรไฟล์ได้', { position: 'top-center', autoClose: 1500 });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
@@ -190,58 +354,111 @@ function Editprofile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 shadow-lg overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600">
-            {data?.image_profile ? (
-              <img
-                src={data.image_profile}
-                alt="รูปโปรไฟล์"
-                className="w-20 h-20 object-cover"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
+        {/* Header like Show_Profile */}
+        <div className="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 relative overflow-hidden mb-6">
+          <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
+
+          {/* Actions */}
+          <div className="absolute top-4 right-4 z-10 flex gap-2">
+            {!profileEditMode ? (
+              <button
+                className="px-3 py-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-all text-sm flex items-center gap-2"
+                onClick={() => setProfileEditMode(true)}
+              >
+                <Edit3 className="w-4 h-4" /> แก้ไขชื่อ/รูป
+              </button>
             ) : (
-              <User className="w-10 h-10 text-white" />
+              <>
+                <button
+                  className="px-3 py-1.5 rounded-lg bg-emerald-400/90 text-white hover:bg-emerald-400 transition-all text-sm disabled:opacity-50"
+                  onClick={saveProfile}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? 'กำลังบันทึก...' : 'บันทึก'}
+                </button>
+                <button
+                  className="px-3 py-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-all text-sm"
+                  onClick={cancelProfileEdit}
+                  disabled={isUpdating}
+                >
+                  ยกเลิก
+                </button>
+              </>
             )}
+            <button
+              className="px-3 py-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-all text-sm flex items-center gap-2"
+              onClick={() => setIsPasswordModalOpen(true)}
+            >
+              <Lock className="w-4 h-4" /> เปลี่ยนรหัสผ่าน
+            </button>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">โปรไฟล์</h1>
-        </div>
 
-        {/* Profile Card */}
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-          {/* Card Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-1">
-                      {data.first_name} 
-                    </h2>
-                    <p className="text-purple-100 flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {data.Email || 'ไม่ได้ระบุอีเมล'}
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button 
-                      className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-full font-medium transition-all hover:scale-105 shadow-lg flex items-center gap-2"
-                      onClick={openModal}
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      แก้ไขโปรไฟล์
-                    </button>
-                    <button
-                      className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-full font-medium transition-all hover:scale-105 shadow-lg flex items-center gap-2"
-                      onClick={() => setIsPasswordModalOpen(true)}
-                    >
-                      <Lock className="w-4 h-4" />
-                      เปลี่ยนรหัสผ่าน
-                    </button>
-                  </div>
-                </div>
+          {/* Content */}
+          <div className="relative flex flex-col items-center text-center gap-4 z-0">
+            <p className="text-purple-100 text-4xl">โปรไฟล์</p>
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white/50 shadow-2xl bg-white/20 flex items-center justify-center group">
+                {previewUrl || data?.image_profile ? (
+                  <img
+                    src={previewUrl || data.image_profile}
+                    alt="avatar"
+                    className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-300"
+                    onClick={() => setSelectedProfileImage(previewUrl || data.image_profile)}
+                  />
+                ) : (
+                  <User className="w-16 h-16 text-white" />
+                )}
+                <label
+                  className={`absolute bottom-2 right-2 bg-black/50 text-white text-[12px] px-2 py-1 rounded cursor-pointer transition-opacity ${
+                    profileEditMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  เปลี่ยนรูป
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickProfileImage(e.target.files?.[0] || null)}
+                  />
+                </label>
               </div>
+            </div>
+
+            {/* Name and details */}
+            <div className="space-y-1">
+              {!profileEditMode ? (
+                <>
+                  <h2 className="text-3xl font-bold text-white">{data?.first_name || 'ผู้ใช้'}</h2>
+                  <p className="text-purple-100 mt-1">เพศ: {sexLabel(data?.sex)}</p>
+                  <p className="text-purple-100">วันเกิด: {formatThaiDate(data?.dob)}</p>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <input
+                    type="text"
+                    value={editData.first_name}
+                    onChange={(e) => setEditData((f) => ({ ...f, first_name: e.target.value }))}
+                    className="px-3 py-2 rounded bg-white/90 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    placeholder="ชื่อ"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Follower / Following counts */}
+            <div className="flex items-center gap-3 text-purple-100">
+              <button type="button" className="underline-offset-2 hover:underline" onClick={() => openListModal('followers')}>
+                ผู้ติดตาม: {followersCount}
+              </button>
+              <span>•</span>
+              <button type="button" className="underline-offset-2 hover:underline" onClick={() => openListModal('following')}>
+                กำลังติดตาม: {followingCount}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Edit Modal */}
+        {/* Edit Modal (legacy, no longer used but kept) */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn">
@@ -431,6 +648,69 @@ function Editprofile() {
             </div>
           </div>
         )}
+        {/* Followers/Following Modal */}
+        {listModalOpen && (
+          <dialog className="modal modal-open">
+            <div className="modal-box max-w-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-800">{listModalType === 'followers' ? 'ผู้ติดตาม' : 'กำลังติดตาม'}</h3>
+                <button className="btn btn-ghost btn-sm" onClick={() => setListModalOpen(false)} aria-label="ปิด">✕</button>
+              </div>
+              {listModalLoading ? (
+                <div className="py-6 text-center text-gray-500">กำลังโหลด...</div>
+              ) : listModalItems.length === 0 ? (
+                <div className="py-6 text-center text-gray-500">ยังไม่มีรายการ</div>
+              ) : (
+                <div className="max-h-[60vh] overflow-auto divide-y">
+                  {listModalItems.map((it) => (
+                    <Link
+                      key={it.id_user}
+                      to={`/showprofile/${it.id_user}`}
+                      className="flex items-center gap-3 py-2 hover:bg-gray-50 px-1 rounded"
+                      onClick={() => setListModalOpen(false)}
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                        {it.image_profile ? (
+                          <img src={it.image_profile} alt={it.first_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-800">{it.first_name}</div>
+                        {/* <div className="text-xs text-gray-500">ID: {it.id_user}</div> */}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              <div className="modal-action">
+                <button className="btn" onClick={() => setListModalOpen(false)}>ปิด</button>
+              </div>
+            </div>
+          </dialog>
+        )}
+
+        {/* Profile Image Preview Modal */}
+        {selectedProfileImage && (
+          <dialog className="modal modal-open">
+            <div className="modal-box max-w-4xl p-0">
+              <div className="flex items-center justify-center z-50 p-4" onClick={() => setSelectedProfileImage(null)}>
+                <div className="relative max-w-[90vw] max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+                  <img src={selectedProfileImage} alt="preview" className="w-auto h-auto max-w-[50vw] max-h-[80vh] object-contain rounded-lg" />
+                  <button onClick={() => setSelectedProfileImage(null)} className="absolute top-4 right-4 bg-black/30 hover:bg-black/40 text-white rounded-full p-2 transition-all duration-200" aria-label="ปิด" title="ปิด">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </dialog>
+        )}
+
         <ToastContainer />
       </div>
     </div>

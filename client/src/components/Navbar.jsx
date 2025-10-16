@@ -1,8 +1,12 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { Bell } from "lucide-react";
+import { useRealtime } from "../context/RealtimeContext";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const menuItems = [
   {
@@ -24,8 +28,9 @@ const menuItems = [
 ];
 
 const Navbar = () => {
-  const { isLogin, logout, name } = useAuth();
-  const { reports, replies, refresh, myReports } = useNotifications();
+  const { isLogin, logout, name, userId } = useAuth();
+  const { reports, replies, refresh, myReports, follows } = useNotifications();
+  const realtime = useRealtime();
   const [openNotif, setOpenNotif] = useState(false);
   const [notifLimit, setNotifLimit] = useState(10);
   const [seenKeysTick, setSeenKeysTick] = useState(0);
@@ -57,6 +62,36 @@ const Navbar = () => {
     if (it.id_reply) params.set("highlightReply", it.id_reply);
     return `${base}?${params.toString()}`;
   };
+
+  // Realtime: follow notifications
+  useEffect(() => {
+    if (!isLogin || !userId || !realtime?.on || !realtime?.off) return;
+    console.debug('[navbar] subscribing follow-new for user', userId);
+    const handler = async (payload) => {
+      try {
+        console.debug('[navbar] follow-new received', payload);
+        if (!payload || String(payload.target_user_id) !== String(userId)) return;
+        const fid = payload.follower_id;
+        let followerName = "สมาชิก";
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_API}profile/${fid}`);
+          followerName = res?.data?.data?.first_name || followerName;
+        } catch {}
+        const href = `/showprofile/${fid}`;
+        toast.info(
+          <a href={href} className="no-underline">
+            <div className="font-medium">{followerName} กำลังติดตามคุณ</div>
+            <div className="text-xs underline mt-1">ดูโปรไฟล์</div>
+          </a>,
+          { position: "top-right", autoClose: 4000 }
+        );
+      } catch {}
+    };
+    realtime.on('follow-new', handler);
+    return () => {
+      try { realtime.off('follow-new', handler); } catch {}
+    };
+  }, [isLogin, userId, realtime]);
 
   // Build unified notifications list (reports + replies), newest first
   const notifItems = useMemo(() => {
@@ -134,10 +169,22 @@ const Navbar = () => {
         color: "green",
       });
     });
+    // New followers (local, realtime only)
+    (follows || []).forEach((f) => {
+      const ts = f.ts ? Number(f.ts) : Date.now();
+      items.push({
+        key: f.key || `fol-${ts}-${f.follower_id}`,
+        type: "follow-new",
+        label: `${f.first_name || 'สมาชิก'} กำลังติดตามคุณ`,
+        href: `/showprofile/${f.follower_id}`,
+        ts,
+        color: "green",
+      });
+    });
     // Sort newest first
     items.sort((a, b) => b.ts - a.ts);
     return items;
-  }, [reports, replies, myReports]);
+  }, [reports, replies, myReports, follows]);
 
   // Seen handling
   const seenSet = useMemo(() => {
@@ -161,10 +208,13 @@ const Navbar = () => {
     }
   }, [seenKeysTick]);
 
-  const unseenCount = useMemo(
-    () => notifItems.filter((n) => !seenSet.has(n.key) && !deletedSet.has(n.key)).length,
-    [notifItems, seenSet, deletedSet]
-  );
+  const unseenCount = useMemo(() => {
+    try {
+      return notifItems.filter((n) => !seenSet.has(n.key) && !deletedSet.has(n.key)).length;
+    } catch {
+      return 0;
+    }
+  }, [notifItems, seenSet, deletedSet]);
 
   const markSeen = (key) => {
     try {
@@ -489,6 +539,7 @@ const Navbar = () => {
           )}
         </div>
       </div>
+      <ToastContainer />
     </nav>
   );
 };

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import { useRealtime } from "../context/RealtimeContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -30,6 +31,7 @@ const toAbs = (p) => {
 function Show_Profile() {
   const { id } = useParams();
   const { userId: authUserId, setName } = useAuth();
+  const realtime = useRealtime?.() || null;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
@@ -187,6 +189,23 @@ function Show_Profile() {
       active = false;
     };
   }, [id]);
+
+  // Realtime: update follower count if this profile gets a new follower
+  useEffect(() => {
+    if (!realtime?.on || !realtime?.off) return;
+    const handler = (payload) => {
+      try {
+        if (!payload) return;
+        if (String(payload.target_user_id) === String(id)) {
+          setFollowersCount((c) => c + 1);
+        }
+      } catch {}
+    };
+    realtime.on('follow-new', handler);
+    return () => {
+      try { realtime.off('follow-new', handler); } catch {}
+    };
+  }, [realtime, id]);
 
   const openListModal = async (type) => {
     try {
