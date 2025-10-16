@@ -135,6 +135,27 @@ exports.createReportForComment = async (req, res) => {
       ]
     );
 
+    // Realtime notify the user who got reported (post comment)
+    try {
+      const io = getIO && getIO();
+      if (io && owner?.id_user) {
+        io.emit('report-new', {
+          scope: 'post',
+          type: 'comment',
+          id_report_comment: result.insertId,
+          id_post: id_post,
+          id_comment: id_comment,
+          id_reply: null,
+          id_event: null,
+          id_event_comment: null,
+          id_event_reply: null,
+          reason,
+          target_user_id: owner.id_user,
+          created_at: now(),
+        });
+      }
+    } catch (_) {}
+
     return res.status(201).json({
       msg: "ส่งรายงานความคิดเห็นสำเร็จ",
       data: { id_report_comment: result.insertId },
@@ -179,6 +200,27 @@ exports.createReportForReply = async (req, res) => {
         now(),
       ]
     );
+
+    // Realtime notify the user who got reported (post reply)
+    try {
+      const io = getIO && getIO();
+      if (io && owner?.id_user) {
+        io.emit('report-new', {
+          scope: 'post',
+          type: 'reply',
+          id_report_comment: result.insertId,
+          id_post: id_post,
+          id_comment: id_comment,
+          id_reply: id_reply,
+          id_event: null,
+          id_event_comment: null,
+          id_event_reply: null,
+          reason,
+          target_user_id: owner.id_user,
+          created_at: now(),
+        });
+      }
+    } catch (_) {}
 
     return res.status(201).json({
       msg: "ส่งรายงานการตอบกลับสำเร็จ",
@@ -238,6 +280,27 @@ exports.createEventReportForComment = async (req, res) => {
       ]
     );
 
+    // Realtime notify the user who got reported (event comment)
+    try {
+      const io = getIO && getIO();
+      if (io && owner?.id_user) {
+        io.emit('report-new', {
+          scope: 'event',
+          type: 'comment',
+          id_report_comment: result.insertId,
+          id_event: id_event,
+          id_event_comment: id_event_comment,
+          id_event_reply: null,
+          id_post: null,
+          id_comment: null,
+          id_reply: null,
+          reason,
+          target_user_id: owner.id_user,
+          created_at: now(),
+        });
+      }
+    } catch (_) {}
+
     return res.status(201).json({
       msg: "����§ҹ�����Դ��������",
       data: { id_report_comment: result.insertId },
@@ -296,6 +359,27 @@ exports.createEventReportForReply = async (req, res) => {
         now(),
       ]
     );
+
+    // Realtime notify the user who got reported (event reply)
+    try {
+      const io = getIO && getIO();
+      if (io && owner?.id_user) {
+        io.emit('report-new', {
+          scope: 'event',
+          type: 'reply',
+          id_report_comment: result.insertId,
+          id_event: id_event,
+          id_event_comment: id_event_comment,
+          id_event_reply: id_event_reply,
+          id_post: null,
+          id_comment: null,
+          id_reply: null,
+          reason,
+          target_user_id: owner.id_user,
+          created_at: now(),
+        });
+      }
+    } catch (_) {}
 
     return res.status(201).json({
       msg: "����§ҹ��õͺ��Ѻ�����",

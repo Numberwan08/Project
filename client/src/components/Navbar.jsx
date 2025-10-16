@@ -128,7 +128,8 @@ const Navbar = () => {
             ? "รายงานตอบกลับ (ดำเนินการแล้ว)"
             : "รายงานคอมเมนต์ (ดำเนินการแล้ว)",
         text: it.reason || "-",
-        href: makeReportLink(it),
+        // หลังดำเนินการแล้ว เปิดไปยังหน้าประวัติการถูกรายงานของตัวเอง
+        href: "/menu/redactcommnet",
         ts,
         color: "yellow",
       });

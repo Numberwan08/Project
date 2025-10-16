@@ -46,16 +46,18 @@ export const NotificationsProvider = ({ children }) => {
     if (!userId) return;
     setLoading(true);
     try {
-      // Fetch reports and followers (new API structure)
-      const myRepAndFollows = await axios.get(
-        `${import.meta.env.VITE_API}report/my/${userId}`
-      );
-      const reportsArr = Array.isArray(myRepAndFollows?.data?.data?.reports)
-        ? myRepAndFollows.data.data.reports
+      // Fetch reports against me, my submitted reports, and followers
+      const [againstMeRes, myRepAndFollows] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_API}report/me/${userId}`),
+        axios.get(`${import.meta.env.VITE_API}report/my/${userId}`),
+      ]);
+
+      // Reports against me (array)
+      const againstMe = Array.isArray(againstMeRes?.data?.data)
+        ? againstMeRes.data.data
         : [];
-      // status: 1 = pending, 0 = resolved (ตามตัวอย่าง)
-      const pending = reportsArr.filter((x) => Number(x.status) === 1);
-      const resolved = reportsArr.filter((x) => Number(x.status) === 0);
+      const pending = againstMe.filter((x) => Number(x.status) === 1);
+      const resolved = againstMe.filter((x) => Number(x.status) === 0);
       setReports({
         pending_count: pending.length,
         resolved_count: resolved.length,
@@ -73,8 +75,13 @@ export const NotificationsProvider = ({ children }) => {
         events: Array.isArray(rp2?.data?.data) ? rp2.data.data : [],
       });
 
-      // My Reports (for myReports, same as above)
-      setMyReports({ pending, resolved });
+      // My submitted reports (separate from reports against me)
+      const submitted = Array.isArray(myRepAndFollows?.data?.data?.reports)
+        ? myRepAndFollows.data.data.reports
+        : [];
+      const subPending = submitted.filter((x) => Number(x.status) === 1);
+      const subResolved = submitted.filter((x) => Number(x.status) === 0);
+      setMyReports({ pending: subPending, resolved: subResolved });
 
       // Followers
       const followersFromApi = Array.isArray(
@@ -184,6 +191,49 @@ export const NotificationsProvider = ({ children }) => {
     if (!realtime || !realtime.on) return;
     // ... onReport, onReply, onCommentHidden listeners
     realtime.on("follow-new", onFollowNew);
+    const onReportNew = (payload) => {
+      try {
+        if (!payload || String(payload.target_user_id || "") !== String(userId || "")) return;
+        const {
+          id_report_comment,
+          scope,
+          type,
+          id_post,
+          id_event,
+          id_comment,
+          id_event_comment,
+          id_reply,
+          id_event_reply,
+          reason,
+          created_at,
+        } = payload;
+        const obj = {
+          id_report_comment,
+          id_post: id_post || null,
+          id_event: id_event || null,
+          id_comment: id_comment || null,
+          id_commnet: id_comment || null,
+          id_event_comment: id_event_comment || null,
+          id_reply: id_reply || null,
+          id_event_reply: id_event_reply || null,
+          reason: reason || null,
+          status: 1,
+          created_at: created_at || new Date().toISOString(),
+        };
+        setReports((prev) => {
+          const p = Array.isArray(prev?.pending) ? prev.pending : [];
+          if (p.some((x) => String(x.id_report_comment) === String(id_report_comment))) return prev;
+          const nextPending = [obj, ...p];
+          return {
+            pending_count: nextPending.length,
+            resolved_count: prev?.resolved_count || 0,
+            pending: nextPending,
+            resolved: Array.isArray(prev?.resolved) ? prev.resolved : [],
+          };
+        });
+      } catch {}
+    };
+    realtime.on("report-new", onReportNew);
     const onNewReply = (payload) => {
       try {
         if (!payload || String(payload.target_user_id || "") !== String(userId || "")) return;
@@ -208,6 +258,7 @@ export const NotificationsProvider = ({ children }) => {
       // ... realtime.off calls
       try {
         realtime.off("follow-new", onFollowNew);
+        realtime.off("report-new", onReportNew);
         realtime.off("new-reply", onNewReply);
       } catch {}
     };
