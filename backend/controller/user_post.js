@@ -484,13 +484,11 @@ exports.add_post = async (req, res) => {
       });
     }
 
-    // ตัดค่าว่างจากตัวแปรที่รับ
     const trimmedNameLocation = name_location ? name_location.replace(/\s+/g, ' ').trim() : "";
     const trimmedDetailLocation = detail_location ? detail_location.trim() : "";
     const trimmedPhone = phone ? phone.trim() : "";
     const trimmedDetailAtt = detail_att ? detail_att.trim() : "";
 
-    // ตรวจสอบ name_location ซ้ำ
     const [dupRows] = await db
       .promise()
       .query("SELECT id_post FROM user_post WHERE name_location = ?", [trimmedNameLocation]);
@@ -1139,8 +1137,9 @@ exports.delete_post_type = async (req, res) => {
         }
         return res.status(200).json({ msg: "ลบประเภทสำเร็จ" });
     } catch (err) {
+        
         console.log("error delete post type", err);
-        // จัดการกรณีติด Foreign Key constraint จาก DB โดยตรง
+
         if (err && (err.code === 'ER_ROW_IS_REFERENCED_2' || err.errno === 1451)) {
             return res.status(409).json({ msg: "ไม่สามารถลบประเภทได้ เนื่องจากมีโพสต์ใช้งานอยู่" });
         }

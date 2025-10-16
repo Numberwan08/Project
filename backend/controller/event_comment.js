@@ -280,12 +280,30 @@ exports.delete_comment = async (req, res) => {
     // cleanup images first
     let groupId = null;
     let imagePath = null;
+    let ownerId = null;
+    let id_event = null;
     try {
-      const [rows] = await db.promise().query('SELECT images, id_images_event FROM event_comment WHERE id_comment = ?', [id]);
+      const [rows] = await db
+        .promise()
+        .query('SELECT images, id_images_event, id_user, id_event FROM event_comment WHERE id_comment = ?', [id]);
       if (rows.length > 0) {
         imagePath = rows[0].images || null;
         groupId = rows[0].id_images_event || null;
+        ownerId = rows[0].id_user || null;
+        id_event = rows[0].id_event || null;
       }
+    } catch(_) {}
+    // Delete reply images and replies (manual cascade)
+    try {
+      const [reps] = await db
+        .promise()
+        .query('SELECT id_reply, user_image FROM event_comment_reply WHERE id_comment = ?', [id]);
+      for (const r of reps || []) {
+        if (r.user_image && fs.existsSync(r.user_image)) {
+          try { fs.unlinkSync(r.user_image); } catch(_) {}
+        }
+      }
+      await db.promise().query('DELETE FROM event_comment_reply WHERE id_comment = ?', [id]);
     } catch(_) {}
     if (groupId) {
       try { await deleteEventImagesGroup(groupId); } catch(_) {}
@@ -295,6 +313,20 @@ exports.delete_comment = async (req, res) => {
     }
     const [r] = await db.promise().query('DELETE FROM event_comment WHERE id_comment = ?', [id]);
     if (r.affectedRows === 0) return res.status(404).json({ msg: 'ไม่พบความคิดเห็น' });
+    // Notify owner that comment was removed (treated similar to hidden)
+    try {
+      const io = getIO && getIO();
+      if (io && ownerId) {
+        io.emit('comment-hidden', {
+          scope: 'event',
+          id_comment: Number(id),
+          id_event: Number(id_event || 0),
+          target_user_id: Number(ownerId),
+          status: 0,
+          created_at: now(),
+        });
+      }
+    } catch(_) {}
     return res.status(200).json({ msg: 'ลบความคิดเห็นสำเร็จ' });
   } catch (err) {
     return res.status(500).json({ msg: 'ไม่สามารถลบได้', error: err.message });

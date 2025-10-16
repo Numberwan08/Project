@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const toAbs = (p) => {
   try {
@@ -57,6 +59,27 @@ function Show_Profile() {
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profilePreviewUrl, setProfilePreviewUrl] = useState(null);
   const [profileSaving, setProfileSaving] = useState(false);
+
+  // Helpers to format DOB and sex
+  const formatThaiDate = (dateString) => {
+    try {
+      if (!dateString) return "-";
+      const d = new Date(dateString);
+      return d.toLocaleDateString("th-TH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (_) {
+      return "-";
+    }
+  };
+  const sexLabel = (sx) => {
+    const v = String(sx || "").toLowerCase();
+    if (v === "m") return "ชาย";
+    if (v === "f") return "หญิง";
+    return "-";
+  };
 
   // Edit product state
   const [editingProductId, setEditingProductId] = useState(null);
@@ -185,10 +208,10 @@ function Show_Profile() {
         )
       );
       cancelEdit();
-      alert("แก้ไขสินค้าสำเร็จ");
+      toast.success("แก้ไขสินค้าสำเร็จ", { position: "top-center", autoClose: 1500 });
     } catch (err) {
       console.error("edit product error", err);
-      alert("ไม่สามารถแก้ไขสินค้าได้");
+      toast.error("ไม่สามารถแก้ไขสินค้าได้", { position: "top-center", autoClose: 1500 });
     } finally {
       setEditLoading(false);
     }
@@ -199,10 +222,10 @@ function Show_Profile() {
     try {
       await axios.delete(`${import.meta.env.VITE_API}product/${id_product}`);
       setProducts((prev) => prev.filter((x) => x.id_product !== id_product));
-      alert("ลบสินค้าสำเร็จ");
+      toast.success("ลบสินค้าสำเร็จ", { position: "top-center", autoClose: 1500 });
     } catch (err) {
       console.error("delete product error", err);
-      alert("ไม่สามารถลบสินค้าได้");
+      toast.error("ไม่สามารถลบสินค้าได้", { position: "top-center", autoClose: 1500 });
     }
   };
 
@@ -267,10 +290,10 @@ function Show_Profile() {
       setProfileImageFile(null);
       if (profilePreviewUrl) URL.revokeObjectURL(profilePreviewUrl);
       setProfilePreviewUrl(null);
-      alert("บันทึกโปรไฟล์สำเร็จ");
+      toast.success("บันทึกโปรไฟล์สำเร็จ", { position: "top-center", autoClose: 1500 });
     } catch (err) {
       console.error("save profile error", err);
-      alert("ไม่สามารถบันทึกโปรไฟล์ได้");
+      toast.error("ไม่สามารถบันทึกโปรไฟล์ได้", { position: "top-center", autoClose: 1500 });
     } finally {
       setProfileSaving(false);
     }
@@ -294,6 +317,7 @@ function Show_Profile() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      <ToastContainer />
       <div className="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 relative overflow-hidden">
         {/* overlay เบา ๆ */}
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
@@ -333,8 +357,10 @@ function Show_Profile() {
 
         {/* เนื้อหา */}
         <div className="relative flex flex-col items-center text-center gap-4 z-0">
+          <p className="text-purple-100 text-4xl">สมาชิก</p>
           {/* Avatar */}
           <div className="relative">
+            
             <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white/50 shadow-2xl bg-white/20 flex items-center justify-center group">
               {profilePreviewUrl || user?.image_profile ? (
                 <img
@@ -381,12 +407,20 @@ function Show_Profile() {
 
           {/* ชื่อ/บทบาท */}
           <div className="space-y-1">
+            
             {!profileEditMode ? (
               <>
+              
                 <h2 className="text-3xl font-bold text-white">
-                  {user?.first_name || "ผู้ใช้"} {user?.last_name || ""}
+                  
+                  {user?.first_name || "ผู้ใช้"}
                 </h2>
-                <p className="text-purple-100">สมาชิก</p>
+                <p className="text-purple-100 mt-1">
+                  เพศ: {sexLabel(user?.sex)}
+                </p>
+                <p className="text-purple-100">
+                  วันเกิด: {formatThaiDate(user?.dob)}
+                </p>
               </>
             ) : (
               <div className="flex flex-col items-center gap-2">

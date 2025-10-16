@@ -137,7 +137,7 @@ function Menu_Att() {
           }
         },
         (error) => {
-          alert("ไม่สามารถเข้าถึงตำแหน่งปัจจุบันได้");
+          toast.error("ไม่สามารถเข้าถึงตำแหน่งปัจจุบันได้", { position: "top-center", autoClose: 1500 });
         }
       );
     }

@@ -287,7 +287,7 @@ function HomePage() {
       <div className="container mx-auto px-4 py-8">
         <section className="mb-16">
           <div className="text-center mb-12">
-            <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
               สถานที่ท่องเที่ยวเชิงวัฒนธรรมยอดนิยม
             </h1>
             <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full"></div>

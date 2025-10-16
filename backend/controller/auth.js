@@ -29,10 +29,28 @@ exports.register = async ( req , res ) =>{
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const normalizedFirstName = (first_name || "").replace(/\s+/g, " ").trim();
+        if (!normalizedFirstName) {
+            return res.status(400).json({
+                msg: "กรุณาระบุชื่อ",
+                error: "first_name required"
+            });
+        }
+        const [existingName] = await db.promise().query(
+            "SELECT id_user FROM user WHERE first_name = ? LIMIT 1",
+            [normalizedFirstName]
+        );
+        if (existingName.length > 0) {
+            return res.status(400).json({
+                msg: "มีคนใช้ชื่อนี้แล้ว",
+                error: "duplicate first_name"
+            });
+        }
+
         const [rows] = await db.promise().query("INSERT INTO  user (email, password, first_name, last_name, dob, sex, image_profile) VALUES (?,?,?,?,?,?,?)",[
             email,
             hashedPassword,
-            first_name,
+            normalizedFirstName,
             last_name,
             dob,
             sex,
