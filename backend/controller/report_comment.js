@@ -1,20 +1,18 @@
-const db = require('../config/db');
+const db = require("../config/db");
 let getIO;
 try {
-  ({ getIO } = require('../socket'));
+  ({ getIO } = require("../socket"));
 } catch (_) {
   getIO = () => null;
 }
-const dayjs = require('dayjs');
+const dayjs = require("dayjs");
 
-const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
+const now = () => dayjs().format("YYYY-MM-DD HH:mm:ss");
 
 const ensureReportTable = async () => {
   try {
-    await db
-      .promise()
-      .query(
-        `CREATE TABLE IF NOT EXISTS report_comment (
+    await db.promise().query(
+      `CREATE TABLE IF NOT EXISTS report_comment (
           id_report_comment INT NOT NULL AUTO_INCREMENT,
           id_commnet INT NULL,
           id_post INT NULL,
@@ -23,21 +21,28 @@ const ensureReportTable = async () => {
           detail_report VARCHAR(1000) NULL,
           PRIMARY KEY (id_report_comment)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8`
-      );
+    );
   } catch (e) {}
 
   const addCol = async (sql) => {
     try {
       await db.promise().query(sql);
-    } catch (e) {
-    }
+    } catch (e) {}
   };
 
-  await addCol("ALTER TABLE report_comment ADD COLUMN reason VARCHAR(255) NULL");
-  await addCol("ALTER TABLE report_comment ADD COLUMN status TINYINT(1) NULL DEFAULT 1");
+  await addCol(
+    "ALTER TABLE report_comment ADD COLUMN reason VARCHAR(255) NULL"
+  );
+  await addCol(
+    "ALTER TABLE report_comment ADD COLUMN status TINYINT(1) NULL DEFAULT 1"
+  );
   await addCol("ALTER TABLE report_comment ADD COLUMN target_user_id INT NULL");
-  await addCol("ALTER TABLE report_comment ADD COLUMN created_at DATETIME NULL");
-  await addCol("ALTER TABLE report_comment ADD COLUMN id_event_comment INT NULL");
+  await addCol(
+    "ALTER TABLE report_comment ADD COLUMN created_at DATETIME NULL"
+  );
+  await addCol(
+    "ALTER TABLE report_comment ADD COLUMN id_event_comment INT NULL"
+  );
   await addCol("ALTER TABLE report_comment ADD COLUMN id_event_reply INT NULL");
   await addCol("ALTER TABLE report_comment ADD COLUMN id_event INT NULL");
 };
@@ -45,14 +50,18 @@ const ensureReportTable = async () => {
 const findCommentOwner = async (id_comment) => {
   const [rows] = await db
     .promise()
-    .query('SELECT id_user, id_post FROM comment_post WHERE id_comment = ?', [id_comment]);
+    .query("SELECT id_user, id_post FROM comment_post WHERE id_comment = ?", [
+      id_comment,
+    ]);
   return rows[0] || null;
 };
 
 const findReplyOwner = async (id_reply) => {
   const [rows] = await db
     .promise()
-    .query('SELECT id_user, id_comment FROM comment_reply WHERE id_reply = ?', [id_reply]);
+    .query("SELECT id_user, id_comment FROM comment_reply WHERE id_reply = ?", [
+      id_reply,
+    ]);
   return rows[0] || null;
 };
 
@@ -60,14 +69,19 @@ const findReplyOwner = async (id_reply) => {
 const findEventCommentOwner = async (id_event_comment) => {
   const [rows] = await db
     .promise()
-    .query('SELECT id_user, id_event FROM event_comment WHERE id_comment = ?', [id_event_comment]);
+    .query("SELECT id_user, id_event FROM event_comment WHERE id_comment = ?", [
+      id_event_comment,
+    ]);
   return rows[0] || null;
 };
 
 const findEventReplyOwner = async (id_event_reply) => {
   const [rows] = await db
     .promise()
-    .query('SELECT id_user, id_comment FROM event_comment_reply WHERE id_reply = ?', [id_event_reply]);
+    .query(
+      "SELECT id_user, id_comment FROM event_comment_reply WHERE id_reply = ?",
+      [id_event_reply]
+    );
   return rows[0] || null;
 };
 
@@ -77,73 +91,104 @@ exports.createReportForComment = async (req, res) => {
     const { id_comment, id_post, id_user, reason, details } = req.body;
 
     if (!id_comment || !id_post || !id_user || !reason) {
-      return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน', error: 'ต้องระบุ id_comment, id_post, id_user, reason' });
+      return res.status(400).json({
+        msg: "ข้อมูลไม่ครบถ้วน",
+        error: "ต้องระบุ id_comment, id_post, id_user, reason",
+      });
     }
 
     // Prevent duplicate report by the same user for the same comment
     const [dup] = await db
       .promise()
-      .query('SELECT id_report_comment FROM report_comment WHERE id_user = ? AND id_commnet = ? LIMIT 1', [id_user, id_comment]);
+      .query(
+        "SELECT id_report_comment FROM report_comment WHERE id_user = ? AND id_commnet = ? LIMIT 1",
+        [id_user, id_comment]
+      );
     if (dup.length > 0) {
-      return res.status(409).json({ msg: 'คุณได้รายงานความคิดเห็นนี้แล้ว' });
+      return res.status(409).json({ msg: "คุณได้รายงานความคิดเห็นนี้แล้ว" });
     }
 
     // find target user (comment owner)
     const owner = await findCommentOwner(id_comment);
     if (!owner) {
-      return res.status(404).json({ msg: 'ไม่พบความคิดเห็นที่จะรายงาน' });
+      return res.status(404).json({ msg: "ไม่พบความคิดเห็นที่จะรายงาน" });
     }
     // Disallow reporting own comment
     if (String(owner.id_user) === String(id_user)) {
-      return res.status(400).json({ msg: 'ไม่สามารถรายงานความคิดเห็นของตนเองได้' });
+      return res
+        .status(400)
+        .json({ msg: "ไม่สามารถรายงานความคิดเห็นของตนเองได้" });
     }
 
-    const [result] = await db
-      .promise()
-      .query(
-        `INSERT INTO report_comment (id_commnet, id_post, id_user, detail_report, reason, status, target_user_id, created_at)
+    const [result] = await db.promise().query(
+      `INSERT INTO report_comment (id_commnet, id_post, id_user, detail_report, reason, status, target_user_id, created_at)
          VALUES (?,?,?,?,?,?,?,?)`,
-        [id_comment, id_post, id_user, details || null, reason, 1, owner.id_user || null, now()]
-      );
+      [
+        id_comment,
+        id_post,
+        id_user,
+        details || null,
+        reason,
+        1,
+        owner.id_user || null,
+        now(),
+      ]
+    );
 
     return res.status(201).json({
-      msg: 'ส่งรายงานความคิดเห็นสำเร็จ',
-      data: { id_report_comment: result.insertId }
+      msg: "ส่งรายงานความคิดเห็นสำเร็จ",
+      data: { id_report_comment: result.insertId },
     });
   } catch (err) {
-    console.log('createReportForComment error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถส่งรายงานได้', error: err.message });
+    console.log("createReportForComment error:", err);
+    return res
+      .status(500)
+      .json({ msg: "ไม่สามารถส่งรายงานได้", error: err.message });
   }
 };
 
 exports.createReportForReply = async (req, res) => {
   try {
     await ensureReportTable();
-    const { id_reply, id_comment, id_post, id_user, reason, details } = req.body;
+    const { id_reply, id_comment, id_post, id_user, reason, details } =
+      req.body;
     if (!id_reply || !id_comment || !id_post || !id_user || !reason) {
-      return res.status(400).json({ msg: 'ข้อมูลไม่ครบถ้วน', error: 'ต้องระบุ id_reply, id_comment, id_post, id_user, reason' });
+      return res.status(400).json({
+        msg: "ข้อมูลไม่ครบถ้วน",
+        error: "ต้องระบุ id_reply, id_comment, id_post, id_user, reason",
+      });
     }
 
     const owner = await findReplyOwner(id_reply);
     if (!owner || String(owner.id_comment) !== String(id_comment)) {
-      return res.status(404).json({ msg: 'ไม่พบการตอบกลับที่จะรายงาน' });
+      return res.status(404).json({ msg: "ไม่พบการตอบกลับที่จะรายงาน" });
     }
 
-    const [result] = await db
-      .promise()
-      .query(
-        `INSERT INTO report_comment (id_reply, id_commnet, id_post, id_user, detail_report, reason, status, target_user_id, created_at)
+    const [result] = await db.promise().query(
+      `INSERT INTO report_comment (id_reply, id_commnet, id_post, id_user, detail_report, reason, status, target_user_id, created_at)
          VALUES (?,?,?,?,?,?,?,?,?)`,
-        [id_reply, id_comment, id_post, id_user, details || null, reason, 1, owner.id_user || null, now()]
-      );
+      [
+        id_reply,
+        id_comment,
+        id_post,
+        id_user,
+        details || null,
+        reason,
+        1,
+        owner.id_user || null,
+        now(),
+      ]
+    );
 
     return res.status(201).json({
-      msg: 'ส่งรายงานการตอบกลับสำเร็จ',
-      data: { id_report_comment: result.insertId }
+      msg: "ส่งรายงานการตอบกลับสำเร็จ",
+      data: { id_report_comment: result.insertId },
     });
   } catch (err) {
-    console.log('createReportForReply error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถส่งรายงานได้', error: err.message });
+    console.log("createReportForReply error:", err);
+    return res
+      .status(500)
+      .json({ msg: "ไม่สามารถส่งรายงานได้", error: err.message });
   }
 };
 
@@ -154,36 +199,54 @@ exports.createEventReportForComment = async (req, res) => {
     const { id_event_comment, id_event, id_user, reason, details } = req.body;
 
     if (!id_event_comment || !id_event || !id_user || !reason) {
-      return res.status(400).json({ msg: '���������ú��ǹ', error: '��ͧ�к� id_event_comment, id_event, id_user, reason' });
+      return res.status(400).json({
+        msg: "���������ú��ǹ",
+        error: "��ͧ�к� id_event_comment, id_event, id_user, reason",
+      });
     }
 
     const [dup] = await db
       .promise()
-      .query('SELECT id_report_comment FROM report_comment WHERE id_user = ? AND id_event_comment = ? LIMIT 1', [id_user, id_event_comment]);
+      .query(
+        "SELECT id_report_comment FROM report_comment WHERE id_user = ? AND id_event_comment = ? LIMIT 1",
+        [id_user, id_event_comment]
+      );
     if (dup.length > 0) {
-      return res.status(409).json({ msg: '�س����§ҹ�����Դ��繹������' });
+      return res.status(409).json({ msg: "�س����§ҹ�����Դ��繹������" });
     }
 
     const owner = await findEventCommentOwner(id_event_comment);
     if (!owner) {
-      return res.status(404).json({ msg: '��辺�����Դ��繷�����§ҹ' });
+      return res.status(404).json({ msg: "��辺�����Դ��繷�����§ҹ" });
     }
     if (String(owner.id_user) === String(id_user)) {
-      return res.status(400).json({ msg: '�������ö��§ҹ�����Դ��繢ͧ���ͧ��' });
+      return res.status(400).json({ msg: "�������ö��§ҹ�����Դ��繢ͧ���ͧ��" });
     }
 
-    const [result] = await db
-      .promise()
-      .query(
-        `INSERT INTO report_comment (id_event_comment, id_event, id_user, detail_report, reason, status, target_user_id, created_at)
+    const [result] = await db.promise().query(
+      `INSERT INTO report_comment (id_event_comment, id_event, id_user, detail_report, reason, status, target_user_id, created_at)
          VALUES (?,?,?,?,?,?,?,?)`,
-        [id_event_comment, id_event, id_user, details || null, reason, 1, owner.id_user || null, now()]
-      );
+      [
+        id_event_comment,
+        id_event,
+        id_user,
+        details || null,
+        reason,
+        1,
+        owner.id_user || null,
+        now(),
+      ]
+    );
 
-    return res.status(201).json({ msg: '����§ҹ�����Դ��������', data: { id_report_comment: result.insertId } });
+    return res.status(201).json({
+      msg: "����§ҹ�����Դ��������",
+      data: { id_report_comment: result.insertId },
+    });
   } catch (err) {
-    console.log('createEventReportForComment error:', err);
-    return res.status(500).json({ msg: '�������ö����§ҹ��', error: err.message });
+    console.log("createEventReportForComment error:", err);
+    return res
+      .status(500)
+      .json({ msg: "�������ö����§ҹ��", error: err.message });
   }
 };
 
@@ -191,38 +254,66 @@ exports.createEventReportForComment = async (req, res) => {
 exports.createEventReportForReply = async (req, res) => {
   try {
     await ensureReportTable();
-    const { id_event_reply, id_event_comment, id_event, id_user, reason, details } = req.body;
-    if (!id_event_reply || !id_event_comment || !id_event || !id_user || !reason) {
-      return res.status(400).json({ msg: '���������ú��ǹ', error: '��ͧ�к� id_event_reply, id_event_comment, id_event, id_user, reason' });
+    const {
+      id_event_reply,
+      id_event_comment,
+      id_event,
+      id_user,
+      reason,
+      details,
+    } = req.body;
+    if (
+      !id_event_reply ||
+      !id_event_comment ||
+      !id_event ||
+      !id_user ||
+      !reason
+    ) {
+      return res.status(400).json({
+        msg: "���������ú��ǹ",
+        error:
+          "��ͧ�к� id_event_reply, id_event_comment, id_event, id_user, reason",
+      });
     }
 
     const owner = await findEventReplyOwner(id_event_reply);
     if (!owner || String(owner.id_comment) !== String(id_event_comment)) {
-      return res.status(404).json({ msg: '��辺��õͺ��Ѻ������§ҹ' });
+      return res.status(404).json({ msg: "��辺��õͺ��Ѻ������§ҹ" });
     }
 
-    const [result] = await db
-      .promise()
-      .query(
-        `INSERT INTO report_comment (id_event_reply, id_event_comment, id_event, id_user, detail_report, reason, status, target_user_id, created_at)
+    const [result] = await db.promise().query(
+      `INSERT INTO report_comment (id_event_reply, id_event_comment, id_event, id_user, detail_report, reason, status, target_user_id, created_at)
          VALUES (?,?,?,?,?,?,?,?,?)`,
-        [id_event_reply, id_event_comment, id_event, id_user, details || null, reason, 1, owner.id_user || null, now()]
-      );
+      [
+        id_event_reply,
+        id_event_comment,
+        id_event,
+        id_user,
+        details || null,
+        reason,
+        1,
+        owner.id_user || null,
+        now(),
+      ]
+    );
 
-    return res.status(201).json({ msg: '����§ҹ��õͺ��Ѻ�����', data: { id_report_comment: result.insertId } });
+    return res.status(201).json({
+      msg: "����§ҹ��õͺ��Ѻ�����",
+      data: { id_report_comment: result.insertId },
+    });
   } catch (err) {
-    console.log('createEventReportForReply error:', err);
-    return res.status(500).json({ msg: '�������ö����§ҹ��', error: err.message });
+    console.log("createEventReportForReply error:", err);
+    return res
+      .status(500)
+      .json({ msg: "�������ö����§ҹ��", error: err.message });
   }
 };
 
 exports.getAllReports = async (req, res) => {
   try {
     await ensureReportTable();
-    const [rows] = await db
-      .promise()
-      .query(
-        `SELECT 
+    const [rows] = await db.promise().query(
+      `SELECT 
            rc.id_report_comment,
            rc.id_commnet AS id_comment,
            rc.id_reply,
@@ -253,12 +344,16 @@ exports.getAllReports = async (req, res) => {
          LEFT JOIN user_post up ON up.id_post = rc.id_post
          LEFT JOIN user_event ue ON ue.id_event = rc.id_event
          ORDER BY rc.created_at DESC, rc.id_report_comment DESC`
-      );
+    );
 
-    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานสำเร็จ', data: rows || [] });
+    return res
+      .status(200)
+      .json({ msg: "ดึงข้อมูลรายงานสำเร็จ", data: rows || [] });
   } catch (err) {
-    console.log('getAllReports error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานได้', error: err.message });
+    console.log("getAllReports error:", err);
+    return res
+      .status(500)
+      .json({ msg: "ไม่สามารถดึงข้อมูลรายงานได้", error: err.message });
   }
 };
 
@@ -266,10 +361,8 @@ exports.getReportsForUser = async (req, res) => {
   try {
     await ensureReportTable();
     const { userId } = req.params;
-    const [rows] = await db
-      .promise()
-      .query(
-        `SELECT 
+    const [rows] = await db.promise().query(
+      `SELECT 
            rc.id_report_comment,
            rc.id_commnet AS id_comment,
            rc.id_reply,
@@ -304,12 +397,16 @@ exports.getReportsForUser = async (req, res) => {
          LEFT JOIN user uerm ON uerm.id_user = er.id_user
          WHERE rc.target_user_id = ?
          ORDER BY rc.created_at DESC, rc.id_report_comment DESC`,
-        [userId]
-      );
-    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานของฉันสำเร็จ', data: rows || [] });
+      [userId]
+    );
+    return res
+      .status(200)
+      .json({ msg: "ดึงข้อมูลรายงานของฉันสำเร็จ", data: rows || [] });
   } catch (err) {
-    console.log('getReportsForUser error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานได้', error: err.message });
+    console.log("getReportsForUser error:", err);
+    return res
+      .status(500)
+      .json({ msg: "ไม่สามารถดึงข้อมูลรายงานได้", error: err.message });
   }
 };
 
@@ -319,44 +416,63 @@ exports.updateReportStatus = async (req, res) => {
     const { id } = req.params;
     let { status } = req.body;
     if (status === undefined || status === null) {
-      return res.status(400).json({ msg: 'ต้องระบุสถานะ', error: 'status required' });
+      return res
+        .status(400)
+        .json({ msg: "ต้องระบุสถานะ", error: "status required" });
     }
     status = Number(status);
     if (status !== 0 && status !== 1) {
-      return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง', error: 'status must be 0 or 1' });
+      return res
+        .status(400)
+        .json({ msg: "สถานะไม่ถูกต้อง", error: "status must be 0 or 1" });
     }
 
     // Get report
     const [rows] = await db
       .promise()
-      .query('SELECT * FROM report_comment WHERE id_report_comment = ?', [id]);
-    if (rows.length === 0) return res.status(404).json({ msg: 'ไม่พบรายงาน' });
+      .query("SELECT * FROM report_comment WHERE id_report_comment = ?", [id]);
+    if (rows.length === 0) return res.status(404).json({ msg: "ไม่พบรายงาน" });
     const rc = rows[0];
 
     // Update report status
     await db
       .promise()
-      .query('UPDATE report_comment SET status = ? WHERE id_report_comment = ?', [status, id]);
+      .query(
+        "UPDATE report_comment SET status = ? WHERE id_report_comment = ?",
+        [status, id]
+      );
 
     // Apply visibility to target entity
     if (rc.id_commnet) {
       // comment
       await db
         .promise()
-        .query('UPDATE comment_post SET status = ? WHERE id_comment = ?', [status === 0 ? '0' : '1', rc.id_commnet]);
+        .query("UPDATE comment_post SET status = ? WHERE id_comment = ?", [
+          status === 0 ? "0" : "1",
+          rc.id_commnet,
+        ]);
     } else if (rc.id_reply) {
       // reply
       await db
         .promise()
-        .query('UPDATE comment_reply SET status = ? WHERE id_reply = ?', [status === 0 ? '0' : '1', rc.id_reply]);
+        .query("UPDATE comment_reply SET status = ? WHERE id_reply = ?", [
+          status === 0 ? "0" : "1",
+          rc.id_reply,
+        ]);
     } else if (rc.id_event_comment) {
       await db
         .promise()
-        .query('UPDATE event_comment SET status = ? WHERE id_comment = ?', [status === 0 ? '0' : '1', rc.id_event_comment]);
+        .query("UPDATE event_comment SET status = ? WHERE id_comment = ?", [
+          status === 0 ? "0" : "1",
+          rc.id_event_comment,
+        ]);
     } else if (rc.id_event_reply) {
       await db
         .promise()
-        .query('UPDATE event_comment_reply SET status = ? WHERE id_reply = ?', [status === 0 ? '0' : '1', rc.id_event_reply]);
+        .query("UPDATE event_comment_reply SET status = ? WHERE id_reply = ?", [
+          status === 0 ? "0" : "1",
+          rc.id_event_reply,
+        ]);
     }
 
     // If hidden by admin due to report, notify the owner realtime
@@ -367,8 +483,8 @@ exports.updateReportStatus = async (req, res) => {
           const isEvent = !!(rc.id_event_comment || rc.id_event_reply);
           const isReply = !!(rc.id_reply || rc.id_event_reply);
           const payload = {
-            scope: isEvent ? 'event' : 'post',
-            type: isReply ? 'reply' : 'comment',
+            scope: isEvent ? "event" : "post",
+            type: isReply ? "reply" : "comment",
             id_comment: rc.id_commnet || rc.id_event_comment || null,
             id_reply: rc.id_reply || rc.id_event_reply || null,
             id_post: rc.id_post || null,
@@ -377,62 +493,89 @@ exports.updateReportStatus = async (req, res) => {
             status: 0,
             created_at: now(),
           };
-          io.emit('comment-hidden', payload);
+          io.emit("comment-hidden", payload);
         }
       } catch (_) {}
     }
 
-    return res.status(200).json({ msg: 'อัปเดตสถานะรายงานสำเร็จ' });
+    return res.status(200).json({ msg: "อัปเดตสถานะรายงานสำเร็จ" });
   } catch (err) {
-    console.log('updateReportStatus error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะรายงานได้', error: err.message });
+    console.log("updateReportStatus error:", err);
+    return res
+      .status(500)
+      .json({ msg: "ไม่สามารถอัปเดตสถานะรายงานได้", error: err.message });
   }
 };
 
 // Reports submitted by a reporter (id_user)
+// Reports submitted by a reporter (id_user)
 exports.getReportsByReporter = async (req, res) => {
   try {
-    await ensureReportTable();
+    // ensureReportTable() อาจไม่จำเป็นต้องมีในฟังก์ชันนี้ หากเป็นการสร้างตารางครั้งเดียว
+    // await ensureReportTable();
     const { userId } = req.params;
-    const [rows] = await db
-      .promise()
-      .query(
-        `SELECT 
-           rc.id_report_comment,
-           rc.id_commnet AS id_comment,
-           rc.id_reply,
-           rc.id_post,
-           rc.id_event_comment,
-           rc.id_event_reply,
-           rc.id_event,
-           rc.reason,
-           rc.detail_report,
-           rc.status,
-           rc.created_at,
-           CASE WHEN rc.id_event_comment IS NOT NULL OR rc.id_event_reply IS NOT NULL THEN 'event' ELSE 'post' END AS source
-         FROM report_comment rc
-         WHERE rc.id_user = ?
-         ORDER BY rc.created_at DESC, rc.id_report_comment DESC`,
-        [userId]
-      );
-    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานที่ฉันส่งสำเร็จ', data: rows || [] });
+
+    // 1. ดึงข้อมูลรายงานที่ผู้ใช้คนนี้เป็นคนส่ง (Reporter)
+    const [reports] = await db.promise().query(
+      `SELECT 
+          rc.id_report_comment,
+          rc.id_commnet AS id_comment,
+          rc.id_reply,
+          rc.id_post,
+          rc.id_event_comment,
+          rc.id_event_reply,
+          rc.id_event,
+          rc.reason,
+          rc.detail_report,
+          rc.status,
+          rc.created_at,
+          CASE WHEN rc.id_event_comment IS NOT NULL OR rc.id_event_reply IS NOT NULL THEN 'event' ELSE 'post' END AS source
+        FROM report_comment rc
+        WHERE rc.id_user = ?
+        ORDER BY rc.created_at DESC, rc.id_report_comment DESC`,
+      [userId]
+    );
+
+    // 2. ดึงข้อมูลคนที่มาติดตามผู้ใช้คนนี้ (Followers)
+    const [followers] = await db.promise().query(
+      `SELECT
+          f.id_follower,
+          u.first_name
+        FROM
+          follows AS f
+        JOIN
+          user AS u ON u.id_user = f.id_follower
+        WHERE
+          f.id_following = ?`,
+      [userId]
+    );
+
+    // 3. สร้างออบเจ็กต์เพื่อรวมข้อมูลทั้งสองส่วน
+    const responseData = {
+      reports: reports || [],
+      followers: followers || [],
+    };
+
+    // 4. ส่งข้อมูลกลับไปใน response
+    return res
+      .status(200)
+      .json({ msg: "ดึงข้อมูลรายงานและผู้ติดตามสำเร็จ", data: responseData });
   } catch (err) {
-    console.log('getReportsByReporter error:', err);
-    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานของฉันได้', error: err.message });
+    console.log("getReportsByReporter error:", err);
+    return res
+      .status(500)
+      .json({ msg: "ไม่สามารถดึงข้อมูลได้", error: err.message });
   }
 };
 
-
-exports.getHistoryReport = async (req, res) => { 
+exports.getHistoryReport = async (req, res) => {
   const { id } = req.params; // reporter id_user
   try {
-    if (typeof ensureReportTable === 'function') {
+    if (typeof ensureReportTable === "function") {
       await ensureReportTable();
     }
-    const [rows] = await db
-      .promise()
-      .query(
-        `SELECT 
+    const [rows] = await db.promise().query(
+      `SELECT 
             rc.id_report_comment,
             rc.id_commnet AS id_comment,
             rc.id_reply,
@@ -464,16 +607,20 @@ exports.getHistoryReport = async (req, res) => {
          LEFT JOIN user_event ue ON ue.id_event = rc.id_event
          WHERE rc.id_user = ?
          ORDER BY rc.created_at DESC, rc.id_report_comment DESC`,
-        [id]
-      );
+      [id]
+    );
 
     if (rows.length === 0) {
-      return res.status(404).json({ msg: 'ไม่พบรายงาน' });
+      return res.status(404).json({ msg: "ไม่พบรายงาน" });
     }
 
-    return res.status(200).json({ msg: 'ดึงข้อมูลรายงานที่ฉันส่งสำเร็จ', data: rows });
+    return res
+      .status(200)
+      .json({ msg: "ดึงข้อมูลรายงานที่ฉันส่งสำเร็จ", data: rows });
   } catch (err) {
-    console.log("getHistoryReport error:" , err);
-    return res.status(500).json({ msg: 'ไม่สามารถดึงข้อมูลรายงานของฉันได้', error: err.message });
+    console.log("getHistoryReport error:", err);
+    return res
+      .status(500)
+      .json({ msg: "ไม่สามารถดึงข้อมูลรายงานของฉันได้", error: err.message });
   }
-}
+};

@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
-import { useAuth } from './AuthContext';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import axios from "axios";
+import { useAuth } from "./AuthContext";
 
 const ReportContext = createContext();
 
@@ -42,6 +48,7 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
+  // --- START: ส่วนที่แก้ไข ---
   const refreshMySubmitted = async () => {
     if (!userId) {
       setMySubmitted([]);
@@ -50,13 +57,17 @@ export const ReportProvider = ({ children }) => {
     try {
       setLoadingSubmitted(true);
       const res = await axios.get(`${api}report/my/${userId}`);
-      setMySubmitted(res.data?.data || []);
+      // แก้ไขบรรทัดนี้: ให้ดึงข้อมูลจาก res.data.data.reports
+      // เพื่อให้แน่ใจว่า mySubmitted เป็น Array เสมอ
+      const submittedReports = res.data?.data?.reports || [];
+      setMySubmitted(Array.isArray(submittedReports) ? submittedReports : []);
     } catch {
       setMySubmitted([]);
     } finally {
       setLoadingSubmitted(false);
     }
   };
+  // --- END: ส่วนที่แก้ไข ---
 
   useEffect(() => {
     refreshReports();
@@ -67,33 +78,49 @@ export const ReportProvider = ({ children }) => {
     refreshMySubmitted();
   }, [userId]);
 
-  const value = useMemo(() => ({
-    reports,
-    myReports,
-    mySubmitted,
-    totalReports: (reports || []).filter((r) => Number(r?.status) !== 0).length || 0,
-    myReportCount: myReports.length || 0,
-    loadingAll,
-    loadingMine,
-    loadingSubmitted,
-    refreshReports,
-    refreshMyReports,
-    refreshMySubmitted,
-    isReportedComment: (id_comment) =>
-      (mySubmitted || []).some((r) => r.id_comment && String(r.id_comment) === String(id_comment)),
-    isReportedReply: (id_reply) =>
-      (mySubmitted || []).some((r) => r.id_reply && String(r.id_reply) === String(id_reply)),
-    // Event-specific helpers
-    isReportedEventComment: (id_event_comment) =>
-      (mySubmitted || []).some((r) => r.source === 'event' && r.id_event_comment && String(r.id_event_comment) === String(id_event_comment)),
-    isReportedEventReply: (id_event_reply) =>
-      (mySubmitted || []).some((r) => r.source === 'event' && r.id_event_reply && String(r.id_event_reply) === String(id_event_reply)),
-  }), [reports, myReports, mySubmitted, loadingAll, loadingMine, loadingSubmitted]);
+  const value = useMemo(
+    () => ({
+      reports,
+      myReports,
+      mySubmitted,
+      totalReports:
+        (reports || []).filter((r) => Number(r?.status) !== 0).length || 0,
+      myReportCount: myReports.length || 0,
+      loadingAll,
+      loadingMine,
+      loadingSubmitted,
+      refreshReports,
+      refreshMyReports,
+      refreshMySubmitted,
+      isReportedComment: (id_comment) =>
+        (mySubmitted || []).some(
+          (r) => r.id_comment && String(r.id_comment) === String(id_comment)
+        ),
+      isReportedReply: (id_reply) =>
+        (mySubmitted || []).some(
+          (r) => r.id_reply && String(r.id_reply) === String(id_reply)
+        ),
+      // Event-specific helpers
+      isReportedEventComment: (id_event_comment) =>
+        (mySubmitted || []).some(
+          (r) =>
+            r.source === "event" &&
+            r.id_event_comment &&
+            String(r.id_event_comment) === String(id_event_comment)
+        ),
+      isReportedEventReply: (id_event_reply) =>
+        (mySubmitted || []).some(
+          (r) =>
+            r?.source === "event" &&
+            r.id_event_reply &&
+            String(r.id_event_reply) === String(id_event_reply)
+        ),
+    }),
+    [reports, myReports, mySubmitted, loadingAll, loadingMine, loadingSubmitted]
+  );
 
   return (
-    <ReportContext.Provider value={value}>
-      {children}
-    </ReportContext.Provider>
+    <ReportContext.Provider value={value}>{children}</ReportContext.Provider>
   );
 };
 
