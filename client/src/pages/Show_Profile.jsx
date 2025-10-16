@@ -44,6 +44,17 @@ function Show_Profile() {
     }
   }, [authUserId]);
   const [selectedImage, setSelectedImage] = useState(null);
+  // Follow state
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  // Follower/Following counts
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  // Modal: list followers/following
+  const [listModalOpen, setListModalOpen] = useState(false);
+  const [listModalType, setListModalType] = useState("followers"); // 'followers' | 'following'
+  const [listModalLoading, setListModalLoading] = useState(false);
+  const [listModalItems, setListModalItems] = useState([]);
 
   // Own-profile edit state
   const isOwner = useMemo(
@@ -56,11 +67,11 @@ function Show_Profile() {
     last_name: "",
     Email: "",
   });
+
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profilePreviewUrl, setProfilePreviewUrl] = useState(null);
   const [profileSaving, setProfileSaving] = useState(false);
 
-  // Helpers to format DOB and sex
   const formatThaiDate = (dateString) => {
     try {
       if (!dateString) return "-";
@@ -81,7 +92,6 @@ function Show_Profile() {
     return "-";
   };
 
-  // Edit product state
   const [editingProductId, setEditingProductId] = useState(null);
   const [editForm, setEditForm] = useState({
     name_product: "",
@@ -130,6 +140,116 @@ function Show_Profile() {
       mounted = false;
     };
   }, [id, isOwner]);
+
+  // Check following state when viewing others' profile
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        if (!id || !userId || isOwner) return;
+        const url = `${import.meta.env.VITE_API}social/followers/${id}`;
+        const res = await axios.get(url);
+        const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+        const isF = list.some((u) => String(u.id_user) === String(userId));
+        if (alive) setIsFollowing(isF);
+      } catch (_) {}
+    };
+    load();
+    return () => {
+      alive = false;
+    };
+  }, [id, userId, isOwner]);
+
+  // Load follower and following counts
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      try {
+        if (!id) return;
+        const [resFollowers, resFollowing] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API}social/followers/${id}`),
+          axios.get(`${import.meta.env.VITE_API}social/following/${id}`),
+        ]);
+        const flw = Array.isArray(resFollowers?.data?.data)
+          ? resFollowers.data.data
+          : [];
+        const flg = Array.isArray(resFollowing?.data?.data)
+          ? resFollowing.data.data
+          : [];
+        if (active) {
+          setFollowersCount(flw.length);
+          setFollowingCount(flg.length);
+        }
+      } catch (_) {}
+    };
+    run();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  const openListModal = async (type) => {
+    try {
+      if (!id) return;
+      setListModalType(type);
+      setListModalOpen(true);
+      setListModalLoading(true);
+      const url =
+        type === "followers"
+          ? `${import.meta.env.VITE_API}social/followers/${id}`
+          : `${import.meta.env.VITE_API}social/following/${id}`;
+      const res = await axios.get(url);
+      const arr = Array.isArray(res?.data?.data) ? res.data.data : [];
+      setListModalItems(
+        arr.map((u) => ({
+          id_user: u.id_user,
+          first_name: u.first_name || "ผู้ใช้",
+          image_profile: toAbs(u.image_profile),
+        }))
+      );
+    } catch (_) {
+      setListModalItems([]);
+    } finally {
+      setListModalLoading(false);
+    }
+  };
+
+  const followProfile = async () => {
+    try {
+      if (!userId || !id) return;
+      setFollowLoading(true);
+      await axios.post(`${import.meta.env.VITE_API}social/follow/${id}`, {
+        id_user: Number(userId),
+      });
+      setIsFollowing(true);
+      setFollowersCount((c) => c + 1);
+      toast.success("ติดตามสำเร็จ", { position: "top-center", autoClose: 1500 });
+    } catch (err) {
+      toast.error("ไม่สามารถติดตามได้", { position: "top-center", autoClose: 1500 });
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const unfollowProfile = async () => {
+    try {
+      if (!userId || !id) return;
+      setFollowLoading(true);
+      // Use query param to avoid DELETE body issues
+      await axios.delete(
+        `${import.meta.env.VITE_API}social/follow/${id}?id_user=${encodeURIComponent(
+          userId
+        )}`
+      );
+      setIsFollowing(false);
+      setFollowersCount((c) => Math.max(0, c - 1));
+      toast.success("เลิกติดตามสำเร็จ", { position: "top-center", autoClose: 1500 });
+    } catch (err) {
+      toast.error("ไม่สามารถเลิกติดตามได้", { position: "top-center", autoClose: 1500 });
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   // Reset page when products change
   useEffect(() => {
@@ -324,7 +444,7 @@ function Show_Profile() {
 
         {/* Action (ขวาบน) */}
         <div className="absolute top-4 right-4 z-10">
-          {isOwner && (
+          {isOwner ? (
             <>
               {!profileEditMode ? (
                 <button
@@ -352,6 +472,23 @@ function Show_Profile() {
                 </div>
               )}
             </>
+          ) : (
+            <button
+              className={`px-3 py-1.5 rounded-lg text-white transition-all text-sm disabled:opacity-50 ${
+                isFollowing
+                  ? "bg-red-500/90 hover:bg-red-500"
+                  : "bg-white/20 hover:bg-white/30"
+              }`}
+              onClick={isFollowing ? unfollowProfile : followProfile}
+              disabled={followLoading}
+              title={isFollowing ? "เลิกติดตาม" : "ติดตาม"}
+            >
+              {followLoading
+                ? "กำลังทำรายการ..."
+                : isFollowing
+                ? "เลิกติดตาม"
+                : "ติดตาม"}
+            </button>
           )}
         </div>
 
@@ -446,6 +583,25 @@ function Show_Profile() {
           /> */}
               </div>
             )}
+          </div>
+
+          {/* Follower / Following counts */}
+          <div className="flex items-center gap-3 text-purple-100">
+            <button
+              type="button"
+              className="underline-offset-2 hover:underline"
+              onClick={() => openListModal("followers")}
+            >
+              ผู้ติดตาม: {followersCount}
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              className="underline-offset-2 hover:underline"
+              onClick={() => openListModal("following")}
+            >
+              กำลังติดตาม: {followingCount}
+            </button>
           </div>
         </div>
       </div>
@@ -690,6 +846,71 @@ function Show_Profile() {
                   </svg>
                 </button>
               </div>
+            </div>
+          </div>
+        </dialog>
+      )}
+
+      {/* Followers/Following Modal */}
+      {listModalOpen && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-800">
+                {listModalType === "followers" ? "ผู้ติดตาม" : "กำลังติดตาม"}
+              </h3>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setListModalOpen(false)}
+                aria-label="ปิด"
+              >
+                ✕
+              </button>
+            </div>
+
+            {listModalLoading ? (
+              <div className="py-6 text-center text-gray-500">กำลังโหลด...</div>
+            ) : listModalItems.length === 0 ? (
+              <div className="py-6 text-center text-gray-500">ยังไม่มีผู้ติดตาม</div>
+            ) : (
+              <div className="max-h-[60vh] overflow-auto divide-y">
+                {listModalItems.map((it) => (
+                  <Link
+                    key={it.id_user}
+                    to={`/showprofile/${it.id_user}`}
+                    className="flex items-center gap-3 py-2 hover:bg-gray-50 px-1 rounded"
+                    onClick={() => setListModalOpen(false)}
+                  >
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                      {it.image_profile ? (
+                        <img
+                          src={it.image_profile}
+                          alt={it.first_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <svg
+                          className="w-6 h-6 text-gray-500"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800">{it.first_name}</div>
+                      {/* <div className="text-xs text-gray-500">ID: {it.id_user}</div> */}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <div className="modal-action">
+              <button className="btn" onClick={() => setListModalOpen(false)}>
+                ปิด
+              </button>
             </div>
           </div>
         </dialog>
