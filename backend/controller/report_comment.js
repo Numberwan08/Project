@@ -443,35 +443,38 @@ exports.updateReportStatus = async (req, res) => {
       );
 
     // Apply visibility to target entity
-    if (rc.id_commnet) {
-      // comment
-      await db
-        .promise()
-        .query("UPDATE comment_post SET status = ? WHERE id_comment = ?", [
-          status === 0 ? "0" : "1",
-          rc.id_commnet,
-        ]);
-    } else if (rc.id_reply) {
-      // reply
+    // IMPORTANT: prioritize replies over comments because reply reports include comment IDs for context
+    if (rc.id_reply) {
+      // hide/unhide only the specific reply on posts
       await db
         .promise()
         .query("UPDATE comment_reply SET status = ? WHERE id_reply = ?", [
           status === 0 ? "0" : "1",
           rc.id_reply,
         ]);
-    } else if (rc.id_event_comment) {
+    } else if (rc.id_commnet) {
+      // hide/unhide the comment on posts
       await db
         .promise()
-        .query("UPDATE event_comment SET status = ? WHERE id_comment = ?", [
+        .query("UPDATE comment_post SET status = ? WHERE id_comment = ?", [
           status === 0 ? "0" : "1",
-          rc.id_event_comment,
+          rc.id_commnet,
         ]);
     } else if (rc.id_event_reply) {
+      // hide/unhide only the specific reply on events
       await db
         .promise()
         .query("UPDATE event_comment_reply SET status = ? WHERE id_reply = ?", [
           status === 0 ? "0" : "1",
           rc.id_event_reply,
+        ]);
+    } else if (rc.id_event_comment) {
+      // hide/unhide the comment on events
+      await db
+        .promise()
+        .query("UPDATE event_comment SET status = ? WHERE id_comment = ?", [
+          status === 0 ? "0" : "1",
+          rc.id_event_comment,
         ]);
     }
 

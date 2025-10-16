@@ -24,7 +24,7 @@ function ReportComment() {
 
   const updateStatus = async (id_report_comment, status) => {
     await axios.patch(`${api}report/${id_report_comment}/status`, { status });
-  };
+  };navb
 
   const statusText = (s) => (Number(s) === 0 ? "ซ่อน" : "กำลังดำเนินการ");
   const reasonText = (r) => {
