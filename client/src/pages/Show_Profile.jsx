@@ -110,19 +110,21 @@ function Show_Profile() {
     const run = async () => {
       setLoading(true);
       setError("");
+      // 1) Load user info (prefer single-user endpoint; fallback to list)
       try {
-        // 1) Load user info (no single-user endpoint, so filter from list)
-        const ures = await axios.get(`${import.meta.env.VITE_API}member`);
-        const list = Array.isArray(ures.data?.rows) ? ures.data.rows : [];
-        const u = list.find((x) => String(x.id_user) === String(id)) || null;
-        // 2) Load products of this user
-        const pres = await axios.get(
-          `${import.meta.env.VITE_API}product/${id}`
-        );
-        const pdata = Array.isArray(pres.data?.data) ? pres.data.data : [];
+        let u = null;
+        try {
+          const r = await axios.get(`${import.meta.env.VITE_API}profile/${id}`);
+          u = r?.data?.data || null;
+        } catch (_) {
+          try {
+            const ures = await axios.get(`${import.meta.env.VITE_API}member`);
+            const list = Array.isArray(ures.data?.rows) ? ures.data.rows : [];
+            u = list.find((x) => String(x.id_user) === String(id)) || null;
+          } catch (_) {}
+        }
         if (mounted) {
-          setUser(u ? { ...u, image_profile: toAbs(u.image_profile) } : null);
-          setProducts(pdata);
+          setUser(u ? { ...u, image_profile: toAbs(u?.image_profile) } : null);
           if (isOwner && u) {
             setProfileForm({
               first_name: u.first_name || "",
@@ -133,6 +135,17 @@ function Show_Profile() {
         }
       } catch (e) {
         if (mounted) setError("ไม่สามารถโหลดข้อมูลได้");
+      }
+
+      // 2) Load products of this user (non-fatal on error)
+      try {
+        const pres = await axios.get(
+          `${import.meta.env.VITE_API}product/${id}`
+        );
+        const pdata = Array.isArray(pres.data?.data) ? pres.data.data : [];
+        if (mounted) setProducts(pdata);
+      } catch (_) {
+        if (mounted) setProducts([]); // show "ยังไม่มีสินค้า" but keep page
       } finally {
         if (mounted) setLoading(false);
       }
