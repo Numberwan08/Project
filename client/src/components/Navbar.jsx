@@ -480,7 +480,7 @@ const Navbar = () => {
                     <a href="/menu/menu_prodact">เพิ่มสินค้า</a>
                   </li> */}
                   {/* <li>
-                    <a href="/menu/Show_Event">ข้อมูลกิจกรรม</a>
+                    <a href="/menu/show_event">ข้อมูลกิจกรรม</a>
                   </li> */}
                   <li>
                     <a href="/menu/show_product">ข้อมูลสินค้า</a>
@@ -495,7 +495,7 @@ const Navbar = () => {
                     <a href="/menu/comment">ประวัติความคิดเห็น</a>
                   </li>
                   <li>
-                    <a href="/menu/profile">แก้ไขโปรไฟล์</a>
+                    <a href="/menu/profile">แก้ไขชื่อ/รูปภาพ</a>
                   </li>
                   <Link to="/">
                     <li

@@ -486,7 +486,7 @@ exports.add_post = async (req, res) => {
 
     const trimmedNameLocation = name_location ? name_location.replace(/\s+/g, ' ').trim() : "";
     const trimmedDetailLocation = detail_location ? detail_location.trim() : "";
-    const trimmedPhone = phone ? phone.trim() : "";
+    const trimmedPhone = phone ? phone.replace(/ /g, '').trim() : "";
     const trimmedDetailAtt = detail_att ? detail_att.trim() : "";
 
     const [dupRows] = await db
@@ -559,6 +559,8 @@ exports.edit_post = async (req, res) => {
     try {
         // Trim name_location for duplicate check
         const trimmedNameLocation = name_location ? name_location.replace(/\s+/g, ' ').trim() : "";
+        // Remove all spaces from phone number
+        const trimmedPhone = phone ? phone.replace(/ /g, '').trim() : "";
 
         // ตรวจสอบ name_location ซ้ำ (ยกเว้นตัวเอง)
         const [dupRows] = await db.promise().query(
@@ -602,9 +604,9 @@ exports.edit_post = async (req, res) => {
                  id_type = ?
              WHERE id_post = ?`,
             [
-              name_location,
+              trimmedNameLocation || name_location,
               detail_location,
-              phone,
+              trimmedPhone,
               detail_att,
               imagePath,
               latitude,
@@ -1043,7 +1045,6 @@ exports.edit_comment = async (req, res) => {
         });
     } catch (err) {
         console.log("error edit comment", err);
-        // ลบไฟล์ใหม่ที่อัปโหลดแล้วหากเกิดข้อผิดพลาด
         if (Array.isArray(req.files)) {
             for (const f of req.files) {
                 if (f?.path && fs.existsSync(f.path)) {
@@ -1057,7 +1058,6 @@ exports.edit_comment = async (req, res) => {
     }
 }
 
-// Add: get list of post types
 exports.get_post_types = async (req, res) => {
     try {
         const [rows] = await db.promise().query(`SELECT post_type.id_type as id_type,name_type, COUNT(id_post) as count_location  FROM post_type LEFT JOIN 
@@ -1072,18 +1072,46 @@ exports.get_post_types = async (req, res) => {
     }
 };
 
-// Add: create a new post type
 exports.create_post_type = async (req, res) => {
     try {
-        const { name_type } = req.body;
-        if (!name_type || name_type.toString().trim() === "") {
+        let { name_type } = req.body;
+
+        if (!name_type) {
             return res.status(400).json({ msg: "กรุณาระบุชื่อประเภท", error: "name_type required" });
         }
-        const [result] = await db.promise().query("INSERT INTO post_type (name_type) VALUES (?)", [name_type]);
+
+        name_type = name_type.toString().trim().replace(/\s+/g, " ");
+
+        if (name_type === "") {
+            return res.status(400).json({ msg: "ชื่อประเภทไม่สามารถเป็นช่องว่างล้วนได้", error: "only whitespace" });
+        }
+
+        const [check] = await db.promise().query(
+            "SELECT id_type FROM post_type WHERE LOWER(TRIM(REPLACE(name_type, '  ', ' '))) = LOWER(?)",
+            [name_type]
+        );
+
+        if (check.length > 0) {
+            return res.status(409).json({
+                msg: "ชื่อประเภทนี้มีอยู่แล้ว",
+                error: "duplicate name_type"
+            });
+        }
+
+        const [result] = await db.promise().query(
+            "INSERT INTO post_type (name_type) VALUES (?)",
+            [name_type]
+        );
+
         if (result.affectedRows === 0) {
             return res.status(400).json({ msg: "ไม่สามารถสร้างประเภทได้", error: "insert failed" });
         }
-        return res.status(201).json({ msg: "สร้างประเภทสำเร็จ", data: { id_type: result.insertId, name_type } });
+
+        return res.status(201).json({
+            msg: "สร้างประเภทสำเร็จ",
+            data: { id_type: result.insertId, name_type }
+        });
+
     } catch (err) {
         console.log("error create post type", err);
         return res.status(500).json({
@@ -1092,6 +1120,8 @@ exports.create_post_type = async (req, res) => {
         });
     }
 };
+
+
 
 // Update a post type
 exports.update_post_type = async (req, res) => {

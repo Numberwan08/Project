@@ -208,6 +208,9 @@ function Detall_Event() {
         position: "top-center",
         autoClose: 1200,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
     setCommentModal(true);
@@ -240,6 +243,9 @@ function Detall_Event() {
         position: "top-center",
         autoClose: 1500,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
 
@@ -595,6 +601,9 @@ function Detall_Event() {
         position: "top-center",
         autoClose: 1200,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
     try {
@@ -776,15 +785,6 @@ function Detall_Event() {
                           วันนี้!
                         </span>
                       )}
-                      {/* ไม่แสดงสถานะสิ้นสุดแล้ว ตามคำขอ */}
-                      <div>
-                        <button
-                          className="mt-2 text-xs bg-white/80 hover:bg-white text-gray-800 px-3 py-1 rounded-full shadow"
-                          onClick={() => addToCalendar(item)}
-                        >
-                          เพิ่มลงปฏิทิน
-                        </button>
-                      </div>
                     </div>
                     <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
                       คลิกเพื่อดูขนาดใหญ่

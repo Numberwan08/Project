@@ -6,12 +6,17 @@ import "react-toastify/dist/ReactToastify.css";
 
 function ProductControllers() {
   const [products, setProducts] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [rejected, setRejected] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
+  const [tab, setTab] = useState('pending'); // 'pending' | 'approved' | 'rejected'
 
   useEffect(() => {
     fetchProducts();
+    fetchPending();
+    fetchRejected();
   }, []);
 
   const fetchProducts = () => {
@@ -20,11 +25,25 @@ function ProductControllers() {
       .catch(() => setProducts([]));
   };
 
+  const fetchPending = () => {
+    axios.get(import.meta.env.VITE_API + "product/pending")
+      .then(res => setPending(res.data.data || []))
+      .catch(() => setPending([]));
+  };
+
+  const fetchRejected = () => {
+    axios.get(import.meta.env.VITE_API + "product/rejected")
+      .then(res => setRejected(res.data.data || []))
+      .catch(() => setRejected([]));
+  };
+
   const handleDelete = async (id_product) => {
     if (window.confirm("ยืนยันการลบสินค้านี้?")) {
       try {
         await axios.delete(import.meta.env.VITE_API + `product/${id_product}`);
         fetchProducts();
+        fetchPending();
+        fetchRejected();
         toast.success("ลบสินค้าสำเร็จ", { autoClose: 500 ,position: "top-center",});
       } catch (err) {
         toast.error("ลบสินค้าไม่สำเร็จ", { autoClose: 500 ,position: "top-center",});
@@ -32,7 +51,32 @@ function ProductControllers() {
     }
   };
 
-  const filteredProducts = products.filter(item => {
+  const handleApprove = async (id_product) => {
+    try {
+      await axios.patch(import.meta.env.VITE_API + `product/${id_product}/status`, { status: 'อนุมัติ' });
+      toast.success('อนุมัติสินค้าแล้ว', { autoClose: 800, position: 'top-center' });
+      fetchPending();
+      fetchRejected();
+      fetchProducts();
+    } catch (e) {
+      toast.error('อนุมัติสินค้าไม่สำเร็จ', { autoClose: 800, position: 'top-center' });
+    }
+  };
+
+  const handleReject = async (id_product) => {
+    if (!window.confirm('ยืนยันการปฎิเสธสินค้านี้?')) return;
+    try {
+      await axios.patch(import.meta.env.VITE_API + `product/${id_product}/status`, { status: 'ปฎิเสธ' });
+      toast.success('ปฎิเสธสินค้าแล้ว', { autoClose: 800, position: 'top-center' });
+      fetchPending();
+      fetchRejected();
+    } catch (e) {
+      toast.error('ปฎิเสธสินค้าไม่สำเร็จ', { autoClose: 800, position: 'top-center' });
+    }
+  };
+
+  const list = tab === 'pending' ? pending : (tab === 'rejected' ? rejected : products);
+  const filteredProducts = list.filter(item => {
   const searchText = search.toLowerCase();
   return (
     (item.name_product && item.name_product.toLowerCase().includes(searchText)) ||
@@ -57,7 +101,21 @@ function ProductControllers() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">จัดการสินค้า</h1>
-          <p className="text-sm text-gray-600">รายการสินค้าทั้งหมดของคุณ</p>
+          <p className="text-sm text-gray-600">อนุมัติสินค้าที่รอดำเนินการก่อนแสดงผล</p>
+          <div className="mt-4 inline-flex rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+            <button
+              className={`px-4 py-2 text-sm font-medium ${tab==='pending' ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              onClick={() => { setTab('pending'); setPage(1);} }
+            >รอดำเนินการ ({pending.length})</button>
+            <button
+              className={`px-4 py-2 text-sm font-medium border-l border-gray-200 ${tab==='approved' ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              onClick={() => { setTab('approved'); setPage(1);} }
+            >ผ่านการอนุมัติ ({products.length})</button>
+            <button
+              className={`px-4 py-2 text-sm font-medium border-l border-gray-200 ${tab==='rejected' ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              onClick={() => { setTab('rejected'); setPage(1);} }
+            >ปฎิเสธ ({rejected.length})</button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -83,13 +141,13 @@ function ProductControllers() {
             <table className="min-w-[1200px] w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-                  <th className="w-[8%] px-4 py-3 text-center font-medium text-sm">ลำดับ</th>
-                  <th className="w-[15%] px-4 py-3 text-left font-medium text-sm">โปรไฟล์</th>
-                  <th className="w-[15%] px-4 py-3 text-left font-medium text-sm">ชื่อสินค้า</th>
-                  <th className="w-[28%] px-4 py-3 text-left font-medium text-sm">รายละเอียด</th>
-                  <th className="w-[15%] px-4 py-3 text-left font-medium text-sm">ราคา</th>
-                  <th className="w-[20%] px-4 py-3 text-left font-medium text-sm">สถานที่</th>
-                  <th className="w-[15%] px-4 py-3 text-center font-medium text-sm">จัดการ</th>
+                  <th className=" px-4 py-3 text-center font-medium text-sm">ลำดับ</th>
+                  <th className=" px-4 py-3 text-left font-medium text-sm">โปรไฟล์</th>
+                  <th className=" px-4 py-3 text-left font-medium text-sm">ชื่อสินค้า</th>
+                  <th className=" px-4 py-3 text-left font-medium text-sm">รายละเอียด</th>
+                  <th className=" px-4 py-3 text-left font-medium text-sm">ราคา</th>
+                  <th className=" px-4 py-3 text-left font-medium text-sm">สถานที่</th>
+                  <th className=" px-4 py-3 text-center font-medium text-sm">{tab==='pending' ? 'ตรวจสอบ' : 'จัดการ'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -135,22 +193,75 @@ function ProductControllers() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-center">
-                          <a
-                            href={`/detall_att/${item.id_post}?highlightProduct=${item.id_product}&suppressHiddenToast=1`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            โพสต์
-                          </a>
-                          <button
-                            onClick={() => handleDelete(item.id_product)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            ลบ
-                          </button>
+                          {tab === 'pending' ? (
+                            <>
+                              <button
+                                onClick={() => handleApprove(item.id_product)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                อนุมัติ
+                              </button>
+                              <button
+                                onClick={() => handleReject(item.id_product)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                ปฎิเสธ
+                              </button>
+                              <a
+                                href={`/detall_att/${item.id_post}?highlightProduct=${item.id_product}&suppressHiddenToast=1`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                โพสต์
+                              </a>
+                            </>
+                          ) : tab === 'approved' ? (
+                            <>
+                              <a
+                                href={`/detall_att/${item.id_post}?highlightProduct=${item.id_product}&suppressHiddenToast=1`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                โพสต์
+                              </a>
+                              <button
+                                onClick={() => handleDelete(item.id_product)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                ลบ
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleApprove(item.id_product)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                อนุมัติ
+                              </button>
+                              <a
+                                href={`/detall_att/${item.id_post}?highlightProduct=${item.id_product}&suppressHiddenToast=1`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                โพสต์
+                              </a>
+                              <button
+                                onClick={() => handleDelete(item.id_product)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                ลบ
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

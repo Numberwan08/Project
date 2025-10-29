@@ -526,8 +526,8 @@ function Editprofile() {
               {!profileEditMode ? (
                 <>
                   <h2 className="text-3xl font-bold text-white">{data?.first_name || 'ผู้ใช้'}</h2>
-                  <p className="text-purple-100 mt-1">เพศ: {sexLabel(data?.sex)}</p>
-                  <p className="text-purple-100">วันเกิด: {formatThaiDate(data?.dob)}</p>
+                  {/* <p className="text-purple-100 mt-1">เพศ: {sexLabel(data?.sex)}</p> */}
+                  {/* <p className="text-purple-100">วันเกิด: {formatThaiDate(data?.dob)}</p> */}
                 </>
               ) : (
                 <div className="flex flex-col items-center gap-2">
@@ -543,7 +543,7 @@ function Editprofile() {
             </div>
 
             {/* Follower / Following counts */}
-            <div className="flex items-center gap-3 text-purple-100">
+            {/* <div className="flex items-center gap-3 text-purple-100">
               <button type="button" className="underline-offset-2 hover:underline" onClick={() => openListModal('followers')}>
                 ผู้ติดตาม: {followersCount}
               </button>
@@ -551,7 +551,7 @@ function Editprofile() {
               <button type="button" className="underline-offset-2 hover:underline" onClick={() => openListModal('following')}>
                 กำลังติดตาม: {followingCount}
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
 

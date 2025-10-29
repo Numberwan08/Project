@@ -41,7 +41,7 @@ const menuItems = [
     path: "/menu/comment",
   },
   {
-    label: "แก้ไขโปรไฟล์",
+    label: "แก้ไขชื่อ/รูปภาพ",
     path: "/menu/profile",
   },
 ];

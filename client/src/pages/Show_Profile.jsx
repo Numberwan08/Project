@@ -585,11 +585,11 @@ function Show_Profile() {
                   {user?.first_name || "ผู้ใช้"}
                 </h2>
                 <p className="text-purple-100 mt-1">
-                  เพศ: {sexLabel(user?.sex)}
+                  {/* เพศ: {sexLabel(user?.sex)} */}
                 </p>
-                <p className="text-purple-100">
+                {/* <p className="text-purple-100">
                   วันเกิด: {formatThaiDate(user?.dob)}
-                </p>
+                </p> */}
               </>
             ) : (
               <div className="flex flex-col items-center gap-2">
@@ -618,7 +618,7 @@ function Show_Profile() {
           </div>
 
           {/* Follower / Following counts */}
-          <div className="flex items-center gap-3 text-purple-100">
+          {/* <div className="flex items-center gap-3 text-purple-100">
             <button
               type="button"
               className="underline-offset-2 hover:underline"
@@ -634,7 +634,7 @@ function Show_Profile() {
             >
               กำลังติดตาม: {followingCount}
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 

@@ -178,7 +178,7 @@ function HistoryReport() {
               }`}
               onClick={() => setSourceFilter('post')}
             >
-              โพสต์
+              สถานที่
             </button>
             <button
               className={`px-3 py-1.5 text-sm border-l ${

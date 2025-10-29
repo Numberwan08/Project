@@ -50,6 +50,8 @@ const server = http.createServer(app);
 try {
   const { Server } = require("socket.io");
   const io = new Server(server, {
+    // Mount under /api/socket.io so it also works behind API proxies
+    path: "/api/socket.io",
     cors: {
       origin: "*",
       methods: ["GET", "POST", "PATCH", "DELETE"],

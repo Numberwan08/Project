@@ -132,13 +132,13 @@ function Detail_Att() {
             ) : (
               <div className="w-6 h-6 rounded-full bg-purple-200 mt-0.5 hover:opacity-90 transition" />
             )}
-         </Link>
+          </Link>
           <div className="flex-1">
             <div className="text-sm text-gray-700">
               <span className="font-semibold mr-1">
                 {rep.reply_user_name || "ผู้ใช้"}
               </span>
-        
+
               <span className="text-gray-500 text-xs">
                 {timeAgo(rep.reply_date)}
               </span>
@@ -219,7 +219,9 @@ function Detail_Att() {
                       const el = editReplyRefs.current[rep.id_reply];
                       if (el) {
                         const l = el.value.length;
-                        try { el.setSelectionRange(l, l); } catch {}
+                        try {
+                          el.setSelectionRange(l, l);
+                        } catch {}
                       }
                     });
                   }}
@@ -320,6 +322,9 @@ function Detail_Att() {
         position: "top-center",
         autoClose: 1500,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
     try {
@@ -349,6 +354,9 @@ function Detail_Att() {
       if (!userId) {
         setCommentError("กรุณาเข้าสู่ระบบก่อนแสดงความคิดเห็น");
         setCommentLoading(false);
+        setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
         return;
       }
       if (!commentText) {
@@ -392,6 +400,9 @@ function Detail_Att() {
         position: "top-center",
         autoClose: 1200,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
     if (isReportedComment && isReportedComment(item.id_comment)) {
@@ -413,6 +424,9 @@ function Detail_Att() {
         position: "top-center",
         autoClose: 1200,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
     if (isReportedReply && isReportedReply(rep.id_reply)) {
@@ -486,6 +500,9 @@ function Detail_Att() {
         position: "top-center",
         autoClose: 1200,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
     setShowCommentModal(true);
@@ -497,6 +514,11 @@ function Detail_Att() {
         position: "top-center",
         autoClose: 1200,
       });
+
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200); // รอให้ toast แสดงสักแป๊บ
+
       return;
     }
     setShowProductModal(true);
@@ -1087,7 +1109,7 @@ function Detail_Att() {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold text-gray-800">
-                    สินค้าที่เกี่ยวข้องของชุมชน
+                    สินค้าที่เกี่ยวข้องกับสถานที่นี้
                   </h2>
 
                   <button
@@ -1152,18 +1174,18 @@ function Detail_Att() {
                               ฿{product.price}
                             </span>
                             <Link to={`/showprofile/${product.id_user}`}>
-                            <span className="text-xs">
-                              โดย:{" "}
-                              {String(product.id_user) === String(userId) ? (
-                                <span className="text-green-600 font-semibold">
-                                  ของฉัน
-                                </span>
-                              ) : (
-                                <span className="text-gray-500">
-                                  {product.first_name}
-                                </span>
-                              )}
-                            </span>
+                              <span className="text-xs">
+                                โดย:{" "}
+                                {String(product.id_user) === String(userId) ? (
+                                  <span className="text-green-600 font-semibold">
+                                    ของฉัน
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-500">
+                                    {product.first_name}
+                                  </span>
+                                )}
+                              </span>
                             </Link>
                           </div>
                           <div className="mt-2 flex justify-between items-center">
@@ -1245,7 +1267,8 @@ function Detail_Att() {
                               <Link to={`/showprofile/${product.id_user}`}>
                                 <span className="text-xs">
                                   โดย:{" "}
-                                  {String(product.id_user) === String(userId) ? (
+                                  {String(product.id_user) ===
+                                  String(userId) ? (
                                     <span className="text-green-600 font-semibold">
                                       ของฉัน
                                     </span>
@@ -1351,7 +1374,10 @@ function Detail_Att() {
                             </div>
                           )}
                           <div className="flex items-start gap-3 mb-2">
-                            <Link to={`/showprofile/${item.id_user}`} className="shrink-0">
+                            <Link
+                              to={`/showprofile/${item.id_user}`}
+                              className="shrink-0"
+                            >
                               {item.user_image ? (
                                 <img
                                   src={item.user_image}
@@ -1364,10 +1390,13 @@ function Detail_Att() {
                             </Link>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <Link to={`/showprofile/${item.id_user}`} className="cursor-pointer">
-                                <span className="font-semibold">
-                                  {item.first_name}
-                                </span>
+                                <Link
+                                  to={`/showprofile/${item.id_user}`}
+                                  className="cursor-pointer"
+                                >
+                                  <span className="font-semibold">
+                                    {item.first_name}
+                                  </span>
                                 </Link>
                                 <span className="text-xs text-gray-500">
                                   {timeAgo(item.date_comment)}
@@ -1444,7 +1473,7 @@ function Detail_Att() {
                                             <button
                                               type="button"
                                               className="absolute inset-0 bg-black/50 text-white font-semibold text-sm md:text-base rounded-lg flex items-center justify-center opacity-100"
-                                          onClick={() => {
+                                              onClick={() => {
                                                 setSelectedFromGallery(false);
                                                 setGalleryModal({
                                                   open: true,
@@ -1783,12 +1812,10 @@ function Detail_Att() {
       ))}
       {selectedImage && (
         <dialog open className="modal" onClose={handleCloseSelectedImage}>
-      
           <div
             className="modal-box max-w-2xl p-3"
             onClick={(e) => e.stopPropagation()} // ป้องกันคลิกในรูปแล้วปิด
           >
-
             <form method="dialog">
               <button
                 className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
@@ -1806,7 +1833,7 @@ function Detail_Att() {
               className="w-full max-h-[70vh] object-contain rounded-lg"
             />
           </div>
- 
+
           <form
             method="dialog"
             className="modal-backdrop bg-white/60 backdrop-blur-sm"
@@ -1819,32 +1846,43 @@ function Detail_Att() {
 
       {galleryModal.open && (
         <dialog className="modal modal-open">
-          <div className="fixed inset-0  bg-opacity-70 flex items-center justify-center z-50 p-4" onClick={() => setGalleryModal({ open: false, images: [] })}>
-          <div className="relative bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-auto p-4" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setGalleryModal({ open: false, images: [] })} className="absolute top-3 right-3 btn btn-sm btn-ghost">✕</button>
-            <h3 className="text-lg font-semibold mb-3">รูปภาพทั้งหมด</h3>
-            {Array.isArray(galleryModal.images) && galleryModal.images.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {galleryModal.images.map((url, i) => (
-                  <img
-                    key={i}
-                    src={url}
-                    alt={`all-${i}`}
-                    className="rounded-lg object-cover w-full h-40 cursor-pointer"
-                    onClick={() => {
-                      setSelectedImage(url);
-                      setSelectedFromGallery(true);
-                      setGalleryModal((prev) => ({ ...prev, open: false }));
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">ไม่พบรูปภาพ</p>
-            )}
+          <div
+            className="fixed inset-0  bg-opacity-70 flex items-center justify-center z-50 p-4"
+            onClick={() => setGalleryModal({ open: false, images: [] })}
+          >
+            <div
+              className="relative bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-auto p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setGalleryModal({ open: false, images: [] })}
+                className="absolute top-3 right-3 btn btn-sm btn-ghost"
+              >
+                ✕
+              </button>
+              <h3 className="text-lg font-semibold mb-3">รูปภาพทั้งหมด</h3>
+              {Array.isArray(galleryModal.images) &&
+              galleryModal.images.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {galleryModal.images.map((url, i) => (
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`all-${i}`}
+                      className="rounded-lg object-cover w-full h-40 cursor-pointer"
+                      onClick={() => {
+                        setSelectedImage(url);
+                        setSelectedFromGallery(true);
+                        setGalleryModal((prev) => ({ ...prev, open: false }));
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">ไม่พบรูปภาพ</p>
+              )}
+            </div>
           </div>
-        </div>
-
         </dialog>
       )}
       {showCommentModal && (

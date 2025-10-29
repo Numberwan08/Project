@@ -18,13 +18,24 @@ function Show_Product() {
   // ======================
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
+  const [tab, setTab] = useState('pending');
 
   // รีเซ็ต/หนีบหน้าปัจจุบันเมื่อจำนวนข้อมูลเปลี่ยน
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil((postData?.length || 0) / ITEMS_PER_PAGE));
+    const statusKey = (st) => {
+      const s = String(st || '').trim();
+      if (s === 'อนุมัติ') return 'approved';
+      if (s === 'ปฎิเสธ') return 'rejected';
+      return 'pending';
+    };
+    const filtered = (postData || []).filter((x) => {
+      const k = statusKey(x?.status);
+      return tab === 'pending' ? k === 'pending' : (tab === 'approved' ? k === 'approved' : k === 'rejected');
+    });
+    const totalPages = Math.max(1, Math.ceil((filtered.length || 0) / ITEMS_PER_PAGE));
     if (page > totalPages) setPage(totalPages);
     if (page < 1) setPage(1);
-  }, [postData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [postData, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getPostMe = async () => {
     try {
@@ -135,11 +146,52 @@ function Show_Product() {
               </span>
             </div>
             <div className="bg-purple-50 px-4 py-2 rounded-lg">
-              <span className="text-purple-600 font-semibold">
-                {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
-              </span>
+              {(() => {
+                const statusKey = (st) => {
+                  const s = String(st || '').trim();
+                  if (s === 'อนุมัติ') return 'approved';
+                  if (s === 'ปฎิเสธ') return 'rejected';
+                  return 'pending';
+                };
+                const filtered = (postData || []).filter((x) => {
+                  const k = statusKey(x?.status);
+                  return tab === 'pending' ? k === 'pending' : (tab === 'approved' ? k === 'approved' : k === 'rejected');
+                });
+                return (
+                  <span className="text-purple-600 font-semibold">
+                    {page} / {Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))}
+                  </span>
+                );
+              })()}
             </div>
           </div>
+          {(() => {
+            const statusKey = (st) => {
+              const s = String(st || '').trim();
+              if (s === 'อนุมัติ') return 'approved';
+              if (s === 'ปฎิเสธ') return 'rejected';
+              return 'pending';
+            };
+            const pendingCount = (postData || []).filter(x => statusKey(x?.status) === 'pending').length;
+            const approvedCount = (postData || []).filter(x => statusKey(x?.status) === 'approved').length;
+            const rejectedCount = (postData || []).filter(x => statusKey(x?.status) === 'rejected').length;
+            return (
+              <div className="mt-4 inline-flex rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+                <button
+                  className={`px-4 py-2 text-sm font-medium ${tab==='pending' ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                  onClick={() => { setTab('pending'); setPage(1); }}
+                >รอดำเนินการ ({pendingCount})</button>
+                <button
+                  className={`px-4 py-2 text-sm font-medium border-l border-gray-200 ${tab==='approved' ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                  onClick={() => { setTab('approved'); setPage(1); }}
+                >อนุมัติ ({approvedCount})</button>
+                <button
+                  className={`px-4 py-2 text-sm font-medium border-l border-gray-200 ${tab==='rejected' ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                  onClick={() => { setTab('rejected'); setPage(1); }}
+                >ปฎิเสธ ({rejectedCount})</button>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -329,22 +381,36 @@ function Show_Product() {
                   <th className="text-gray-700 font-semibold">ชื่อสินค้า</th>
                   <th className="text-gray-700 font-semibold">รายละเอียด</th>
                   <th className="text-gray-700 font-semibold">ราคา</th>
+                  <th className="text-gray-700 font-semibold">สถานะ</th>
                   <th className="text-gray-700 font-semibold">โพสต์</th>
                   <th className="text-gray-700 font-semibold text-center">จัดการ</th>
                   <th className="text-gray-700 font-semibold text-center">ต้นโพสต์</th>
                 </tr>
               </thead>
               <tbody>
-                {postData.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="text-center py-10 text-gray-500">
-                      ยังไม่มีสินค้าในระบบ
-                    </td>
-                  </tr>
-                ) : (
-                  postData
-                    .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-                    .map((item, index) => (
+                {(() => {
+                  const statusKey = (st) => {
+                    const s = String(st || '').trim();
+                    if (s === 'อนุมัติ') return 'approved';
+                    if (s === 'ปฎิเสธ') return 'rejected';
+                    return 'pending';
+                  };
+                  const filtered = (postData || []).filter((x) => {
+                    const k = statusKey(x?.status);
+                    return tab === 'pending' ? k === 'pending' : (tab === 'approved' ? k === 'approved' : k === 'rejected');
+                  });
+                  const pageItems = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+                  if (filtered.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan="9" className="text-center py-10 text-gray-500">
+                          ยังไม่มีสินค้าในแท็บนี้
+                        </td>
+                      </tr>
+                    );
+                  }
+                  return (
+                    pageItems.map((item, index) => (
                       <tr key={item.id_product ?? index} className="hover:bg-gray-50 transition-colors">
                         <td className="font-medium text-gray-600">
                           {(page - 1) * ITEMS_PER_PAGE + index + 1}
@@ -371,6 +437,18 @@ function Show_Product() {
                               {Number(item.price).toLocaleString()}
                             </div>
                           )}
+                        </td>
+                        <td>
+                          {(() => {
+                            const st = String(item.status || '').trim();
+                            const cls = st === 'อนุมัติ'
+                              ? 'badge badge-success'
+                              : st === 'ปฎิเสธ'
+                              ? 'badge badge-error'
+                              : 'badge badge-warning';
+                            const label = st || 'รอดำเนินการ';
+                            return <div className={`${cls}`}>{label}</div>;
+                          })()}
                         </td>
                         <td>
                           <div className="flex items-center gap-1 text-sm text-gray-600">
@@ -411,13 +489,26 @@ function Show_Product() {
                         </td>
                       </tr>
                     ))
-                )}
+                  );
+                })()}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination Controls (เหมือน Show_Event) */}
-          {postData.length > 0 && (
+          {/* Pagination Controls */}
+          {(() => {
+            const statusKey = (st) => {
+              const s = String(st || '').trim();
+              if (s === 'อนุมัติ') return 'approved';
+              if (s === 'ปฎิเสธ') return 'rejected';
+              return 'pending';
+            };
+            const filtered = (postData || []).filter((x) => {
+              const k = statusKey(x?.status);
+              return tab === 'pending' ? k === 'pending' : (tab === 'approved' ? k === 'approved' : k === 'rejected');
+            });
+            if (filtered.length === 0) return null;
+            return (
             <div className="flex items-center  pt-2bg-gray-50 justify-center px-4 py-3 border-t border-gray-200 flex items-center">
               <button
                 className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
@@ -427,21 +518,22 @@ function Show_Product() {
                 ก่อนหน้า
               </button>
               <span className="px-2">
-                หน้า {page} / {Math.max(1, Math.ceil(postData.length / ITEMS_PER_PAGE))}
+                หน้า {page} / {Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))}
               </span>
               <button
                 className="px-3 py-1.5 text-xs rounded-lg border bg-white disabled:opacity-50"
                 onClick={() =>
                   setPage((p) =>
-                    Math.min(Math.ceil(postData.length / ITEMS_PER_PAGE) || 1, p + 1)
+                    Math.min(Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1, p + 1)
                   )
                 }
-                disabled={page === Math.ceil(postData.length / ITEMS_PER_PAGE) || postData.length === 0}
+                disabled={page === Math.ceil(filtered.length / ITEMS_PER_PAGE) || filtered.length === 0}
               >
                 ถัดไป
               </button>
             </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>

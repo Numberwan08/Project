@@ -261,6 +261,28 @@ export const NotificationsProvider = ({ children }) => {
       } catch {}
     };
     realtime.on("comment-hidden", onCommentHidden);
+    const onProductApproved = (payload) => {
+      try {
+        if (!payload || String(payload.target_user_id || "") !== String(userId || "")) return;
+        if (String(payload.status) !== 'อนุมัติ') return;
+        const href = payload.id_post
+          ? `/detall_att/${payload.id_post}?highlightProduct=${payload.id_product}`
+          : undefined;
+        const name = payload.name_product || 'สินค้า';
+        toast.success(
+          href ? (
+            <a href={href} className="no-underline">
+              <div className="font-medium">{name} ผ่านการอนุมัติแล้ว</div>
+              <div className="text-xs underline mt-1">เปิดดูสินค้า</div>
+            </a>
+          ) : (
+            `${name} ผ่านการอนุมัติแล้ว`
+          ),
+          { position: 'top-right', autoClose: 4000 }
+        );
+      } catch {}
+    };
+    realtime.on('product-approved', onProductApproved);
     return () => {
       // ... realtime.off calls
       try {
@@ -268,6 +290,7 @@ export const NotificationsProvider = ({ children }) => {
         realtime.off("report-new", onReportNew);
         realtime.off("new-reply", onNewReply);
         realtime.off("comment-hidden", onCommentHidden);
+        realtime.off('product-approved', onProductApproved);
       } catch {}
     };
   }, [realtime, userId]);

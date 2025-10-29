@@ -189,6 +189,7 @@ exports.add_event = async (req , res )=> {
     try{
         // Validate and enforce unique name_event (trimmed)
         const trimmedName = (name_event || "").replace(/\s+/g, " ").trim();
+        const sanitizedPhone = phone ? phone.replace(/ /g, '').trim() : "";
         if (!trimmedName) {
             if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
             return res.status(400).json({ mag: "กรุณาระบุชื่อกิจกรรม", error: "name_event required" });
@@ -209,7 +210,7 @@ exports.add_event = async (req , res )=> {
             id_user_insert,
             trimmedName,
             location_event,
-            phone,
+            sanitizedPhone,
             detail_event,
             startAt,
             endAt,
@@ -288,12 +289,13 @@ exports.edit_event = async (req, res) => {
 
         const startAt = toMysqlDatetime(date_start);
         const endAt = toMysqlDatetime(date_end);
+        const sanitizedPhone = phone ? phone.replace(/ /g, '').trim() : "";
         const [rows] = await db.promise().query(
             "UPDATE user_event SET name_event = ?, location_event = ?, phone = ?, detail_event = ?, date_start = ?, date_end = ?, images = ?, latitude = ?, longitude = ?, type = ? WHERE id_event = ?",
             [
                 trimmedName,
                 location_event,
-                phone,
+                sanitizedPhone,
                 detail_event,
                 startAt,
                 endAt,

@@ -113,6 +113,9 @@ function AttractionPage() {
         position: "top-center",
         autoClose: 1500,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
 

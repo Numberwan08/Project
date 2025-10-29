@@ -18,6 +18,19 @@ function EventPages() {
   const [filterStart, setFilterStart] = useState(""); // YYYY-MM-DD
   const [filterEnd, setFilterEnd] = useState("");   // YYYY-MM-DD
 
+  // Helpers: work with date-only (ignore time)
+  const toDateOnly = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const parseDateOnly = (s) => {
+    try {
+      if (!s) return null;
+      const [y, m, d] = s.split("-").map((n) => parseInt(n, 10));
+      if (!y || !m || !d) return null;
+      return new Date(y, m - 1, d);
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -135,20 +148,23 @@ function EventPages() {
     }
   };
 
-  const today = new Date();
+  const today = (() => {
+    const t = new Date();
+    return toDateOnly(t);
+  })();
   const isActiveOrUpcoming = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = toDateOnly(new Date(startDate));
+    const end = toDateOnly(new Date(endDate));
     return today <= end;
   };
   const isEnded = (endDate) => {
-    const end = new Date(endDate);
+    const end = toDateOnly(new Date(endDate));
     return today > end;
   };
 
   const getEventStatus = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = toDateOnly(new Date(startDate));
+    const end = toDateOnly(new Date(endDate));
 
     if (today > end) {
       return {
@@ -190,10 +206,10 @@ const filteredEvents = events
     return name.includes(q) || detailLoc.includes(q);
   })
   .sort((a, b) => {
-    const dateA = new Date(a.date_end);
-    const dateB = new Date(b.date_end);
-    const endDateA = new Date(a.date_start);
-    const endDateB = new Date(b.date_start);
+    const dateA = toDateOnly(new Date(a.date_end));
+    const dateB = toDateOnly(new Date(b.date_end));
+    const endDateA = toDateOnly(new Date(a.date_start));
+    const endDateB = toDateOnly(new Date(b.date_start));
 
     const isActiveA = today >= dateA && today <= endDateA;
     const isActiveB = today >= dateB && today <= endDateB;
@@ -229,21 +245,24 @@ const filteredEvents = events
       return true;
     })
     .filter((item) => {
-      // Date range filter (overlap with [filterStart, filterEnd])
+      // Date range filter (overlap with [filterStart, filterEnd]) using date-only comparisons
       if (!filterStart && !filterEnd) return true;
-      const evStart = new Date(item.date_start);
-      const evEnd = new Date(item.date_end);
+      const evStart = toDateOnly(new Date(item.date_start));
+      const evEnd = toDateOnly(new Date(item.date_end));
 
       if (filterStart && !filterEnd) {
-        const fs = new Date(filterStart);
+        const fs = parseDateOnly(filterStart);
+        if (!fs) return true;
         return evEnd >= fs;
       }
       if (!filterStart && filterEnd) {
-        const fe = new Date(filterEnd);
+        const fe = parseDateOnly(filterEnd);
+        if (!fe) return true;
         return evStart <= fe;
       }
-      const fs2 = new Date(filterStart);
-      const fe2 = new Date(filterEnd);
+      const fs2 = parseDateOnly(filterStart);
+      const fe2 = parseDateOnly(filterEnd);
+      if (!fs2 || !fe2) return true;
       return evStart <= fe2 && evEnd >= fs2;
     });
 

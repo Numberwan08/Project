@@ -9,21 +9,34 @@ export const RealtimeProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      // Derive socket base URL from VITE_API origin or current window origin
-      let base = '';
-      try {
+      // Derive socket base URL and path from VITE_API (supports absolute or relative)
+      const resolveSocketTarget = () => {
+        let base = '';
+        let path = '/socket.io';
         const api = import.meta.env.VITE_API;
         if (api) {
-          const u = new URL(api);
-          base = u.origin; // strip path like /api
+          try {
+            const u = new URL(api, typeof window !== 'undefined' ? window.location.origin : undefined);
+            base = u.origin; // strip path
+            const apiPath = u.pathname.replace(/\/+$/, '');
+            if (apiPath && apiPath !== '/') path = `${apiPath}/socket.io`;
+          } catch (_) {
+            // If URL failed (e.g., relative), derive from window
+            if (typeof window !== 'undefined' && window.location) {
+              base = window.location.origin;
+              const apiPath = String(api).replace(/\/+$/, '');
+              if (apiPath && apiPath !== '/') path = `${apiPath}/socket.io`;
+            }
+          }
+        } else if (typeof window !== 'undefined' && window.location) {
+          base = window.location.origin;
         }
-      } catch (_) {}
-      if (!base && typeof window !== 'undefined' && window.location) {
-        base = window.location.origin;
-      }
-      // Fallback to relative if still empty
-      const url = base || undefined;
-      const s = io(url, {
+        return { base: base || undefined, path };
+      };
+
+      const { base, path } = resolveSocketTarget();
+      const s = io(base, {
+        path,
         transports: ['websocket', 'polling'],
         withCredentials: false,
         autoConnect: true,

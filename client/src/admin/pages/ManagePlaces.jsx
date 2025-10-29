@@ -15,6 +15,10 @@ import {
   ChevronRight,
   Trash2,
   Search,
+  MessageCircle,
+  Star,
+  Package,
+  ShoppingBag,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -1281,18 +1285,18 @@ function ManagePlaces() {
                         </td>
                         <td className="px-4 py-3 text-gray-700 text-xs">
                           <div className="space-y-1">
-                            <div>
-                              คอมเมนต์:
+                            <div className="flex items-center">
+                              <MessageCircle size={14} className="text-purple-600" />
                               <span className="ml-1 font-semibold">{item.comments || 0}</span>
                               <span className="ml-1 text-gray-500">รายการ</span>
                             </div>
-                            <div>
-                              คะแนนเฉลี่ย:
+                            <div className="flex items-center">
+                              <Star size={14} className="w-4 h-4 text-yellow-400 fill-current" />
                               <span className="ml-1 font-semibold">{Number(item.star || 0).toFixed(1)}</span>
                               <span className="ml-1 text-gray-500">/ 5</span>
                             </div>
-                            <div>
-                              สินค้า:
+                            <div className="flex items-center">
+                              <ShoppingBag size={14} className="text-blue-500" />
                               <span className="ml-1 font-semibold">{item.products || 0}</span>
                               <span className="ml-1 text-gray-500">รายการ</span>
                             </div>

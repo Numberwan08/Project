@@ -9,6 +9,11 @@ import {
   Loader2,
   Package,
   FileText,
+  X as CloseIcon,
+  Flag,
+  Eye,
+  EyeOff,
+  Layers,
 } from "lucide-react";
 
 function ReportComment() {
@@ -17,6 +22,14 @@ function ReportComment() {
   const api = import.meta.env.VITE_API;
   const [expandedKeys, setExpandedKeys] = useState(new Set());
   const [processingKey, setProcessingKey] = useState(null);
+  const [showAllDetails, setShowAllDetails] = useState(new Set());
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailGroup, setDetailGroup] = useState(null);
+  const [detailPage, setDetailPage] = useState(1);
+  const detailItemsPerPage = 6;
+
+  // Summary for current view (by source filter)
+  // NOTE: defined after filteredGroups to avoid TDZ errors
 
   // ======= NEW: pagination states (เหมือนตัวอย่าง) =======
   const [page, setPage] = useState(1);
@@ -161,6 +174,14 @@ function ReportComment() {
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
+  const summary = useMemo(() => {
+    const totalGroups = (filteredGroups || []).length;
+    const totalReports = (filteredGroups || []).reduce((m, g) => m + (g?.count || 0), 0);
+    const hiddenGroups = (filteredGroups || []).filter((g) => Number(g?.status_group) === 0).length;
+    const visibleGroups = Math.max(0, totalGroups - hiddenGroups);
+    return { totalGroups, totalReports, hiddenGroups, visibleGroups };
+  }, [filteredGroups]);
+
   // toggle ทีละกลุ่ม
   const toggleOne = (key) => {
     const next = new Set(expandedKeys);
@@ -182,7 +203,7 @@ function ReportComment() {
           <h1 className="text-2xl font-bold text-gray-800 mb-1">
             รายงานความคิดเห็น
           </h1>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <p className="text-sm text-gray-600">รวมรายงานตามคอมเมนต์/รีพลาย</p>
             <div className="inline-flex rounded-lg border overflow-hidden">
               <button
@@ -212,6 +233,21 @@ function ReportComment() {
                 กิจกรรม
               </button>
             </div>
+          </div>
+          {/* Summary chips */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200">
+              <Layers className="h-3.5 w-3.5 text-purple-600" /> กลุ่ม: {summary.totalGroups}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200">
+              <Flag className="h-3.5 w-3.5 text-rose-600" /> รายงาน: {summary.totalReports}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200">
+              <Eye className="h-3.5 w-3.5 text-green-600" /> แสดง: {summary.visibleGroups}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white text-gray-700 border border-gray-200">
+              <EyeOff className="h-3.5 w-3.5 text-gray-600" /> ซ่อน: {summary.hiddenGroups}
+            </span>
           </div>
         </div>
 
@@ -280,10 +316,14 @@ function ReportComment() {
                           </td>
                           <td className="px-4 py-3">
                             <button
-                              className="text-sm text-purple-700 hover:text-purple-900"
-                              onClick={() => toggleOne(g.key)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 rounded-lg text-xs font-medium"
+                              onClick={() => {
+                                setDetailGroup(g);
+                                setDetailOpen(true);
+                                setDetailPage(1);
+                              }}
                             >
-                              {expandedKeys.has(g.key) ? "ซ่อนรายละเอียด" : "ดูรายละเอียด"}
+                              <FileText className="h-3.5 w-3.5" /> รายละเอียด
                             </button>
                           </td>
                           <td className="px-4 py-3">
@@ -295,6 +335,15 @@ function ReportComment() {
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-150 shadow-sm font-medium text-xs"
                                   title="เปิดโพสต์และไฮไลต์คอมเมนต์"
+                                  onClick={(e) => {
+                                    if (Number(g.status_group) === 0) {
+                                      e.preventDefault();
+                                      toast.warning("ความคิดเห็นนั้นถูกลบแล้ว", {
+                                        position: "top-center",
+                                        autoClose: 1500,
+                                      });
+                                    }
+                                  }}
                                 >
                                   <FileText className="h-3.5 w-3.5" />
                                   ดูโพสต์
@@ -318,33 +367,7 @@ function ReportComment() {
                           </td>
                         </tr>
 
-                        {expandedKeys.has(g.key) && (
-                          <tr>
-                            <td colSpan={6} className="px-4 pb-4">
-                              <div className="mx-1 mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                                <div className="space-y-3">
-                                  {g.items.map((r) => (
-                                    <div
-                                      key={r.id_report_comment}
-                                      className="border-b border-gray-200 last:border-none pb-2"
-                                    >
-                                      <div className="text-sm text-gray-800">
-                                        <span className="font-medium">ผู้แจ้ง:</span>{" "}
-                                        {r.reporter_name || r.reporter_id || "-"}
-                                      </div>
-                                      <div className="text-sm text-gray-600">
-                                        เหตุผล: {reasonText(r.reason)}
-                                      </div>
-                                      <div className="text-sm text-gray-600">
-                                        เนื้อหา: {r.detail_report || "-"}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                        {/* รายละเอียดถูกย้ายไปแสดงใน Modal */}
                       </React.Fragment>
                     );
                   })
@@ -396,6 +419,111 @@ function ReportComment() {
           {/* ======= END Pagination UI ======= */}
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {detailOpen && detailGroup && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setDetailOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl max-w-3xl w-full p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="-m-4 mb-4 p-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-t-xl flex items-start justify-between">
+              <div className="pr-4">
+                <div className="text-xs/relaxed text-white/80">
+                  {detailGroup.source === 'event' ? 'กิจกรรม' : 'โพสต์'} • {detailGroup.type === 'reply' ? 'ตอบกลับ' : 'คอมเมนต์'}
+                </div>
+                <h3 className="text-base md:text-lg font-semibold truncate max-w-[40rem]">
+                  {detailGroup.post_name || '-'}
+                </h3>
+              </div>
+              <button className="text-white/80 hover:text-white" onClick={() => setDetailOpen(false)} aria-label="ปิด">
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {(() => {
+              const items = Array.isArray(detailGroup.items) ? detailGroup.items : [];
+              // Summary: reporters chips
+              const reporters = [];
+              const seen = new Set();
+              items.forEach((r) => {
+                const name = r.reporter_name || r.reporter_id || '-';
+                if (!seen.has(name)) { seen.add(name); reporters.push(name); }
+              });
+              // Summary: reasons counts
+              const reasonCount = {};
+              items.forEach((r) => {
+                const label = reasonText(r.reason);
+                reasonCount[label] = (reasonCount[label] || 0) + 1;
+              });
+              const start = (detailPage - 1) * detailItemsPerPage;
+              const pageItems = items.slice(start, start + detailItemsPerPage);
+              const detailTotalPages = Math.max(1, Math.ceil(items.length / detailItemsPerPage));
+              const prevDetail = () => setDetailPage((p) => Math.max(1, p - 1));
+              const nextDetail = () => setDetailPage((p) => Math.min(detailTotalPages, p + 1));
+              return (
+                <>
+                  <div className="max-h-80 overflow-y-auto border rounded-lg">
+                    {pageItems.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">ไม่มีรายละเอียด</div>
+                    ) : (
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-gradient-to-r from-purple-600 to-purple-700 text-white sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-medium">ผู้แจ้ง</th>
+                            <th className="px-3 py-2 text-left font-medium">เหตุผล</th>
+                            <th className="px-3 py-2 text-left font-medium">รายละเอียด</th>
+                            <th className="px-3 py-2 text-left font-medium">เวลา</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {pageItems.map((r) => (
+                            <tr key={r.id_report_comment} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 text-gray-800 align-top">
+                                {r.reporter_name || r.reporter_id || '-'}
+                              </td>
+                              <td className="px-3 py-2 align-top">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                  {reasonText(r.reason)}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-gray-700 align-top">
+                                <div className="whitespace-pre-wrap break-words">
+                                  {r.detail_report || '-'}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 text-gray-500 align-top">
+                                {r.created_at ? new Date(r.created_at).toLocaleString('th-TH') : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="text-xs text-gray-600">แสดง {(start + 1)} - {Math.min(start + detailItemsPerPage, items.length)} จาก {items.length} รายการ</div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={prevDetail} disabled={detailPage === 1} className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-xs">
+                        <ChevronLeft className="h-3.5 w-3.5" /> ก่อนหน้า
+                      </button>
+                      <span className="px-3 py-1.5 bg-purple-600 text-white rounded-lg font-medium shadow-sm text-xs">{detailPage} / {detailTotalPages}</span>
+                      <button onClick={nextDetail} disabled={detailPage === detailTotalPages} className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-xs">
+                        ถัดไป <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

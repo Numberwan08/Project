@@ -25,6 +25,38 @@ function HomePage() {
     fetchData();
   }, []);
 
+  const formatDateTimeThai = (value) => {
+    try {
+      if (!value) return "-";
+      const d = new Date(value);
+      if (isNaN(d)) return "-";
+      return d.toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
+    } catch {
+      return "-";
+    }
+  };
+
+  const daysUntilStart = (value) => {
+    try {
+      if (!value) return null;
+      const start = new Date(value);
+      if (isNaN(start)) return null;
+      const now = new Date();
+      const diffMs = start.getTime() - now.getTime();
+      const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      return days;
+    } catch {
+      return null;
+    }
+  };
+
+  const startInDaysLabel = (value) => {
+    const d = daysUntilStart(value);
+    if (d === null) return "-";
+    if (d <= 0) return "เริ่มวันนี้";
+    return `เริ่มอีก ${d} วัน`;
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -151,6 +183,9 @@ function HomePage() {
         position: "top-center",
         autoClose: 1500,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
 
@@ -202,6 +237,9 @@ function HomePage() {
         position: "top-center",
         autoClose: 1500,
       });
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
       return;
     }
 
@@ -362,11 +400,11 @@ function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {topEvents.map((item, idx) => (
-                <div
-                  className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group"
-                  key={item.id_event || idx}
-                >
+            {topEvents.map((item, idx) => (
+              <div
+                className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group"
+                key={item.id_event || idx}
+              >
                   <div className="relative overflow-hidden">
                     <img
                       src={item.images}
@@ -395,6 +433,9 @@ function HomePage() {
                     >
                       {item.name_event}
                     </h3>
+                    <span className="inline-flex items-center mb-4 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                      {startInDaysLabel(item?.date_start)}
+                    </span>
                     <Link to={`/detall_event/${item.id_event}`}>
                       <button className="w-full bg-gradient-to-r cursor-pointer from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                         ดูรายละเอียด
@@ -434,6 +475,7 @@ function HomePage() {
 
                   <div className="p-4 flex flex-col justify-between flex-1">
                     <div>
+                      
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-bold text-gray-800 group-hover:text-purple-600 transition-colors line-clamp-2">
                           {item.name_location || item.name_event}
@@ -453,7 +495,6 @@ function HomePage() {
                         {item.detail_location || item.location_event}
                       </p>
                     </div>
-
                     <Link
                       to={
                         item.id_post

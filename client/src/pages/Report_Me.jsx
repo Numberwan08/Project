@@ -188,7 +188,7 @@ function Report_Me() {
             }`}
             onClick={() => setSourceFilter("post")}
           >
-            โพสต์
+            สถานที่
           </button>
           <button
             type="button"

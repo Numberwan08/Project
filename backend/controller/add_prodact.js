@@ -2,6 +2,7 @@
 const { error, log } = require("console");
 const db = require("../config/db");
 const fs = require('fs');
+const { getIO } = require("../socket");
 const deleteImage =(path)=>{
     fs.unlink(path,(err)=>{
         if(err){
@@ -42,14 +43,20 @@ exports.get_product_id = async (req,res)=>{
 exports.get_prodact = async (req , res )=>{
     try{
         const [rows] = await db.promise().query(`SELECT 
-            t1.*, 
-            t2.first_name, 
-            t2.last_name, 
-            t3.name_location
-        FROM user_prodact AS t1
-        JOIN user AS t2 ON t1.id_user = t2.id_user
-        LEFT JOIN user_post AS t3 ON t1.id_post = t3.id_post
-        ORDER BY t3.name_location ASC, t1.id_product ASC;`);
+    t1.*, 
+    t2.first_name, 
+    t2.last_name, 
+    t3.name_location
+FROM user_prodact AS t1
+JOIN user AS t2 
+    ON t1.id_user = t2.id_user
+LEFT JOIN user_post AS t3 
+    ON t1.id_post = t3.id_post
+WHERE t1.status != 'ปฎิเสธ' and t1.status != 'รอดำเนินการ'
+ORDER BY 
+    t3.name_location ASC, 
+    t1.id_product ASC;
+;`);
 if(rows.length===0){
             return res.status(404).json({ msg:"ไม่พบสินค้า"})
         }
@@ -65,6 +72,70 @@ if(rows.length===0){
         return res.status(500).json({
             msg: "ไม่สามารถดึงข้อมูลโพสต์ได้",
             error:err.message
+        });
+    }
+}
+
+// รายการสินค้าที่รอดำเนินการอนุมัติ
+exports.get_pending_products = async (req, res) => {
+    try {
+        const [rows] = await db.promise().query(`SELECT 
+    t1.*, 
+    t2.first_name, 
+    t2.last_name, 
+    t3.name_location
+FROM user_prodact AS t1
+JOIN user AS t2 
+    ON t1.id_user = t2.id_user
+LEFT JOIN user_post AS t3 
+    ON t1.id_post = t3.id_post
+WHERE t1.status = 'รอดำเนินการ'
+ORDER BY 
+    t1.id_product DESC;`);
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
+        }));
+
+        return res.status(200).json({msg: "ดึงสินค้ารอดำเนินการสำเร็จ", data: formatData});
+    } catch (err) {
+        console.log("error get pending products", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงสินค้ารอดำเนินการได้",
+            error: err.message
+        });
+    }
+}
+
+// รายการสินค้าที่ถูกปฎิเสธ
+exports.get_rejected_products = async (req, res) => {
+    try {
+        const [rows] = await db.promise().query(`SELECT 
+    t1.*, 
+    t2.first_name, 
+    t2.last_name, 
+    t3.name_location
+FROM user_prodact AS t1
+JOIN user AS t2 
+    ON t1.id_user = t2.id_user
+LEFT JOIN user_post AS t3 
+    ON t1.id_post = t3.id_post
+WHERE t1.status = 'ปฎิเสธ'
+ORDER BY 
+    t1.id_product DESC;`);
+
+        const formatData = rows.map((row)=>({
+            ...row,
+            images: row.images ? `${req.protocol}://${req.headers.host}/${row.images}`: null,
+        }));
+
+        return res.status(200).json({msg: "ดึงสินค้าที่ถูกปฎิเสธสำเร็จ", data: formatData});
+    } catch (err) {
+        console.log("error get rejected products", err);
+        return res.status(500).json({
+            msg: "ไม่สามารถดึงสินค้าที่ถูกปฎิเสธได้",
+            error: err.message
         });
     }
 }
@@ -124,16 +195,8 @@ exports.add_prodact = async (req , res )=>{
             if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
             return res.status(400).json({ msg: "กรุณาระบุชื่อสินค้า", error: "name_product required" });
         }
-        const [dup] = await db.promise().query(
-            "SELECT id_product FROM user_prodact WHERE name_product = ? AND id_post = ?",
-            [trimmedName, id_post]
-        );
-        if (dup.length > 0) {
-            if (image && image.path && fs.existsSync(image.path)) deleteImage(image.path);
-            return res.status(400).json({ msg: "ชื่อนี้ถูกใช้ในโพสต์นี้แล้ว", error: "duplicate name_product in post" });
-        }
 
-        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,id_post,name_product,detail_product,phone,price,images,type)VALUES (?,?,?,?,?,?,?,?,?)",[
+        const [rows] = await db.promise().query("INSERT INTO user_prodact (id_product,id_user,id_post,name_product,detail_product,phone,price,images,type,status)VALUES (?,?,?,?,?,?,?,?,?,?)",[
             max_id+1,
             id_user,
             id_post,
@@ -142,7 +205,8 @@ exports.add_prodact = async (req , res )=>{
             phone,
             price,
             image.path,
-            type
+            type,
+            'รอดำเนินการ'
         ]);
 
         if(rows.affectedRows === 0 ){
@@ -162,6 +226,45 @@ exports.add_prodact = async (req , res )=>{
         msg: "ไม่สามารถโพสต์ได้",
         error: err.message,
     });
+    }
+}
+
+// อัปเดตสถานะสินค้า (อนุมัติ/ปฎิเสธ)
+exports.update_product_status = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let { status } = req.body;
+        const allowed = new Set(['อนุมัติ', 'ปฎิเสธ']);
+        if (!allowed.has(String(status))) {
+            return res.status(400).json({ msg: 'สถานะไม่ถูกต้อง', error: 'invalid status' });
+        }
+        const [rows] = await db.promise().query("SELECT * FROM user_prodact WHERE id_product = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ msg: 'ไม่พบสินค้า' });
+        }
+        await db.promise().query("UPDATE user_prodact SET status = ? WHERE id_product = ?", [status, id]);
+        const [after] = await db.promise().query("SELECT * FROM user_prodact WHERE id_product = ?", [id]);
+        const product = after[0];
+        if (product && product.images) {
+            product.images = `${req.protocol}://${req.headers.host}/${product.images}`;
+        }
+        try {
+            const io = getIO && getIO();
+            if (io && product && product.id_user) {
+                io.emit('product-approved', {
+                    target_user_id: product.id_user,
+                    id_product: product.id_product,
+                    id_post: product.id_post,
+                    name_product: product.name_product,
+                    status,
+                    ts: Date.now()
+                });
+            }
+        } catch (_) {}
+        return res.status(200).json({ msg: 'อัปเดตสถานะสำเร็จ', data: product });
+    } catch (err) {
+        console.log('error update product status', err);
+        return res.status(500).json({ msg: 'ไม่สามารถอัปเดตสถานะได้', error: err.message });
     }
 }
 
@@ -344,7 +447,7 @@ exports.get_random_products_by_post = async (req, res) => {
             SELECT t1.*, t2.first_name 
             FROM user_prodact t1 
             JOIN user t2 ON t1.id_user = t2.id_user 
-            WHERE t1.id_post = ? 
+            WHERE t1.id_post = ? and t1.status = 'อนุมัติ'
             ORDER BY RAND() 
             LIMIT 3
         `, [id_post]);
